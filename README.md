@@ -24,8 +24,14 @@ When students drop out, colleges face reduced public funding, lower tuition fees
 
 ## Environment Set Up
 
+## Running Locally
+
 ## Deployment
 
+## Customizing the UI and Theming
+
 ## Code Reference 
+
+## FAQ and Troubleshooting
 
 
