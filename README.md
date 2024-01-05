@@ -1,5 +1,6 @@
 # One-Stop Academic Advising Assistant by Campus Evolve 
-Campus Evolve is partnering with Axim Collaborative on an exciting new project aimed at bringing the power of generative AI to higher education academic advising.  
+Campus Evolve is partnering with Axim Collaborative on an exciting new project aimed at bringing the power of generative AI to higher education academic advising.  The purpose of this repository is to share code and implementation instructions for an AI academic adivising assistant that combines Retrieval Augmented Generation with Large Language Model Integration to allow universities to implement an online assistant for one-stop advising:
+
 ![image](https://github.com/CampusGPT-ai/GAI_Academic_Adivising_Assistant_MVP/assets/142542882/c3a2215e-12b2-486b-a175-47a892dbac3f)
 
 ## The Problem
@@ -16,3 +17,15 @@ Advisors must navigate a labyrinth of degree program requirements, student recor
 
 ### Drop Out Costs
 When students drop out, colleges face reduced public funding, lower tuition fees, higher recruitment costs, and many more challenges, creating a cycle of decline
+
+## Table of Contents
+
+## Features
+
+## Environment Set Up
+
+## Deployment
+
+## Code Reference 
+
+
