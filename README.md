@@ -26,6 +26,9 @@ When students drop out, colleges face reduced public funding, lower tuition fees
 ### Vector Indexing and Embedding
 ### Retrieval Evaluation Framework
 ### Prompt structure
+#### Prompting with History
+#### Injecting student profile data
+#### Retrieval augmentation with auto-merging retrieval and cosign similarity search
 ### Response Streaming
 ###  UI/Client set up
 
