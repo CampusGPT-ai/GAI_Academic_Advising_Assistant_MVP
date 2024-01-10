@@ -22,6 +22,13 @@ When students drop out, colleges face reduced public funding, lower tuition fees
 
 ## Features
 
+### AI Service Definitions
+### Vector Indexing and Embedding
+### Retrieval Evaluation Framework
+### Prompt structure
+### Response Streaming
+###  UI/Client set up
+
 ## Environment Set Up
 
 ## Running Locally
