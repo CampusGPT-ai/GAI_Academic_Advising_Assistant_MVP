@@ -42,6 +42,8 @@ When students drop out, colleges face reduced public funding, lower tuition fees
 
 ## Code Reference 
 
+## Challenges and Potential Extensions
+
 ## FAQ and Troubleshooting
 
 
