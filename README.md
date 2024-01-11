@@ -23,6 +23,78 @@ When students drop out, colleges face reduced public funding, lower tuition fees
 ## Features
 
 ### AI Service Definitions
+This codebase provides a structured approach to connect with the Azure Open AI service. It defines several client classes to interact with different aspects of the service, such as chat and embeddings, across various deployment environments like Azure, LangChain, and OpenAI.
+
+#### Usage
+To use these clients, you need to have the necessary credentials and access to the Azure Open AI services. Import the relevant classes and instantiate them with the appropriate parameters. You can then use these instances to interact with the Azure Open AI services, like sending chat messages or embedding texts.
+
+#### Classes and Main Methods
+AILLMClients
+An abstract base class for AI Language Model (LLM) clients.
+
+#### Methods
+chat(): Abstract method to be implemented for sending chat messages.
+embed(): Abstract method to be implemented for embedding text.
+
+#### LangChainLLMClients
+A class for LangChain Language Model clients.
+
+#### Parameters
+deployment (str): The deployment environment.
+version (str): The version of the language model.
+endpoint (str): The endpoint URL.
+#### Attributes
+client (AzureChatOpenAI): The Azure Chat OpenAI client.
+embeddings (AzureOpenAIEmbeddings): The Azure OpenAI Embeddings client.
+#### Methods
+chat(messages: List[Message]) -> Any: Sends chat messages and returns the response.
+embed(text: str) -> List[float]: Embeds text using the embedding model.
+
+#### AzureLLMClients
+A class for Azure Language Model clients.
+
+#### Parameters
+azure_endpoint (str): The Azure endpoint URL.
+model (str): The model name.
+embedding_model (str): The embedding model name.
+deployment (str): The deployment environment.
+api_version (str): The API version.
+#### Methods
+chat(messages: List[Message], json_mode: bool): Sends chat messages and returns the response.
+embed(text: str): Embeds text and returns embedding.
+embed_many(inputs: List[str]): Embeds multiple texts.
+
+#### OpenAILLMClients
+A class for OpenAI language model clients.
+
+#### Parameters
+model (str): The language model name.
+embedding_model (str): The embedding model name.
+api_key (str): The API key.
+#### Methods
+chat(is_streaming: bool, messages: List[Message]): Sends chat messages and returns the response.
+embed(text: str) -> openai_response_objects.Embedding: Embeds text and returns the embedding.
+
+#### Utility Functions
+#### normalize_text(s: str, sep_token: str = " \n ")
+Normalizes the input text by removing extra spaces and unwanted characters.
+
+#### get_tokens(text: str) -> List[int]
+Tokenizes the given text using a specified tokenizer.
+
+#### convert_to_langchain(messages: List[Message]) -> List[Either[HumanMessage, SystemMessage]]
+Converts a list of Message objects into LangChain's HumanMessage or SystemMessage objects.
+
+#### get_llm_client(...)
+Instantiates and returns an appropriate LLM client based on the specified API type and other parameters.
+
+#### Additional Information
+Ensure you have the necessary dependencies installed, like openai, azure.identity, and custom modules like openai_response_objects.
+Proper Azure credentials and access rights are needed to use these clients.
+Handle exceptions appropriately, especially in network calls and tokenization processes.
+Logging is configured to output to stdout for better monitoring and debugging.
+This framework provides a flexible and consistent way to integrate and utilize the Azure Open AI services in various applications and environments.
+
 ### Vector Indexing and Embedding
 ### Retrieval Evaluation Framework
 ### Prompt structure
