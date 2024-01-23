@@ -1,0 +1,221 @@
+[
+    {
+        "topic": "Academic Progress",
+        "question": "How can I check my academic progress as a physics major?",
+        "answer": "You can check your academic progress by logging into your myFSU account and navigating to the 'Academic Progress' section. Additionally, it's beneficial to meet with your academic advisor regularly to discuss your progress and any concerns you may have.",
+        "related_interests": ""
+    },
+    {
+        "topic": "Minor Courses",
+        "question": "What history courses are available for my minor?",
+        "answer": "The available history courses can be checked online through the course catalog or by contacting the History Department. You can also discuss this with your academic advisor during your advising sessions.",
+        "related_interests": "History minor"
+    },
+    {
+        "topic": "Language Learning",
+        "question": "Are there any language courses or clubs I can join?",
+        "answer": "Yes, FSU offers various language courses which you can find in the course catalog. Additionally, there are language clubs and societies on campus that you can join to enhance your language learning experience.",
+        "related_interests": "Languages"
+    },
+    {
+        "topic": "Outdoor Activities",
+        "question": "Where can I find information on outdoor activities or clubs?",
+        "answer": "Information on outdoor activities or clubs can be found on the FSU Campus Recreation website or by visiting the Campus Recreation office.",
+        "related_interests": "Outdoor activities"
+    },
+    {
+        "topic": "Watersports",
+        "question": "Are there any watersports activities or clubs at FSU?",
+        "answer": "Yes, there are watersports clubs at FSU. You can find more information on the Campus Recreation website or by contacting the Campus Recreation office.",
+        "related_interests": "Watersports"
+    },
+    {
+        "topic": "Performing Arts",
+        "question": "How can I get involved in performing arts at FSU?",
+        "answer": "FSU has a vibrant performing arts community. You can get involved by joining performing arts clubs, attending auditions for plays or shows, or by taking performing arts courses offered at FSU.",
+        "related_interests": "Performing arts"
+    },
+    {
+        "topic": "Research Opportunities",
+        "question": "How can I find research opportunities in my field?",
+        "answer": "Research opportunities can be found by contacting your department, checking the Research Centers and Institutes page on FSU's website, or discussing with your academic advisor.",
+        "related_interests": "Physics major"
+    },
+    {
+        "topic": "Financial Aid",
+        "question": "Where can I get information on financial aid?",
+        "answer": "Information on financial aid can be obtained from the Financial Aid office at FSU, or by visiting the Financial Aid section on the FSU website.",
+        "related_interests": "First-generation student"
+    },
+    {
+        "topic": "Tutoring",
+        "question": "Where can I find tutoring for my physics courses?",
+        "answer": "Tutoring services may be available through the Physics Department, or you can check the Academic Center for Excellence (ACE) for tutoring options.",
+        "related_interests": "Physics major"
+    },
+    {
+        "topic": "Study Groups",
+        "question": "How can I join a study group?",
+        "answer": "You can join study groups through course-specific forums, or by connecting with classmates and forming a study group together.",
+        "related_interests": ""
+    },
+    {
+        "topic": "Course Registration",
+        "question": "How do I sign up for next semester's classes?",
+        "answer": "You can sign up for classes through your myFSU portal during the designated registration period.",
+        "related_interests": ""
+    },
+    {
+        "topic": "Women in Tech Clubs",
+        "question": "Are there any clubs for women in technology?",
+        "answer": "Yes, there are clubs and organizations at FSU that support women in technology fields. You may want to check out organizations like Women in Computer Science (WiCS) or Society of Women Engineers (SWE).",
+        "related_interests": "Computer Science, Women in Technology"
+    },
+    {
+        "topic": "Entrepreneurship Resources",
+        "question": "Where can I find resources on entrepreneurship?",
+        "answer": "You can explore entrepreneurship resources through the Jim Moran College of Entrepreneurship or by attending entrepreneurship-related events on campus.",
+        "related_interests": "Entrepreneurship"
+    },
+    {
+        "topic": "Singing Opportunities",
+        "question": "How can I get involved in singing on campus?",
+        "answer": "You can get involved in singing through joining one of the FSU choirs or a cappella groups, or by taking music or voice classes.",
+        "related_interests": "Singing"
+    },
+    {
+        "topic": "Anime Clubs",
+        "question": "Are there any clubs for anime enthusiasts?",
+        "answer": "Yes, there are clubs for anime enthusiasts at FSU. You can look for them on the list of registered student organizations on the FSU website.",
+        "related_interests": "Anime"
+    },
+    {
+        "topic": "Health and Wellness",
+        "question": "Where can I access health and wellness resources?",
+        "answer": "Health and wellness resources can be accessed through the FSU Health and Wellness Center, and there are also various fitness and wellness programs offered through FSU Campus Recreation.",
+        "related_interests": "Health and Wellness"
+    },
+    {
+        "topic": "Internship Opportunities",
+        "question": "How can I find internships related to computer engineering?",
+        "answer": "You can find internships through the FSU Career Center, or by speaking with your academic advisor or professors in the Computer Engineering Department.",
+        "related_interests": "Computer Engineering"
+    },
+    {
+        "topic": "Study Resources",
+        "question": "Where can I get help with my computer engineering courses?",
+        "answer": "You can get help through tutoring services provided by the Academic Center for Excellence (ACE) or by forming study groups with classmates.",
+        "related_interests": "Computer Engineering"
+    },
+    {
+        "topic": "Work-Study",
+        "question": "How do I apply for work-study?",
+        "answer": "You can apply for work-study through the Financial Aid office, or by checking the work-study section on the FSU website.",
+        "related_interests": ""
+    },
+    {
+        "topic": "Extracurricular",
+        "question": "How do I join a club?",
+        "answer": "You can join a club by attending the Club Fair held each semester or by checking the list of registered student organizations on the FSU website.",
+        "related_interests": "Languages, Outdoor activities, Watersports, Performing arts"
+    },
+    {
+        "topic": "Study Abroad",
+        "question": "Are there study abroad programs I can participate in?",
+        "answer": "Yes, FSU offers various study abroad programs. You can check the International Programs website or contact the International Programs office for more information.",
+        "related_interests": "Languages, History minor"
+    },
+    {
+        "topic": "Internships",
+        "question": "How can I find internships related to physics?",
+        "answer": "You can find internships through the Career Center, or by speaking with your academic advisor or professors in the Physics Department.",
+        "related_interests": "Physics major"
+    },
+    {
+        "topic": "Work-Study",
+        "question": "How do I apply for work-study?",
+        "answer": "You can apply for work-study through the Financial Aid office, or by checking the work-study section on the FSU website.",
+        "related_interests": "First-generation student"
+    },
+    {
+        "topic": "Housing",
+        "question": "How do I apply for housing?",
+        "answer": "You can apply for housing through the Housing portal on the FSU website during the housing application period.",
+        "related_interests": ""
+    },
+    {
+        "topic": "Library Resources",
+        "question": "Where can I find resources for my research projects?",
+        "answer": "You can find resources at the FSU Libraries, either in-person or through the library's online database.",
+        "related_interests": "Physics major, History minor"
+    },
+    {
+        "topic": "Health Services",
+        "question": "Where is the health center located?",
+        "answer": "The FSU Health and Wellness Center is located on campus. You can check the FSU website for the exact location and services offered.",
+        "related_interests": ""
+    },
+        {
+            "topic": "Major Selection",
+            "question": "How do I declare my business major?",
+            "answer": "You can declare your business major by meeting with an academic advisor in the College of Business, who will help you with the necessary paperwork and course planning.",
+            "related_interests": "Business Major"
+        },
+        {
+            "topic": "Athletic Commitments",
+            "question": "How can I balance my athletic commitments with academics?",
+            "answer": "You can work with both your athletic and academic advisors to create a balanced schedule. Utilizing time management tools and resources like tutoring and study halls can also be beneficial.",
+            "related_interests": "Student Athlete, Soccer"
+        },
+        {
+            "topic": "On-Campus Housing",
+            "question": "How do I apply for on-campus housing?",
+            "answer": "You can apply for on-campus housing through the Housing portal on the FSU website during the housing application period.",
+            "related_interests": "On-Campus Living"
+        },
+        {
+            "topic": "Student Affairs",
+            "question": "How can I get involved in student affairs?",
+            "answer": "You can get involved in student affairs by joining student government, attending student affairs events, or by seeking positions in student-led organizations.",
+            "related_interests": "Student Affairs"
+        },
+        {
+            "topic": "Art Opportunities",
+            "question": "Where can I pursue my interest in art?",
+            "answer": "You can pursue your interest in art by taking art courses, joining art clubs, or attending art events and exhibitions on campus.",
+            "related_interests": "Art"
+        },
+        {
+            "topic": "Business Courses",
+            "question": "What business courses should I take in my first year?",
+            "answer": "You should meet with your academic advisor to discuss your course plan, but typically freshmen take introductory courses in economics, accounting, and business administration.",
+            "related_interests": "Business Major"
+        },
+        {
+            "topic": "Fitness Facilities",
+            "question": "Where are the fitness facilities located?",
+            "answer": "The fitness facilities are located within the Leach Center and the Fitness and Movement Clinic on campus, where you can access gym equipment, pools, and various fitness programs.",
+            "related_interests": "Student Athlete, Health"
+        },
+        {
+            "topic": "Athletic Training",
+            "question": "Where do I go for athletic training or injuries?",
+            "answer": "For athletic training or injuries, you can visit the sports medicine facilities on campus or contact your team's athletic trainer.",
+            "related_interests": "Student Athlete, Soccer"
+        },
+        {
+            "topic": "Study Resources",
+            "question": "Where can I find tutoring for my courses?",
+            "answer": "Tutoring services can be accessed through the Academic Center for Excellence (ACE) or through specific departments depending on the course.",
+            "related_interests": ""
+        },
+        {
+            "topic": "Networking",
+            "question": "How can I network with business professionals?",
+            "answer": "You can network with business professionals by attending College of Business events, joining business-related organizations, or by leveraging the alumni network through the Career Center.",
+            "related_interests": "Business Major"
+        }
+    
+    
+    
+]

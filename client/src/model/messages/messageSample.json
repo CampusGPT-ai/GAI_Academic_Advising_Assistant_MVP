@@ -1,0 +1,45 @@
+[{
+	"_id" : "65315d57d6f2632d416bf408",
+	"user" : "65315d56d6f2632d416bf402", 
+	"conversation" : "65315d57d6f2632d416bf406",
+	"timestamp" : {
+		"$date" : 1697708689178
+	},
+    "role": "user", 
+	"message" : "What degrees should I pursue to become a poet?"
+
+},
+{
+	"_id" : "65315d57d6f2632d416bf408",
+	"user" : "65315d56d6f2632d416bf402",
+	"conversation" : "65315d57d6f2632d416bf406",
+	"timestamp" : {
+		"$date" : 1697708689178
+	},
+    "role": "bot", 
+	"message" : "Poets come from many educational backgrounds, but English is a popular choice to pursue a career as a writer.",
+    "Citations": 
+    [
+        { 
+        "CitationPath": "www.example.com",
+        "CitationText": "some text"
+        },
+        {
+        "CitationPath": "www.anotherexample.com",
+        "CitationText": "some more text"
+        }
+
+    ],
+    "Followups": [{
+        
+        "FollowpupQuestion": "why didn't you already think of this?"
+        
+    },
+    {
+        
+        "FollowpupQuestion": "or this?"
+        
+    }]
+}
+
+]
