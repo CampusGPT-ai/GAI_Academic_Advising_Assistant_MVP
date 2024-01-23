@@ -1,0 +1,8 @@
+{
+    "parameters": {
+      "managedIdentity": {
+        "value": "ce-advisor-admin"
+      }
+    }
+  }
+  
