@@ -1,0 +1,91 @@
+[
+
+    {
+        "_id" : "65315d56d6f2632d416bf401",
+        "user_id" : "ttallahassee",
+        "institution" : "65304cef8c357b4001d79de2",
+        "full_name" : "Tiffany Tallahassee",
+        "avatar" : "tiffany",
+        "interests" : [
+            "Student Government",
+            "Volunteer UCF",
+            "Bright Futures Scholarship Recipient"
+        ],
+        "demographics" : {
+            "ethnicity" : "white",
+            "gender" : "Female"
+        },
+        "academics" : {
+            "AcademicYear" : "2",
+            "Major" : "Computer Engineering",
+            "Minor" : ""
+        },
+        "courses" : [
+            "EGS1006C",
+            "EGN1007C",
+            "EGN3420",
+            "COT3100C",
+            "COP3502C",
+            "COP3503C",
+            "COP3330",
+            "EEL4768",
+            "COP4600"
+        ]
+    },
+    {
+        "_id" : "65315d55d6f2632d416bf400",
+        "user_id" : "jjacksonville",
+        "institution" : "65304cef8c357b4001d79de2",
+        "full_name" : "Jamal Jacksonville",
+        "avatar" : "jamal",
+        "interests" : [
+            "team sports",
+            "mental health",
+            "greek life"
+        ],
+        "demographics" : {
+            "ethnicity" : "African American",
+            "gender" : "Male",
+            "AcademicYear" : "3"
+        },
+        "academics" : {
+            "Major" : "Physics",
+            "Minor" : "History"
+        },
+        "courses" : [
+            "MAC2311C",
+            "PHY2048",
+            "PHY2049L",
+            "CHM2046",
+            "MAC2312",
+            "MAP2302",
+            "PHY3101",
+            "CHM2045C",
+            "CHM2046",
+            "MAC2311C"
+        ]
+    },
+    {
+        "_id" : "65315d56d6f2632d416bf402",
+        "user_id" : "ddaytona",
+        "institution" : "65304cef8c357b4001d79de2",
+        "full_name" : "Dylan Daytona",
+        "avatar" : "dylan",
+        "interests" : [
+            "languages",
+            "outdoor activities",
+            "watersports",
+            "peforming arts"
+        ],
+        "demographics" : {
+            "ethnicity" : "white",
+            "gender" : "Male"
+        },
+        "academics" : {
+            "AcademicYear" : "1",
+            "Major" : "Business Administration",
+            "Minor" : ""
+        },
+        "courses" : [ ]
+    }
+]

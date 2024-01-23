@@ -1,0 +1,81 @@
+
+.chatBotChatContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 900px;
+    width: 70%;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: #f5f5f5;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+}
+
+.chatBotChatError {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    max-width: 200px;
+}
+
+.chatUserContainerAlign{
+    display: flex;
+    justify-content: flex-end;
+}
+
+.chatUserChatContainer {
+    align-self: flex-end;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 900px;
+    width: 70%;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: #e8ebfa;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+}
+
+.chatBotChatReferences {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.chatInputContainer {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    width: 90%;
+    min-width: 600px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #f5f5f5;
+}
+
+.chatInput {
+    flex: 1;
+}
+
+.chatHistoryHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 8px;
+    width: 100%;
+    min-width: 200px;
+}
+
+.demoProfileContainer {
+    max-width: 400px;
+    height: 550px;
+    padding: 20px;
+    margin: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-content: center;
+    align-self: start;
+    border-radius: 5%;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
