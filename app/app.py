@@ -13,18 +13,20 @@ from functools import lru_cache
 from cloud_services.gpt_models import AILLMModels, get_llm_model
 from cloud_services.vector_search import VectorSearchService, get_search_client
 from user_conversation import UserConversation
-from app.backend.user_profile.profile_internal import Profile
-from institution.institution import Institution
+from azure.identity import DefaultAzureCredential
+from models import Topic, Conversation, ConversationRequest, ChatMessage, Institution
 from settings.settings import Settings
-from conversation.topic import Topic
-from demo_setup.inst_profile_setup import setup_demo_profiles, setup_conversations
 from util.json_helper import response_from_string
 from util.logger_format import CustomFormatter
-from conversation.conversation import Conversation, ConversationRequest
-from conversation.chat_message import ChatMessage
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
 import logging, sys
+
+credential = DefaultAzureCredential()
+TOKEN = credential.get_token("https://cognitiveservices.azure.com/.default").token
+openai.api_key = TOKEN
+openai.api_type = os.getenv("OPENAI_API_TYPE")
+
 
 load_dotenv()
 ch = logging.StreamHandler(stream=sys.stdout)
@@ -43,7 +45,8 @@ logger.addHandler(ch)
 def get_settings():
     return Settings()
 
-
+# setting up mongo and openai as persistent connections
+# will span the life of the app as deployed
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup block
@@ -51,23 +54,22 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     logger.info(f"got settings from settings.py {settings.model_dump()}")
     # setup mongo connection
-    db_name = settings.APPSETTING_MONGO_DB
-    db_conn = settings.APPSETTING_MONGO_CONN_STR
+    db_name = settings.MONGO_DB
+    db_conn = settings.MONGO_CONN_STR
     _mongo_conn = connect(db=db_name, host=db_conn)
 
     # setup openai connection
-    openai.api_key = settings.APPSETTING_OPENAI_API_KEY
-    openai.api_version = settings.APPSETTING_OPENAI_API_VERSION
-    openai.api_base = settings.APPSETTING_OPENAI_API_BASE
-    openai.api_type = settings.APPSETTING_OPENAI_API_TYPE
+    openai.api_key = settings.AZURE_OPENAI_API_KEY
+    openai.api_version = settings.OPENAI_API_VERSION
+    openai.api_type = settings.OPENAI_API_TYPE
 
     # setup blob storage connection
     blob_client = BlobServiceClient(
-        account_url=f"https://{settings.APPSETTING_AZURE_STORAGE_ACCOUNT}.blob.core.windows.net",
-        credential=settings.APPSETTING_AZURE_STORAGE_ACCOUNT_CRED,
+        account_url=f"https://{settings.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net",
+        credential=settings.AZURE_STORAGE_ACCOUNT_CRED,
     )
     app.state.blob_container_client = blob_client.get_container_client(
-        settings.APPSETTING_AZURE_STORAGE_CONTAINER)
+        settings.AZURE_STORAGE_CONTAINER)
     
 
     yield
@@ -84,8 +86,8 @@ origins = [
     "http://localhost:5000",
     "http://localhost:5001",
     "localhost:3000",
-    "https://ce-demo-client.azurewebsites.net",
-    "https://ce-demo-client-dev.azurewebsites.net"
+    f"https://node{os.getenv('APP_NAME')}-development.azurewebsites.net",
+    f"https://node{os.getenv('APP_NAME')}.azurewebsites.net"
 ]
 
 
@@ -119,29 +121,27 @@ async def chat_anonymous(
     ai_model: AILLMModels = Depends(
         lambda: get_llm_model(
             openai.api_type,
-            app.state.settings.APPSETTING_DEPLOYMENT_NAME or os.getenv("APPSETTING_DEPLOYMENT_NAME"),
-            app.state.settings.APPSETTING_MODEL_NAME or os.getenv("APPSETTING_MODEL_NAME"),
-            app.state.settings.APPSETTING_EMBEDDING or os.getenv("APPSETTING_MODEL_NAME"),
+            app.state.settings.DEPLOYMENT_NAME or os.getenv("DEPLOYMENT_NAME"),
+            app.state.settings.MODEL_NAME or os.getenv("MODEL_NAME"),
+            app.state.settings.EMBEDDING or os.getenv("MODEL_NAME"),
         )
     ),
     search_client: VectorSearchService = Depends(
         lambda: get_search_client(
-            app.state.settings.APPSETTING_SEARCH_ENDPOINT or os.getenv("APPSETTING_SEARCH_ENDPOINT"),
-            app.state.settings.APPSETTING_SEARCH_API_KEY or os.getenv("APPSETTING_SEARCH_API_KEY"),
-            app.state.settings.APPSETTING_SEARCH_INDEX_NAME or os.getenv("APPSETTING_SEARCH_INDEX_NAME"),
+            app.state.settings.SEARCH_ENDPOINT or os.getenv("SEARCH_ENDPOINT"),
+            app.state.settings.SEARCH_API_KEY or os.getenv("SEARCH_API_KEY"),
+            app.state.settings.SEARCH_INDEX_NAME or os.getenv("SEARCH_INDEX_NAME"),
         )
     ),
 ):
     conversation = Conversation()
     #conversation.save()
     chain = UserConversation(
-        institution=None,
-        user=None,
         conversation=conversation,
         ai_model=ai_model,
         search_client=search_client,
-        sourcepage_field=app.state.settings.APPSETTING_KB_FIELDS_SOURCEPAGE or os.getenv("APPSETTING_KB_FIELDS_SOURCEPAGE"),
-        content_field=app.state.settings.APPSETTING_KB_FIELDS_CONTENT or os.getenv("APPSETTING_KB_FIELDS_CONTENT"),
+        sourcepage_field=app.state.settings.KB_FIELDS_SOURCEPAGE or os.getenv("KB_FIELDS_SOURCEPAGE"),
+        content_field=app.state.settings.KB_FIELDS_CONTENT or os.getenv("KB_FIELDS_CONTENT"),
         settings=app.state.settings,
     )
     try:
@@ -160,27 +160,20 @@ async def create_conversation(
     ai_model: AILLMModels = Depends(
         lambda: get_llm_model(
             openai.api_type,
-            app.state.settings.APPSETTING_DEPLOYMENT_NAME or os.getenv("APPSETTING_DEPLOYMENT_NAME"),
-            app.state.settings.APPSETTING_MODEL_NAME or os.getenv("APPSETTING_MODEL_NAME"),
-            app.state.settings.APPSETTING_EMBEDDING or os.getenv("APPSETTING_EMBEDDING"),
+            app.state.settings.DEPLOYMENT_NAME or os.getenv("DEPLOYMENT_NAME"),
+            app.state.settings.MODEL_NAME or os.getenv("MODEL_NAME"),
+            app.state.settings.EMBEDDING or os.getenv("EMBEDDING"),
         )
     ),
     search_client: VectorSearchService = Depends(
         lambda: get_search_client(
-            app.state.settings.APPSETTING_SEARCH_ENDPOINT or os.getenv("APPSETTING_SEARCH_ENDPOINT"),
-            app.state.settings.APPSETTING_SEARCH_API_KEY or os.getenv("APPSETTING_SEARCH_API_KEY"),
-            app.state.settings.APPSETTING_SEARCH_INDEX_NAME or os.getenv("APPSETTING_SEARCH_INDEX_NAME")
+            app.state.settings.SEARCH_ENDPOINT or os.getenv("SEARCH_ENDPOINT"),
+            app.state.settings.SEARCH_API_KEY or os.getenv("SEARCH_API_KEY"),
+            app.state.settings.SEARCH_INDEX_NAME or os.getenv("SEARCH_INDEX_NAME")
         )
     ),
 ):
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
 
-    user = Profile.objects(institution=inst, user_id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")    
-    
     logger.info(f"creating new conversation for user")
 
     conversation = Conversation(user=user)
@@ -188,13 +181,11 @@ async def create_conversation(
     logger.info(f"created a new conversation with id: {conversation._auto_id_field}")
     
     chain = UserConversation(
-        institution=inst,
-        user=user,
         conversation=conversation,
         ai_model=ai_model,
         search_client=search_client,
-        sourcepage_field=app.state.settings.APPSETTING_KB_FIELDS_SOURCEPAGE or os.getenv("APPSETTING_KB_FIELDS_SOURCEPAGE"),
-        content_field=app.state.settings.APPSETTING_KB_FIELDS_CONTENT or os.getenv("APPSETTING_KB_FIELDS_CONTENT"),
+        sourcepage_field=app.state.settings.KB_FIELDS_SOURCEPAGE or os.getenv("KB_FIELDS_SOURCEPAGE"),
+        content_field=app.state.settings.KB_FIELDS_CONTENT or os.getenv("KB_FIELDS_CONTENT"),
         settings=app.state.settings,
     )
     
@@ -212,28 +203,21 @@ async def chat(
     ai_model: AILLMModels = Depends(
         lambda: get_llm_model(
             openai.api_type,
-            app.state.settings.APPSETTING_DEPLOYMENT_NAME or os.getenv("APPSETTING_DEPLOYMENT_NAME"),
-            app.state.settings.APPSETTING_MODEL_NAME or os.getenv("APPSETTING_MODEL_NAME"),
-            app.state.settings.APPSETTING_EMBEDDING or os.getenv("APPSETTING_EMBEDDING"),
+            app.state.settings.DEPLOYMENT_NAME or os.getenv("DEPLOYMENT_NAME"),
+            app.state.settings.MODEL_NAME or os.getenv("MODEL_NAME"),
+            app.state.settings.EMBEDDING or os.getenv("EMBEDDING"),
         )
     ),
     search_client: VectorSearchService = Depends(
         lambda: get_search_client(
-            app.state.settings.APPSETTING_SEARCH_ENDPOINT or os.getenv("APPSETTING_SEARCH_ENDPOINT"),
-            app.state.settings.APPSETTING_SEARCH_API_KEY or os.getenv("APPSETTING_SEARCH_API_KEY"),
-            app.state.settings.APPSETTING_SEARCH_INDEX_NAME or os.getenv("APPSETTING_SEARCH_INDEX_NAME"),
+            app.state.settings.SEARCH_ENDPOINT or os.getenv("SEARCH_ENDPOINT"),
+            app.state.settings.SEARCH_API_KEY or os.getenv("SEARCH_API_KEY"),
+            app.state.settings.SEARCH_INDEX_NAME or os.getenv("SEARCH_INDEX_NAME"),
         )
     ),
 ):
     logger.info("***********************starting chat message api")
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
-
-    user = Profile.objects(institution=inst, user_id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+ 
     conversation = Conversation.objects(id=conversation_id).first()
     if conversation is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -241,13 +225,11 @@ async def chat(
         logger.info(f"got conversation {conversation} for user {user} and institution {inst}")
 
     chain = UserConversation(
-        institution=inst,
-        user=user,
         conversation=conversation,
         ai_model=ai_model,
         search_client=search_client,
-        sourcepage_field=app.state.settings.APPSETTING_KB_FIELDS_SOURCEPAGE or os.getenv("APPSETTING_KB_FIELDS_SOURCEPAGE"),
-        content_field=app.state.settings.APPSETTING_KB_FIELDS_CONTENT or os.getenv("APPSETTING_KB_FIELDS_CONTENT"),
+        sourcepage_field=app.state.settings.KB_FIELDS_SOURCEPAGE or os.getenv("KB_FIELDS_SOURCEPAGE"),
+        content_field=app.state.settings.KB_FIELDS_CONTENT or os.getenv("KB_FIELDS_CONTENT"),
         settings=app.state.settings,
     )
     generator = chain.send_message(user_question)
@@ -257,13 +239,6 @@ async def chat(
 @app.get("/institutions")
 async def get_institution():
     return Institution.objects().to_json()
-
-
-@app.get("/demo_setup")
-async def demo_setup():
-    inst = setup_demo_profiles()
-    # setup_topics(inst)
-    setup_conversations(inst)
 
 
 @app.get("/institutions/{institution_id}/users")

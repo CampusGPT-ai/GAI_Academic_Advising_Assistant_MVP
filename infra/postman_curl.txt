@@ -1,0 +1,11 @@
+curl --location 'http://127.0.0.1:8000/institutions'
+
+curl --location --request GET 'http://127.0.0.1:8000/institutions/demo/users' \
+--header 'Content-Type: application/json' \
+--data '{
+    "user_id": "65315d55d6f2632d416bf400",
+    "institution_id": "65304cef8c357b4001d79de2",
+    "conversation_id": "65315d56d6f2632d416bf403",
+    "user_question": "What courses are available this semester?"
+}'
+

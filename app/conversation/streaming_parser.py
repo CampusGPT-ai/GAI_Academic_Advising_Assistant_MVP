@@ -5,8 +5,7 @@ import re
 from typing import Any, AsyncIterator, Literal, Union, cast
 from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
 from langchain.schema import LLMResult
-from conversation.chat_message import ChatMessage
-from conversation.chat_message import Citation
+from models import ChatMessage, Citation
 import logging, sys
 from util.logger_format import CustomFormatter
 
@@ -28,7 +27,6 @@ class StreamingParser(AsyncIteratorCallbackHandler):
         self.conversation = conversation
         self.memory = memory
         self.user_question = user_question
-        self.user = user
         self.bot_response = ""
 
     async def aiter(self) -> AsyncIterator[str]:
@@ -138,7 +136,7 @@ class StreamingParser(AsyncIteratorCallbackHandler):
         
         hist_message = ChatMessage(
             conversation=self.conversation, 
-            user=self.user, 
+            user="", 
             user_question=self.user_question,
             bot_response=self.bot_response,
             citations=self.citations,

@@ -2,6 +2,19 @@
   "parameters": {
     "storageAccountKey": {
       "value": "test"
+    },
+    "embeddingModel": {
+      "value": "embedding"
+    },    
+    "openAIModelName": {
+      "value": "gpt-35-turbo-16k"
+    },
+    "openAIDeploymentName": {
+      "value": "gpt3516k"
+    },
+    "openAIVersion": {
+      "value": "2023-07-01-preview"
     }
   }
 }
+

@@ -1,3 +1,4 @@
+# TODO: USER PROFILE
 import openai, os
 import asyncio
 
@@ -91,28 +92,8 @@ You are an academic advisor for university students.  Use the [CONTEXT] and [RES
 def get_user_info(profile):
     my_classes = "No classes taken yet"
     
-    if profile is not None and profile.academics is not None:
-        major = profile.academics.get("Major")
-        full_name = profile.full_name
-        year = profile.academics.get("Academic Year")
-        interests = ", ".join(profile.interests)
-        demographics_ethnicity = profile.demographics.get("ethnicity")
-        demographics_gender = profile.demographics.get("gender")
-        classes_list = profile.courses
-        
-    if classes_list is not None and len(classes_list) > 0:
-        my_classes = ", ".join(classes_list)
-    
-    message = f'''- Student name': {full_name} \n
-    - Major: {major}\n
-    - Year: {year}\n
-    - Gender: {demographics_gender}\n
-    - Ethnicity: {demographics_ethnicity}\n
-    - Interests: {interests}
-    - Classes taken: {my_classes}\n
-    '''
-    logger.info(f"user info: {message}")
-    return message
+    #removed demo profile here - might need to add back in future
+    return 
 
 def generate_follow_up_prompt() -> ChatPromptTemplate:
     response_schemas = [
@@ -140,8 +121,6 @@ class UserConversation:
 
     def __init__(
         self,
-        institution,
-        user,
         conversation,
         ai_model: AILLMModels,
         search_client: VectorSearchService,
@@ -153,17 +132,13 @@ class UserConversation:
         self.search_client = search_client
         self.sourcepage_field = sourcepage_field
         self.content_field = content_field
-        self.institution = institution
-        self.user = user
         self.conversation = conversation
         self.settings = settings
 
     async def send_message(self, query_text: str) -> AsyncIterable[str]:
         model = self.ai_model.getModel()
-        if self.user:
-            user_info = get_user_info(self.user)
-        else: 
-            user_info = 'no user selected'
+        # add back in future version
+        user_info = 'no user selected'
         # Step 0: setup chain processors we will in multiple chains
         # Step 0.1: setup mongo backed memory
         raw_message_history = MongoDBChatMessageHistory(
@@ -214,7 +189,6 @@ class UserConversation:
        
         # 4.1 setup message parser and configure model with callbacks
         model.callbacks = [StreamingParser(
-            user=self.user, 
             conversation=self.conversation, 
             user_question=query_text, 
             memory=memory)]
