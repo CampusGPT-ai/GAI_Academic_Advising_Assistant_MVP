@@ -1,12 +1,22 @@
 from abc import ABC, abstractmethod
 from azure.search.documents.aio import SearchClient
 from azure.core.credentials import AzureKeyCredential
-from langchain.embeddings import AzureOpenAIEmbeddings
+from langchain_openai import AzureOpenAIEmbeddings
+from azure.identity import DefaultAzureCredential
+import openai
+from settings import settings
+settings = settings.Settings()
 
-embeddings = AzureOpenAIEmbeddings(
-    azure_deployment="embedding",
-    openai_api_version="2023-05-15",
-)
+credential = DefaultAzureCredential()
+TOKEN = credential.get_token("https://cognitiveservices.azure.com/.default").token
+openai.api_key = TOKEN
+openai.api_type = settings.OPENAI_API_TYPE
+
+
+embeddings = AzureOpenAIEmbeddings(azure_deployment=settings.EMBEDDING, 
+                                    openai_api_version=settings.OPENAI_API_VERSION,
+                                    azure_endpoint=settings.AZURE_OPENAI_ENDPOINT)
+
 from langchain.vectorstores.azuresearch import AzureSearch
 
      

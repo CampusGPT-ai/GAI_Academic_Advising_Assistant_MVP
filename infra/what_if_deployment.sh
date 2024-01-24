@@ -13,4 +13,4 @@ rg_id="gnoba4quzzn5u"
 
 
 # az deployment group what-if --resource-group $rg --template-file 'containers.bicep' --parameters @params_containers.json
-az deployment group what-if --resource-group $rg --template-file 'webapps.bicep' --parameters @params_webapp.json
+az deployment group create  --resource-group $rg --template-file 'webapps.bicep' --parameters @params_webapp.json

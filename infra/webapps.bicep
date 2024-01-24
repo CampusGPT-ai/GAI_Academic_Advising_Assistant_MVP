@@ -34,6 +34,11 @@ var storageContainerName = 'index-processed'
 
 @secure()
 param storageAccountKey string
+param openAIDeploymentName string
+param embeddingModel string
+param openAIModelName string 
+param openAIVersion string
+
 //container registry
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2019-05-01' = {
   name: containerRegistryName
@@ -84,7 +89,7 @@ resource pythonAppService 'Microsoft.Web/sites@2020-06-01' = {
           }
           {
             name: 'DEPLOYMENT_NAME'
-            value: 'gpt3516k'
+            value: openAIDeploymentName
           }
           {
             name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
@@ -100,7 +105,7 @@ resource pythonAppService 'Microsoft.Web/sites@2020-06-01' = {
           }
           {
             name: 'EMBEDDING'
-            value: 'embedding'
+            value: embeddingModel
           }
           {
             name: 'HISTORY_WINDOW_SIZE'
@@ -116,7 +121,7 @@ resource pythonAppService 'Microsoft.Web/sites@2020-06-01' = {
           }
           {
             name: 'MODEL_NAME'
-            value: 'gpt-35-turbo-16k'
+            value: openAIModelName
           }
           {
             name: 'MONGO_CONN_STR'
@@ -140,7 +145,7 @@ resource pythonAppService 'Microsoft.Web/sites@2020-06-01' = {
           }
           {
             name: 'OPENAI_API_VERSION'
-            value: '2023-07-01-preview'
+            value: openAIVersion
           }
           {
             name: 'RAW_MESSAGE_COLLECTION'
