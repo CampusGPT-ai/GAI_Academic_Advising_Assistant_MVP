@@ -12,9 +12,9 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 from cloud_services.gpt_models import AILLMModels, get_llm_model
 from cloud_services.vector_search import VectorSearchService, get_search_client
-from user_conversation import UserConversation
+from conversation.user_conversation import UserConversation
 from azure.identity import DefaultAzureCredential
-from models import Topic, Conversation, ConversationRequest, ChatMessage, Institution
+from data.models import Topic, Conversation, ConversationRequest, ChatMessage, Institution
 from settings.settings import Settings
 from util.json_helper import response_from_string
 from util.logger_format import CustomFormatter
