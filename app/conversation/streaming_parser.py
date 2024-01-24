@@ -5,7 +5,7 @@ import re
 from typing import Any, AsyncIterator, Literal, Union, cast
 from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
 from langchain.schema import LLMResult
-from models import ChatMessage, Citation
+from data.models import ChatMessage, Citation
 import logging, sys
 from util.logger_format import CustomFormatter
 
