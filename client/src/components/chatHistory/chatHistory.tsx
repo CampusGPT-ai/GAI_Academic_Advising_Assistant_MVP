@@ -1,5 +1,5 @@
 import { Grid } from '@mui/material';
-import { FC } from 'react';
+import React,{ FC } from 'react';
 import conversationSample from "../../model/conversation/conversationSample.json";
 import Conversation from '../../model/conversation/conversations';
 import ChatHistoryHeader from './chatHistoryHeader';

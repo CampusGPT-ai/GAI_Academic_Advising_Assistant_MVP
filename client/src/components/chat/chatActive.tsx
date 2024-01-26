@@ -1,11 +1,10 @@
 import { Box, Typography } from "@mui/material";
 import React, { FC, useEffect, useState } from "react";
-import "../../../assets/styles.css";
+import "../../assets/styles.css";
 import messageSample from "../../model/messages/messageSample.json";
 import Message from "../../model/messages/messages";
 import ChatInput from "./chatInput";
 import ChatMessages from "./chatMessage/chatMessages";
-import ChatSampleQuestion from "./chatSampleQuestion";
 
 
 /**

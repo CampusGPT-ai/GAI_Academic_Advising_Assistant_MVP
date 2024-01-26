@@ -1,5 +1,4 @@
 import React, { FC,useState } from 'react';
-import ProfileCard from '../components/profileMenu/profileUserCard';
 import { Box, Button } from '@mui/material';
 
 interface LoginProps {
@@ -30,7 +29,6 @@ const Login: FC<LoginProps> = (
     return (
         
         <div>
-           <ProfileCard setProfile={handleProfileChange} />
            <Box width="100%" justifyContent={"center"} display={"flex"}>
            <Button variant="contained" color="primary" onClick={() => getProfile(selectedProfile)}>Login</Button>
               </Box>

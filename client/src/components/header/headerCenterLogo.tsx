@@ -1,5 +1,5 @@
-import { FC } from 'react';
-import logo from '../../../assets/images/ucflogo.png';
+import React, { FC } from 'react';
+import logo from '../../assets/images/ucflogo.png';
 interface LogoProps {
     size: string;
 }

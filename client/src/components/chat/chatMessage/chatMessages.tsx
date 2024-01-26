@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import { FC } from "react";
+import React, { FC } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
 import Message from "../../../model/messages/messages";

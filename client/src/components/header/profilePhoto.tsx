@@ -1,6 +1,6 @@
 import AccountCircle from "@mui/icons-material/AccountCircle";
-import { FC } from 'react';
-import jamal from '../../../assets/images/avatars/jamal.png';
+import React, { FC } from 'react';
+import jamal from '../../assets/images/avatars/jamal.png';
 
 interface ProfilePhotoProps {
     isLoggedIn: boolean;

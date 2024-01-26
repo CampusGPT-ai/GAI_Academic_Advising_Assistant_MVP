@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import { FC, useEffect, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import ProfileButtonComponent from "./profileButton";
 
 /**
