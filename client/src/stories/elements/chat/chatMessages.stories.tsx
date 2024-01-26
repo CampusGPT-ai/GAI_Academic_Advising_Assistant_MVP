@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ChatMessages from "../../../components/chat/chatMessage/chatMessages";
+import ChatMessages from "../../../components/chat/chatElements/chatMessageContainer";
 
 export default {
   component: ChatMessages,

@@ -1,11 +1,11 @@
 // A Memoized Component for Rendering Chat History
 import { Box } from "@mui/material";
 import React, { FC } from "react";
-import "../../../assets/styles.css";
-import messageSample from "../../../model/messages/messageSample.json";
-import Message from "../../../model/messages/messages";
-import ChatBotChat from "./chatMessage/chatBotChat";
-import ChatUserChat from "./chatMessage/chatUserChat";
+import "../../../../assets/styles.css";
+import messageSample from "../../../../model/messages/messageSample.json";
+import Message from "../../../../model/messages/messages";
+import ChatBotChat from "./chatBotChat";
+import ChatUserChat from "./chatUserChat";
 
 //for default props
 const jsonString = JSON.stringify(messageSample);

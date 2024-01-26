@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ChatBotChat from "../../../components/chat/chatMessage/chatBotChat";
+import ChatBotChat from "../../../components/chat/chatElements/chatMessageElements/chatBotChat";
 import Message from "../../../model/messages/messages";
 import messageSample from "../../../model/messages/messageSample.json";
 

@@ -2,17 +2,18 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from msal import ConfidentialClientApplication
-from starlette.middleware.sessions import SessionMiddleware
+
+from fastapi import APIRouter, Request
 import os
-app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("VERY_SECRET_KEY"))
+router = APIRouter()
+
 
 CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
 TENANT_ID = os.getenv("AZURE_TENANT_ID")
 CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 SCOPE = ["User.Read"]  # Add other scopes as needed
-REDIRECT_PATH = "/getAToken"  # The endpoint in your application for receiving the code
+REDIRECT_PATH = "/login"  # The endpoint in your application for receiving the code
 oauth2_scheme = OAuth2AuthorizationCodeBearer(authorizationUrl=f"{AUTHORITY}/oauth2/v2.0/authorize", tokenUrl=f"{AUTHORITY}/oauth2/v2.0/token")
 
 def build_msal_app():
@@ -26,7 +27,7 @@ def get_auth_url(request: Request):
     request.session["state"] = state  # Saving the state for validation later
     return auth_url
 
-@app.get("/login")
+@router.get("/login")
 async def login(request: Request):
     auth_url = get_auth_url(request)
     return RedirectResponse(auth_url)

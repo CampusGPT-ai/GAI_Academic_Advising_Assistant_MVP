@@ -29,7 +29,7 @@
 3. *optional  - npm run build-storybook to create storybook build
 3. npm run storybook to view/test individual components
 4. npm start to preview app in localhost
-5. 
+5. update base url in client>src>api>baseURL to webpp url from azure app service for dev and prod
 
 
 ## troubleshoot
