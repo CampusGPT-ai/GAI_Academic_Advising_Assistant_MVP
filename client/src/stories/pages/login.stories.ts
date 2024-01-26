@@ -1,6 +1,6 @@
 //src/stories/pages/index.stories.ts
 import { Meta } from "@storybook/react";
-import Login from "../../components/pages/login";
+import Login from "../../pages/login";
 
 export default {
     component: Login,

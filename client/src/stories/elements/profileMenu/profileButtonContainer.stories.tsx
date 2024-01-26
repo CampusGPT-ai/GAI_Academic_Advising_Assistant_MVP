@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ProfileButtonContainer from "../../../components/elements/profileMenu/profileButtonContainer";
+import ProfileButtonContainer from "../../../components/profileMenu/profileButtonContainer";
 
 
 export default {

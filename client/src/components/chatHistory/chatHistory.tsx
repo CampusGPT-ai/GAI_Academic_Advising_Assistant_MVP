@@ -1,9 +1,9 @@
 import { Grid } from '@mui/material';
 import { FC } from 'react';
-import conversationSample from "../../../model/conversation/conversationSample.json";
-import Conversation from '../../../model/conversation/conversations';
-import ChatHistoryHeader from '../../elements/chatHistory/chatHistoryHeader';
-import ChatHistoryList from '../../elements/chatHistory/chatHistoryList';
+import conversationSample from "../../model/conversation/conversationSample.json";
+import Conversation from '../../model/conversation/conversations';
+import ChatHistoryHeader from './chatHistoryHeader';
+import ChatHistoryList from './chatHistoryList';
 
 interface ChatHistoryContainerProps {
     conversations: Array<Conversation>;

@@ -2,20 +2,21 @@
 
 import { FC, useEffect, useRef, useState } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
-import fetchChatResponse from "../../api/fetchChatResponse";
-import fetchConversations from "../../api/fetchConversations";
-import fetchMessageHistory from "../../api/fetchMessages";
-import fetchTopics from "../../api/fetchTopics";
-import Conversation from "../../model/conversation/conversations";
-import Message, { Citation } from "../../model/messages/messages";
-import { Topic } from "../../model/topic/topics";
-import { UserProfile } from "../../model/user/user";
-import getUserProfile from "../../utilities/getDemoProfile";
-import { getFirstThreeQuestions } from "../../utilities/parseTopics";
-import Footer from "../sections/footer";
-import Header from "../sections/header";
+import fetchChatResponse from "../api/fetchChatResponse";
+import fetchConversations from "../api/fetchConversations";
+import fetchMessageHistory from "../api/fetchMessages";
+import fetchTopics from "../api/fetchTopics";
+import Conversation from "../model/conversation/conversations";
+import Message, { Citation } from "../model/messages/messages";
+import { Topic } from "../model/topic/topics";
+import { UserProfile } from "../model/user/user";
+import getUserProfile from "../utilities/getDemoProfile";
+import { getFirstThreeQuestions } from "../utilities/parseTopics";
+import Footer from "../components/footer/footer";
+import Header from "../components/header/header";
 import Chat from "./chat";
 import Login from "./login";
+import { Box } from "@mui/material";
 
 /**
  * MainPage - This component manages and renders the main page of the application.
@@ -37,7 +38,7 @@ const MainPage: FC = () => {
   const prevUserRef = useRef<UserProfile>();
   const [isLoading, setLoading] = useState(false);
   const [sampleQuestions, setSampleQuestions] = useState([""]);
-  const [title, setTitle] = useState("Your Personal UCF AI Advisor"); //pull from institutions? this is the header bar title - for example: FSU
+  const [title, setTitle] = useState("YOUR PERSONAL CAMPUS GUIDE"); //pull from institutions? this is the header bar title - for example: FSU
   const [user, setUser] = useState<UserProfile>();
   const [loggedIn, setLoggedIn] = useState(false);
   const [messageHistory, setMessageHistory] = useState(Array<Message>());
@@ -335,7 +336,7 @@ const MainPage: FC = () => {
     console.log(`loading state change detected: ${isLoading}`)
   },[isLoading])
   return (
-    <div>
+    <Box sx={{backgroundColor: (theme) => theme.palette.primary.main}}>
       <Header //src/sections/header.tsx
         title={title}
         handleLogout={logoutUser}
@@ -368,7 +369,7 @@ const MainPage: FC = () => {
         <Route path="login" element={<Login getProfile={getUser} />} />
       </Routes>
       <Footer></Footer>
-    </div>
+    </Box>
   );
 };
 

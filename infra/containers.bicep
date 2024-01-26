@@ -4,10 +4,10 @@ param rgName string = resourceGroup().name
 param managedIdentity string
 
 var resourceTags = {
-  application: 'tl chen campusevolve ai advisor'
-  department: 'cos physics'
+  application: 'campusevolve ai advisor'
+  //department: 'cos physics'
   environment: 'poc'
-  expenseid: 'ucfel0002333'
+  //expenseid: 'ucfel0002333'
 }
 var appName= uniqueString(resourceGroup().id)
 

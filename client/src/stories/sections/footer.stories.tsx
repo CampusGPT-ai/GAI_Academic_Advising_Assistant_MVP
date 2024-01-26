@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import Footer from "../../components/sections/footer";
+import Footer from "../../components/footer/footer";
 
 
 export default {

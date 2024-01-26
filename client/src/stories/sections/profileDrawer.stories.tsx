@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ProfileDrawer from "../../components/sections/profileMenu";
+import ProfileDrawer from "../../components/profileMenu/profileMenu";
 
 
 export default {

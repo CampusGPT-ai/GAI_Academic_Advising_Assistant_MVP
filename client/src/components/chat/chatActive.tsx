@@ -1,11 +1,11 @@
 import { Box, Typography } from "@mui/material";
 import React, { FC, useEffect, useState } from "react";
 import "../../../assets/styles.css";
-import messageSample from "../../../model/messages/messageSample.json";
-import Message from "../../../model/messages/messages";
-import ChatInput from "../../elements/chat/chatInput";
-import ChatMessages from "../../elements/chat/chatMessages";
-import ChatSampleQuestion from "../../elements/chat/chatSampleQuestion";
+import messageSample from "../../model/messages/messageSample.json";
+import Message from "../../model/messages/messages";
+import ChatInput from "./chatInput";
+import ChatMessages from "./chatMessage/chatMessages";
+import ChatSampleQuestion from "./chatSampleQuestion";
 
 
 /**
@@ -87,9 +87,12 @@ const ChatActive: FC<ChatActiveProps> = ({
   })
   //console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
   return (
-    <Box sx={{alignContent: "start", 
-    width: "95%", p: 2, 
+    <Box sx={{alignItems: "center", 
+    width: "95%", p: 2,
+    display: "flex",
+    flexDirection: "column",
     borderRadius: 2, 
+    flexWrap: "wrap",
     boxShadow: 3, 
     overflow: 'hidden',
     backgroundColor: 'white',
@@ -111,18 +114,11 @@ const ChatActive: FC<ChatActiveProps> = ({
         </>
       ) : (
         <>
-          <Typography variant="h2" sx={{ mb: 4 }}>What's on your mind today?<br></br><br></br>
-          <Typography variant="h6" sx={{ ml: 2 }}>Here are some questions you might want to ask...</Typography>
-          </Typography>
-          {sampleQuestions?.map((question, index) => (
-            <React.Fragment key={index}>
-              <ChatSampleQuestion
-                isLoading={isLoading}
-                text={question}
-                onSampleQuestionsClicked={handleQuestionClick}
-              />
-            </React.Fragment>
-          ))}
+        <Box justifyContent="center" mt="100px" width="100%" display="flex">
+          <Typography variant="h2" sx={{ mb: 4 }}>What's on your mind today?<br></br><br></br></Typography>
+          </Box>
+          
+    
         </>
       )}
       <ChatInput 

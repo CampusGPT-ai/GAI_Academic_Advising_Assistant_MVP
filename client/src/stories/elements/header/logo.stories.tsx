@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import Logo from "../../../components/elements/header/headerCenterLogo";
+import Logo from "../../../components/header/headerCenterLogo";
 
 
 export default {

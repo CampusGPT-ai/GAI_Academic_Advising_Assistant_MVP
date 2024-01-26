@@ -9,7 +9,7 @@ tags="application='tl chen campusevolve ai advisor' department='cos physics' env
 az login
 
 rg_id=$(az group show --name $rg --query id -o tsv)
-saname="cosmos-${rg_id}"
+saname="cosmos${rg_id}"
 
 # run bicep to set up storage
 #az deployment group create --resource-group $rg --template-file 'containers.bicep'

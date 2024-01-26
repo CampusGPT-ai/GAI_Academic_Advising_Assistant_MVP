@@ -10,12 +10,11 @@ import React, { FC, useState } from "react";
 import dylan from "../../assets/images/avatars/dylan.png";
 import jamal from "../../assets/images/avatars/jamal.png";
 import tiffany from "../../assets/images/avatars/tiffany.png";
-import Logo from "../../components/elements/header/headerCenterLogo"; // Update the path to where the Logo component is located
 import { Topic } from "../../model/topic/topics";
 import { UserProfile } from "../../model/user/user";
 import { preprocessTopics } from "../../utilities/parseTopics";
-import ProfilePhoto from "../elements/header/profilePhoto";
-import ProfileDrawer from "./profileMenu";
+import ProfilePhoto from "./profilePhoto";
+import ProfileDrawer from "../profileMenu/profileMenu";
 
 const avatars: Map<string, string> = new Map();
 
@@ -82,8 +81,9 @@ const Header: FC<HeaderProps> = ({
   return (
     <AppBar
       position="sticky"
+      elevation={0}
       sx={{
-        height: 80,
+        height: 70,
         backgroundColor: (theme) => theme.palette.primary.main,
       }}
     >
@@ -116,18 +116,7 @@ const Header: FC<HeaderProps> = ({
           </Tooltip>
         </Box>
       </Toolbar>
-      {/* Center Logo */}
-      <Box
-        sx={{
-          position: "absolute",
-          left: "50%",
-          bottom: "0%",
-          transform: "translate(-50%, 50%)",
-          zIndex: 5,
-        }}
-      >
-        <Logo size="small" />
-      </Box>
+
 
       {user && (
         <ProfileDrawer

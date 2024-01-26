@@ -1,10 +1,10 @@
 # Define variables
-rg='ce-advisor-poc'
+rg='AI-Advisor'
 location='eastus'
 identity_name="ce-advisor-admin"
 
 # Define tags
-tags="application='tl chen campusevolve ai advisor' department='cos physics' environment='poc' expenseid='ucfel0002333'"
+tags="application='campusevolve ai advisor' environment='poc'"
 
 # Log in to Azure (this will prompt a login via the browser)
 az login
@@ -12,5 +12,8 @@ az login
 rg_id="gnoba4quzzn5u"
 
 
- az deployment group what-if --resource-group $rg --template-file 'containers.bicep' --parameters @params_containers.json
-az deployment group what-if  --resource-group $rg --template-file 'webapps.bicep' --parameters @params_webapp.json
+az deployment group create --resource-group $rg --template-file 'containers.bicep' --parameters @params_container.json
+
+
+# az deployment group what-if --resource-group $rg --template-file 'containers.bicep' --parameters @params_container.json
+# az deployment group what-if  --resource-group $rg --template-file 'webapps.bicep' --parameters @params_webapp.json

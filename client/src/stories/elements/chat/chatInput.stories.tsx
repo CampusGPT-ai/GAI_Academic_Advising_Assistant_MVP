@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ChatInput from "../../../components/elements/chat/chatInput";
+import ChatInput from "../../../components/chat/chatInput";
 
 export default {
   component: ChatInput,

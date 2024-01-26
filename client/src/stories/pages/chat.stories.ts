@@ -1,6 +1,6 @@
 //src/stories/pages/index.stories.ts
 import { Meta } from "@storybook/react";
-import Chat from "../../components/pages/chat";
+import Chat from "../../pages/chat";
 
 
   export default { component: Chat,

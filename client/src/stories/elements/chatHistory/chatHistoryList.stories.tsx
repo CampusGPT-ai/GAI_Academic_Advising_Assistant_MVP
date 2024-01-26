@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ChatHistory from "../../../components/elements/chatHistory/chatHistoryList";
+import ChatHistory from "../../../components/chatHistory/chatHistoryList";
 
 export default {
   component: ChatHistory,
