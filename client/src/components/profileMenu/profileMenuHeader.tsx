@@ -1,5 +1,5 @@
 import { Box, Button, Typography, useTheme } from "@mui/material";
-import { FC } from "react";
+import React, { FC } from "react";
 import { UserProfile } from "../../model/user/user";
 import ProfilePhoto from "../header/profilePhoto";
 

@@ -1,6 +1,6 @@
 import { Button, Grid, Typography, useTheme } from "@mui/material";
-import { FC } from "react";
-import "../../../assets/styles.css";
+import React, { FC } from "react";
+import "../../assets/styles.css";
 
 /**
  * Props for the ChatHistoryHeader component.

@@ -1,5 +1,5 @@
 import { Box, Grid } from "@mui/material";
-import { FC } from "react";
+import React, { FC } from "react";
 import Conversation from "../model/conversation/conversations";
 import Message from "../model/messages/messages";
 import ChatActive from "../components/chat/chatActive";

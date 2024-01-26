@@ -1,6 +1,6 @@
 //src/components/pages/index.tsxfetchmessages
 
-import { FC, useEffect, useRef, useState } from "react";
+import React, { FC, useEffect, useRef, useState } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import fetchChatResponse from "../api/fetchChatResponse";
 import fetchConversations from "../api/fetchConversations";

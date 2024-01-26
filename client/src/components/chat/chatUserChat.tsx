@@ -1,6 +1,6 @@
 import React, { FC } from "react";
 import { Typography, Box } from "@mui/material";
-import "../../../assets/styles.css";
+import "../../assets/styles.css";
 interface ChatUserChatProps {
   text?: string;
 }

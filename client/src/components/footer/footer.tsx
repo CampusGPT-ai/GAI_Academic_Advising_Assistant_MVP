@@ -1,5 +1,5 @@
 import { Box, Button, Link, Typography, useTheme } from '@mui/material';
-import { FC } from 'react';
+import React, { FC } from 'react';
 import logo from "../../assets/images/base_logo_transparent_background.png";
 const Template: FC = () => {
     const theme = useTheme()
