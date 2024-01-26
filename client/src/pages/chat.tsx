@@ -2,7 +2,7 @@ import { Box, Grid } from "@mui/material";
 import React, { FC } from "react";
 import Conversation from "../model/conversation/conversations";
 import Message from "../model/messages/messages";
-import ChatActive from "../components/chat/chatActive";
+import ChatActive from "../components/chat/chatContainer";
 import ChatHistoryContainer from "../components/chatHistory/chatHistory";
 
 /**
@@ -57,19 +57,7 @@ const Chat: FC<ChatProps> = ({
  
       <Box height={"100%"} display="flex" justifyContent={"center"} width="100vw">
       <Grid container width="100%" m={10}>
-        {isLoggedIn && (
-          <Grid item xs={3}>
-            <Box sx={{ m: "20px" }}>
-              <ChatHistoryContainer //src/sections/chat/chatHistory
-                isLoading={isLoading}
-                setConversation={setConversation}
-                newChat={newChat}
-                conversations={conversations}
-              />
-            </Box>
-          </Grid>
-        )}
-        <Grid item xs={isLoggedIn ? 9 : 12}>
+        <Grid item xs={12}>
           <ChatActive //src/sections/chat/chatActive
             isLoading={isLoading}
             chatResponse={chatResponse}

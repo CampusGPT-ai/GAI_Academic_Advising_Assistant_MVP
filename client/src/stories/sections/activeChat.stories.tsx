@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ChatActive from "../../components/chat/chatActive";
+import ChatActive from "../../components/chat/chatContainer";
 
 export default {
   component: ChatActive,

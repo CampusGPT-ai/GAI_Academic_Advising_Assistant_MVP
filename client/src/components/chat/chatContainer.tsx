@@ -1,10 +1,10 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import React, { FC, useEffect, useState } from "react";
 import "../../assets/styles.css";
 import messageSample from "../../model/messages/messageSample.json";
 import Message from "../../model/messages/messages";
-import ChatInput from "./chatInput";
-import ChatMessages from "./chatMessage/chatMessages";
+import ChatInput from "./chatElements/chatInput";
+import ChatMessages from "./chatElements/chatMessageContainer";
 
 
 /**
@@ -50,6 +50,7 @@ const ChatActive: FC<ChatActiveProps> = ({
 }) => {
 
   const [userQuestion, setUserQuestion] = useState('');
+  const theme = useTheme()
 
   /**
    * Sets the message state to the input text.
@@ -94,7 +95,7 @@ const ChatActive: FC<ChatActiveProps> = ({
     flexWrap: "wrap",
     boxShadow: 3, 
     overflow: 'hidden',
-    backgroundColor: 'white',
+    backgroundColor: theme.palette.primary.light,
     }}>
       {messageHistory && messageHistory.length>0 ? (
         <>

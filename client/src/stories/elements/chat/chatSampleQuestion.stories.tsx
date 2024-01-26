@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ChatSampleQuestion from "../../../components/chat/chatSampleQuestion";
+import ChatSampleQuestion from "../../../components/chat/chatElements/chatMessageElements/chatSampleQuestion";
 
 export default {
   component: ChatSampleQuestion,
