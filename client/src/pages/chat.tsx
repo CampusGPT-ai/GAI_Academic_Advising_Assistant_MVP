@@ -3,7 +3,6 @@ import React, { FC } from "react";
 import Conversation from "../model/conversation/conversations";
 import Message from "../model/messages/messages";
 import ChatActive from "../components/chat/chatContainer";
-import ChatHistoryContainer from "../components/chatHistory/chatHistory";
 
 /**
  * Props for the Chat component.

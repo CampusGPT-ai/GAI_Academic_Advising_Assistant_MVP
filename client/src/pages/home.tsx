@@ -366,7 +366,7 @@ const MainPage: FC = () => {
             />
           }
         />
-        <Route path="login" element={<Login getProfile={getUser} />} />
+        <Route path="login" element={<Login/>} />
       </Routes>
       <Footer></Footer>
     </Box>

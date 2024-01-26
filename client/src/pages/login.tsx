@@ -1,43 +1,18 @@
-import React, { FC,useState } from 'react';
-import { Box, Button } from '@mui/material';
+import React from 'react';
+import { useMsal } from '@azure/msal-react';
 
-interface LoginProps {
-    getProfile: (id: string) => void; 
-};
+function Login() {
+  const { instance } = useMsal();
 
-/**
- * Login component that displays a profile card and a login button.
- * @param {Object} props - Component props.
- * @param {Function} props.getProfile - Function to get the user profile.
- * @returns {JSX.Element} - Rendered component.
- */
-const Login: FC<LoginProps> = (
-    {
-        getProfile
-    }
-) => {
-    const [selectedProfile, setSelectedProfile] = useState<string>("");
-        
-    /**
-     * Handles the change of the selected profile.
-     * @param {string} id - The ID of the selected profile.
-     */
-    const handleProfileChange = (id: string) =>
-    {
-        setSelectedProfile(id);
-    }
-    return (
-        
-        <div>
-           <Box width="100%" justifyContent={"center"} display={"flex"}>
-           <Button variant="contained" color="primary" onClick={() => getProfile(selectedProfile)}>Login</Button>
-              </Box>
-        </div>
-    );
+  const handleLogin = () => {
+    instance.loginRedirect({
+      scopes: ['User.Read'] // Define scopes as needed
+    }).catch(e => {
+      console.error(e);
+    });
+  };
+
+  return <button onClick={handleLogin}>Login</button>;
 }
-
-Login.defaultProps = {
-    getProfile: (id: string) => {console.log(id)}
-};
 
 export default Login;

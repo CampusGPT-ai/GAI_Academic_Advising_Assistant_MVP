@@ -1,6 +1,6 @@
 import React, { FC } from "react";
-import { Typography, Box } from "@mui/material";
-import "../../../assets/styles.css";
+import { Typography, Box, useTheme } from "@mui/material";
+import "../../../../assets/styles.css";
 interface ChatUserChatProps {
   text?: string;
 }
@@ -8,9 +8,18 @@ interface ChatUserChatProps {
 const ChatUserChat: FC<ChatUserChatProps> = ({
   text
 }) => {
+  const theme = useTheme();
   return (
     <div className="chatUserContainerAlign">
-      <Box className="chatUserChatContainer">
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        p: 1,
+        width: '90%',
+        minWidth: '600px',
+        boxShadow: theme.shadows[2],
+        backgroundColor: theme.palette.secondary.light,
+      }}>
           <Typography variant="body1">{text}</Typography>
       </Box>
     </div>

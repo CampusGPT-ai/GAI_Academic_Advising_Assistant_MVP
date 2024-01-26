@@ -11,6 +11,7 @@ export const lightTheme = createTheme({
     mode: 'light',
     primary: {
       light: '#ecf0f1',
+      mainlight: '#81d4e4',
       mid: '#5e686e',
       main: '#0093B1',
       dark: '#000000',
@@ -18,7 +19,7 @@ export const lightTheme = createTheme({
       darkText: '#000000',
     },
     secondary: {
-      light: '#ecf0f1',
+      light: '#81d4e4',
       mid: '#d6dadc',
       main: '#D50032',
       dark: '#6a767c',

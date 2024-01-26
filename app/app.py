@@ -20,7 +20,10 @@ from util.json_helper import response_from_string
 from util.logger_format import CustomFormatter
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 import logging, sys
+from app_auth import authorize_user
+
 
 credential = DefaultAzureCredential()
 TOKEN = credential.get_token("https://cognitiveservices.azure.com/.default").token
@@ -79,6 +82,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("VERY_SECRET_KEY"))
+app.include_router(authorize_user.router)
 
 #TODO: need to figure out what origins to allow once we deploy
 origins = [
