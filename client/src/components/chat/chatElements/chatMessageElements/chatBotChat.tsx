@@ -1,11 +1,10 @@
 
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
 import propTypes from "prop-types";
 import React, { FC } from "react";
-import "../../../assets/styles.css";
-import messageSample from "../../../model/messages/messageSample.json";
-import Message from "../../../model/messages/messages";
-import ChatBotChatResponse from "./chatBotChatResponse";
+import messageSample from "../../../../model/messages/messageSample.json";
+import Message from "../../../../model/messages/messages";
+import ChatBotChatResponse from "./chatResponse/chatBotChatResponse";
 
 //for default props
 const jsonString = JSON.stringify(messageSample);
@@ -40,10 +39,19 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
   error,
   currentAnswerRef
 }) => {
+  const theme = useTheme();
   console.log(`is loading? ${isLoading}`)
   return (
       
-      <Box className="chatBotChatContainer">
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        p: 1,
+        width: '90%',
+        minWidth: '600px',
+        boxShadow: theme.shadows[2],
+        backgroundColor: theme.palette.primary.contrastText,
+      }}>
         {isLoading && (
           <div>
             <CircularProgress

@@ -4,8 +4,8 @@ import React, { FC } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
 import Message from "../../../model/messages/messages";
-import ChatBotChat from "../chatResponse/chatBotChat";
-import ChatUserChat from "../chatUserChat";
+import ChatBotChat from "./chatMessage/chatBotChat";
+import ChatUserChat from "./chatMessage/chatUserChat";
 
 //for default props
 const jsonString = JSON.stringify(messageSample);

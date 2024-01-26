@@ -2,10 +2,10 @@ import { Box, Dialog, DialogContent, Grid, Typography } from "@mui/material";
 import DOMPurify from "dompurify";
 import React, { FC, useState } from "react";
 import "../../../assets/styles.css";
-import messageSample from "../../../model/messages/messageSample.json";
-import Message from "../../../model/messages/messages";
-import ChatCitation from "./chatResponseElements/chatCitation";
-import ChatFollowUp from "./chatResponseElements/chatFollowUp";
+import messageSample from "../../../../../model/messages/messageSample.json";
+import Message from "../../../../../model/messages/messages";
+import ChatCitation from "../../chatResponse/chatResponseElements/chatCitation";
+import ChatFollowUp from "../../chatResponse/chatResponseElements/chatFollowUp";
 
 //for default props
 const jsonString = JSON.stringify(messageSample);
