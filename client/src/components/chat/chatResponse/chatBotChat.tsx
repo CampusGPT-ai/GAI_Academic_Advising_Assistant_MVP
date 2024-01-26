@@ -3,8 +3,8 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import propTypes from "prop-types";
 import React, { FC } from "react";
 import "../../../../assets/styles.css";
-import messageSample from "../../../../model/messages/messageSample.json";
-import Message from "../../../../model/messages/messages";
+import messageSample from "../../../model/messages/messageSample.json";
+import Message from "../../../model/messages/messages";
 import ChatBotChatResponse from "./chatBotChatResponse";
 
 //for default props

@@ -1,9 +1,12 @@
 import SendIcon from "@mui/icons-material/Send";
 import Box from "@mui/material/Box";
+import Grid from '@mui/material/Grid';
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import { ChangeEvent, FC, KeyboardEvent, useState } from "react";
-
+import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
+import DifferenceOutlinedIcon from '@mui/icons-material/DifferenceOutlined';
 interface ChatInputProps {
   sendChat: (text: string) => void;
   isLoading: boolean;
@@ -38,10 +41,9 @@ const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading }) => {
   };
 
   return (
-    <Box className="chatInputContainer" sx={{ mt: 4 }}>
+    <Box  sx={{ mt: 4 }} width="60%">
       <TextField
-        className="chatInput"
-        placeholder="Type a new question (e.g. How can I get help picking courses for next semester?)"
+        placeholder="Type your question to get started."
         variant="standard"
         value={message}
         onChange={handleInputChange}
@@ -49,9 +51,24 @@ const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading }) => {
         fullWidth
         disabled={isLoading}
       />
-      <IconButton onClick={handleSendClick} disabled={isLoading}>
-        <SendIcon />
+      <Grid container width="100%" mt={1}>
+        <Grid item xs={6} sx={{display: "flex", justifyContent: "start"}} >
+        <IconButton onClick={handleSendClick} disabled={isLoading}>
+        <TipsAndUpdatesOutlinedIcon fontSize="large" />        
       </IconButton>
+      <IconButton onClick={handleSendClick} disabled={isLoading}>
+      <HistoryOutlinedIcon fontSize="large"></HistoryOutlinedIcon>
+      </IconButton>
+      <IconButton onClick={handleSendClick} disabled={isLoading}>
+      <DifferenceOutlinedIcon fontSize="large"></DifferenceOutlinedIcon>
+      </IconButton>
+        </Grid>
+        <Grid item xs={6} sx={{display: "flex", justifyContent: "end"}}>
+      <IconButton onClick={handleSendClick} disabled={isLoading}>
+        <SendIcon fontSize="large"/>
+      </IconButton>
+      </Grid>
+      </Grid>
     </Box>
   );
 };

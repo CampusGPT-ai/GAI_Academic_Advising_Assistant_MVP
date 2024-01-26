@@ -4,8 +4,8 @@ import React, { FC, useState } from "react";
 import { Topic } from "../../model/topic/topics";
 import { UserProfile } from "../../model/user/user";
 import findTopicsByInterest, { preprocessTopics } from "../../utilities/parseTopics";
-import ProfileButtonContainer from "../elements/profileMenu/profileButtonContainer";
-import ProfileMenuHeader from "../elements/profileMenu/profileMenuHeader";
+import ProfileButtonContainer from "./profileButtonContainer";
+import ProfileMenuHeader from "./profileMenuHeader";
 /**
  * Props for the ProfileDrawer component.
  * @param setSampleQuestions - A function that sets the list of sample questions.

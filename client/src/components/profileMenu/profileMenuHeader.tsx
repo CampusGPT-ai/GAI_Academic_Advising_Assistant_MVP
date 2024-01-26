@@ -1,11 +1,11 @@
 import { Box, Button, Typography, useTheme } from "@mui/material";
 import { FC } from "react";
-import { UserProfile } from "../../../model/user/user";
+import { UserProfile } from "../../model/user/user";
 import ProfilePhoto from "../header/profilePhoto";
 
 
 //for default props
-import userSample from "../../../model/user/userSample.json";
+import userSample from "../../model/user/userSample.json";
 const jsonString = JSON.stringify(userSample);
 const users = JSON.parse(jsonString) as UserProfile[];
 

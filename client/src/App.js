@@ -2,7 +2,7 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles'; // Import ThemeProvider and createTheme
 import {lightTheme as theme} from './assets/theme';
-import MainPage from './components/pages/home';
+import MainPage from './pages/home';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';

@@ -1,8 +1,8 @@
 import QuestionAnswerOutlinedIcon from "@mui/icons-material/QuestionAnswerOutlined";
 import { Button, Grid, useTheme } from "@mui/material";
 import { FC, useState } from "react";
-import conversationSample from "../../../model/conversation/conversationSample.json";
-import Conversation from "../../../model/conversation/conversations";
+import conversationSample from "../../model/conversation/conversationSample.json";
+import Conversation from "../../model/conversation/conversations";
 
 const jsonString = JSON.stringify(conversationSample);
 const conversations = JSON.parse(jsonString) as Conversation[];

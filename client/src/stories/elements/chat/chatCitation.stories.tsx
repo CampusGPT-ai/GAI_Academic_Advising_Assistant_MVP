@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ChatCitation from "../../../../components/elements/chat/chatBot/chatCitation";
+import ChatCitation from "../../../components/chat/chatResponse/chatCitation";
 
 
 export default { component: ChatCitation, title: "Elements/Chat/ChatCitation" } as Meta;

@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ProfileMenuHeader from "../../../components/elements/profileMenu/profileMenuHeader";
+import ProfileMenuHeader from "../../../components/profileMenu/profileMenuHeader";
 
 export default {
     component: ProfileMenuHeader,

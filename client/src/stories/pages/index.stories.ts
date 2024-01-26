@@ -1,6 +1,6 @@
 //src/stories/pages/index.stories.ts
 import { Meta } from "@storybook/react";
-import MainPage from "../../components/pages/home";
+import MainPage from "../../pages/home";
 
 
   export default { component: MainPage

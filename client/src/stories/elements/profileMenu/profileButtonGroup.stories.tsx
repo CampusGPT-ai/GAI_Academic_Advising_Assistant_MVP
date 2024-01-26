@@ -1,5 +1,5 @@
 import { Meta } from "@storybook/react";
-import ButtonGroupComponent from "../../../components/elements/profileMenu/profileButtonGroup";
+import ButtonGroupComponent from "../../../components/profileMenu/profileButtonGroup";
 
 
 export default {

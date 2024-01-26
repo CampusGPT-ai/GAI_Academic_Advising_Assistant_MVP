@@ -1,5 +1,5 @@
 import React, { FC,useState } from 'react';
-import ProfileCard from '../sections/profileUserCard';
+import ProfileCard from '../components/profileMenu/profileUserCard';
 import { Box, Button } from '@mui/material';
 
 interface LoginProps {

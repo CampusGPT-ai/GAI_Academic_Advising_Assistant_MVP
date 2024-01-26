@@ -3,7 +3,7 @@ import { FC } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
 import Message from "../../../model/messages/messages";
-import ChatBotChat from "./chatBot/chatBotChat";
+import ChatBotChat from "../chatResponse/chatBotChat";
 import ChatMessageHistory from "./chatMessageHistory";
 
 //for default props

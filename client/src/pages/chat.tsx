@@ -1,9 +1,9 @@
 import { Box, Grid } from "@mui/material";
 import { FC } from "react";
-import Conversation from "../../model/conversation/conversations";
-import Message from "../../model/messages/messages";
-import ChatActive from "../sections/chat/chatActive";
-import ChatHistoryContainer from "../sections/chat/chatHistory";
+import Conversation from "../model/conversation/conversations";
+import Message from "../model/messages/messages";
+import ChatActive from "../components/chat/chatActive";
+import ChatHistoryContainer from "../components/chatHistory/chatHistory";
 
 /**
  * Props for the Chat component.
@@ -54,9 +54,9 @@ const Chat: FC<ChatProps> = ({
   // conversations: Array<Conversation>;
   
   return (
-    <div>
-      <Box height={"50px"}></Box>
-      <Grid container>
+ 
+      <Box height={"100%"} display="flex" justifyContent={"center"} width="100vw">
+      <Grid container width="100%" m={10}>
         {isLoggedIn && (
           <Grid item xs={3}>
             <Box sx={{ m: "20px" }}>
@@ -83,7 +83,8 @@ const Chat: FC<ChatProps> = ({
           />
         </Grid>
       </Grid>
-    </div>
+      </Box>
+ 
   );
 };
 

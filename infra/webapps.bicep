@@ -1,10 +1,10 @@
 param location string = resourceGroup().location // Location for all resources
 
 var resourceTags = {
-  application: 'tl chen campusevolve ai advisor'
-  department: 'cos physics'
+  application: 'campusevolve ai advisor'
+  // department: 'cos physics'
   environment: 'poc'
-  expenseid: 'ucfel0002333'
+  //expenseid: 'ucfel0002333'
 }
 param appName string = uniqueString(resourceGroup().id)
 //container registry params

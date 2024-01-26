@@ -10,18 +10,20 @@ export const lightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      light: '#FEF9E0',
-      mid: '#FBE680',
-      main: '#F7CC00',
-      dark: '#F1AD00 ',
-      contrastText: '#000000',
-      darkText: '#ffffff',
+      light: '#ecf0f1',
+      mid: '##5e686e',
+      main: '#0093B1',
+      dark: '#000000',
+      contrastText: '#fff',
+      darkText: '#000000',
     },
     secondary: {
-      light: '#000000',
-      main: '#F1AD00',
-      dark: '#000000',
-      contrastText: '#F7CC00',
+      light: '#ecf0f1',
+      mid: '#d6dadc',
+      main: '#D50032',
+      dark: '#6a767c',
+      contrastText: '#fff',
+      darkText: '#000000',
     },
     warning: {
       main: '#ba1a1a',
@@ -33,7 +35,7 @@ export const lightTheme = createTheme({
       main: '#b3bc52',
     },
     text: {
-      primary: '#F1AD00',
+      primary: '#171a1c',
       secondary: '#000',
   },
 },
@@ -62,6 +64,11 @@ export const lightTheme = createTheme({
       fontSize: '2rem', // Adjust as needed
       fontWeight: 'bold', // Adjust as needed
       color: '#515abb', // Adjust as needed
+    },
+    bodylight: {
+      fontSize: '1rem', // Adjust as needed
+      fontWeight: 300, // Adjust as needed
+      color: '#fff', // Adjust as needed
     },
     h2: {
       fontSize: '1.5rem', // Adjust as needed
