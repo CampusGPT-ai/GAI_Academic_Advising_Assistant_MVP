@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from mongoengine import *
 from pydantic import BaseModel
 
@@ -59,4 +59,18 @@ class ConversationRequest(BaseModel):
     topic: str
     user_id: str | None = None
     institution_id: str | None = None
+    
+class UserSession(Document):
+    _auto_id_field = 'id'
+    user_id = StringField(required=True, unique=False)
+    session_id = StringField(required=True, unique=True)
+    session_start = DateTimeField(required=True, default=datetime.now())
+    session_end = DateTimeField(required=True, default=datetime.now())
+    meta = {
+        'collection': 'user_session',  # the name of your collection in the database
+        'indexes': [
+            'session_id'  # index this field for faster querying
+        ]
+    }
 
+    
