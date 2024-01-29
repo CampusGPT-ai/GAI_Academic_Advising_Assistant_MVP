@@ -142,13 +142,13 @@ class UserConversation:
         # Step 0: setup chain processors we will in multiple chains
         # Step 0.1: setup mongo backed memory
         raw_message_history = MongoDBChatMessageHistory(
-            connection_string=self.settings.APPSETTING_MONGO_CONN_STR or os.getenv("APPSETTING_MONGO_CONN_STR"),
-            database_name=self.settings.APPSETTING_MONGO_DB or os.getenv("APPSETTING_MONGO_DB"),
-            collection_name=self.settings.APPSETTING_RAW_MESSAGE_COLLECTION or os.getenv("APPSETTING_RAW_MESSAGE_COLLECTION"),
+            connection_string=self.settings.MONGO_CONN_STR or os.getenv("MONGO_CONN_STR"),
+            database_name=self.settings.MONGO_DB or os.getenv("MONGO_DB"),
+            collection_name=self.settings.RAW_MESSAGE_COLLECTION or os.getenv("RAW_MESSAGE_COLLECTION"),
             session_id=(self.conversation.id or None)
         )
         memory = ConversationBufferWindowMemory(
-            k=self.settings.APPSETTING_HISTORY_WINDOW_SIZE or 10,
+            k=self.settings.HISTORY_WINDOW_SIZE or 10,
             chat_memory=raw_message_history, 
             return_messages=True
         )

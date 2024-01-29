@@ -52,6 +52,9 @@ seaborn = "^0.13.1"
 langchain-core = "^0.1.15"
 msal = "^1.26.0"
 playwright = "^1.41.0"
+itsdangerous = "^2.1.2"
+python-jose = "^3.3.0"
+cryptography = "^42.0.1"
 
 
 [build-system]

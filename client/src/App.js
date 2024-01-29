@@ -3,7 +3,6 @@ import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles'; // Import ThemeProvider and createTheme
 import {lightTheme as theme} from './assets/theme';
 import MainPage from './pages/home';
-import LoginPage from './pages/login';
 import ProtectedRoute from './routeAuth';
 
 import '@fontsource/roboto/300.css';
@@ -19,8 +18,7 @@ const App = () => (
 <ThemeProvider theme={theme}>
     <Router>
       <Routes>
-        <Route path="/login" element={<LoginPage></LoginPage>}/>
-        <Route path="/" element={<ProtectedRoute>
+        <Route path="*" element={<ProtectedRoute>
           <MainPage /> </ProtectedRoute>} />
       </Routes>
     </Router>

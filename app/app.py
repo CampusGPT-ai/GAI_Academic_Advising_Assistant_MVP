@@ -80,10 +80,24 @@ async def lifespan(app: FastAPI):
     # shutdown block
     disconnect()
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+async def catch_exceptions_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Unhandled exception: {str(e)}"},
+        )
+        
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("VERY_SECRET_KEY"))
+app.middleware('http')(catch_exceptions_middleware)
 app.include_router(authorize_user.router)
+
+
 
 #TODO: need to figure out what origins to allow once we deploy
 origins = [

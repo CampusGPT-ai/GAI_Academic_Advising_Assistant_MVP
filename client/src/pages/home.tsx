@@ -15,7 +15,6 @@ import { getFirstThreeQuestions } from "../utilities/parseTopics";
 import Footer from "../components/footer/footer";
 import Header from "../components/header/header";
 import Chat from "./chat";
-import Login from "./login";
 import { Box } from "@mui/material";
 
 /**
@@ -57,6 +56,7 @@ const MainPage: FC = () => {
     streamingMessageRef.current = data;
     _setStreamingMessage(data);
   };
+  console.log("loading main page")
 
   /**
    * Handles the profile button click event and navigates to the login page.
@@ -345,10 +345,7 @@ const MainPage: FC = () => {
         setSampleQuestions={getSampleQuestions} //this should change the questions visible in the chat pane
         user={user}
       />
-      <Routes>
-        <Route
-          path="chat" //src/pages/chat.tsx
-          element={
+
             <Chat
               setConversation={setSelectedConversation}
               conversationTitle={selectedConversation?.topic}
@@ -364,10 +361,8 @@ const MainPage: FC = () => {
               chatResponse={streamingMessage}
               currentAnswerRef={currentAnswerRef}
             />
-          }
-        />
-        <Route path="login" element={<Login/>} />
-      </Routes>
+
+
       <Footer></Footer>
     </Box>
   );
