@@ -8,10 +8,13 @@ import cloud_services.llm_services as llm
 from cloud_services.azure_cog_service import AzureSearchService
 from datetime import datetime
 import pytz
-from file_utilities import remove_duplicate_passages
+from azure.storage.blob.aio import BlobServiceClient
+from .file_utilities import remove_duplicate_passages
 import copy
 from joblib import load
 load_dotenv()
+
+
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
@@ -32,10 +35,18 @@ openai.base_url = OPENAI_ENDPOINT
 openai.azure_endpoint = ''
 openai.api_type = 'azure'
 
-UNPROCESSED_DIRECTORY = 'C:\\repos\\isupportu-\\QnA'
-DOCUMENT_DIRECTORY = 'C:\\repos\\isupportu-\\QnA'
-VISITED_LOG = 'C:\\repos\\isupportu-\\QnA\\logs\\visited_vs.txt'
-REJECTED_LOG = 'C:\\repos\\isupportu-\\QnA\\logs\\rejected_vs.txt'
+AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
+AZURE_STORAGE_ACCOUNT_CRED = os.getenv("AZURE_STORAGE_ACCOUNT_CRED")
+AZURE_STORAGE_CONTAINER=os.getenv("AZURE_STORAGE_CONTAINER")
+
+# setup blob storage connection
+blob_client = BlobServiceClient(
+    account_url=f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net",
+    credential=AZURE_STORAGE_ACCOUNT_CRED,
+)
+blob_container_client = blob_client.get_container_client(
+    AZURE_STORAGE_CONTAINER)
+
 
 class VectorUploader(FileLogger):
     def __init__(self,document_directory, visited_log, rejected_log, unprocessed_directory):
@@ -77,6 +88,7 @@ class VectorUploader(FileLogger):
         new_doc_list = []
         for d in docs:
             new_doc = copy.deepcopy(doc)
+
             new_doc["page_content"] = d
             new_doc_list.append(new_doc)
             

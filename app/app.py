@@ -20,7 +20,7 @@ from util.json_helper import response_from_string
 from util.logger_format import CustomFormatter
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.sessions import SessionMiddlewares
 import logging, sys
 from app_auth import authorize_user
 
