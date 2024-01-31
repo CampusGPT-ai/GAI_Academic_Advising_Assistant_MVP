@@ -9,6 +9,7 @@ from data.models import ChatMessage, Citation
 import logging, sys
 from util.logger_format import CustomFormatter
 
+
 ch = logging.StreamHandler(stream=sys.stdout)
 ch.setLevel(logging.INFO)
 ch.setFormatter(CustomFormatter())

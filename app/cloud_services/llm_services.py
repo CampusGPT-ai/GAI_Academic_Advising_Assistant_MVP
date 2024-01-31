@@ -158,9 +158,10 @@ class AzureLLMClients(AILLMClients):
         self.client  = AzureOpenAI(
                 azure_endpoint = azure_endpoint, 
                 api_key=os.getenv("AZURE_OPENAI_KEY"),  
-                api_version="2023-05-15"
+                api_version=api_version
 )
         self.model = model
+        self.deployment = deployment
 
     def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:
         """
@@ -176,15 +177,15 @@ class AzureLLMClients(AILLMClients):
         message_list =  [model.model_dump() for model in  messages]
         try:
             if json_mode and self.model in ('gpt-4-1106-preview','gpt-35-turbo-1106'):
-                result = self.chat_client.chat.completions.create(
-                    model = self.model,
+                result = self.client.chat.completions.create(
+                    model = self.deployment,
                     seed = 42,
                     response_format={ "type": "json_object" },
                     messages = message_list
                     )
             else:
-                result = self.chat_client.chat.completions.create(
-                    model = self.model,
+                result = self.client.chat.completions.create(
+                    model = self.deployment,
                     messages = message_list
                     )
             return openai_response_objects.parse_completion_object(False,result)
@@ -229,7 +230,7 @@ class AzureLLMClients(AILLMClients):
             logging.info(f"text greater than max tokens detected {len(cleaned_inputs)-len(filtered_inputs)} items filtered out of embedding")
         result = []    
         try:
-            result = self.embedding_client.embeddings.create(input=filtered_inputs, model="text-embedding-ada-002")
+            result = self.client.embeddings.create(input=filtered_inputs, model="text-embedding-ada-002")
         except Exception as e:
             raise e
         

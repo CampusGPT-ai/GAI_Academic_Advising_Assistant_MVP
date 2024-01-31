@@ -97,7 +97,8 @@ class VectorUploader(FileLogger):
             try:
                 docs = self.split_texts(docs)
             except:
-                raise Exception(f"document anomaly detected for file {filename}")
+                print(f"document anomaly detected for file {filename}")
+                continue
 
             for attempt in range(max_retries):
                 try:
