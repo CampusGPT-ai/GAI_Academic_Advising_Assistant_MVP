@@ -3,17 +3,16 @@ import os, time, threading
 from dotenv import load_dotenv
 import openai
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from file_tracker import FileLogger
+from web_scraping.file_tracker import FileLogger
 import cloud_services.llm_services as llm
 from cloud_services.azure_cog_service import AzureSearchService
 from datetime import datetime
 import pytz
 from azure.storage.blob.aio import BlobServiceClient
-from .file_utilities import remove_duplicate_passages
+from web_scraping.file_utilities import remove_duplicate_passages
 import copy
 from joblib import load
 load_dotenv()
-
 
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
@@ -29,28 +28,15 @@ SYSTEM_TEXT = '''You are an academic advisor creating an FAQ from your universit
 EMBEDDING_DEPLOYMENT = os.getenv("EMBEDDING")
 MAX_TOKEN_LENGTH = 6000
 
-openai.api_key = OPENAI_KEY
-openai.api_version = OPENAI_VERSION
-openai.base_url = OPENAI_ENDPOINT
-openai.azure_endpoint = ''
-openai.api_type = 'azure'
-
 AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
 AZURE_STORAGE_ACCOUNT_CRED = os.getenv("AZURE_STORAGE_ACCOUNT_CRED")
 AZURE_STORAGE_CONTAINER=os.getenv("AZURE_STORAGE_CONTAINER")
 
-# setup blob storage connection
-blob_client = BlobServiceClient(
-    account_url=f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net",
-    credential=AZURE_STORAGE_ACCOUNT_CRED,
-)
-blob_container_client = blob_client.get_container_client(
-    AZURE_STORAGE_CONTAINER)
-
+account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net"
 
 class VectorUploader(FileLogger):
-    def __init__(self,document_directory, visited_log, rejected_log, unprocessed_directory):
-        super().__init__(document_directory, visited_log, rejected_log, unprocessed_directory)
+    def __init__(self, visited_log, rejected_log, credentials, account_url):
+        super().__init__( visited_log, rejected_log, credentials, account_url)
         self.azure_llm = llm.get_llm_client(api_type='azure',
                                 api_version=OPENAI_VERSION,
                                 endpoint=OPENAI_ENDPOINT,
@@ -62,14 +48,15 @@ class VectorUploader(FileLogger):
                                                 SEARCH_INDEX_NAME,
                                                 self.azure_llm,
                                                 SEARCH_API_KEY)
-        self.tokenizer = self.load_tokenizer()
+        self.tokenizer = self.create_simple_tokenizer()
         
-    def load_tokenizer(self):
-        try:
-            tokenizer = load('ana_tokenizer.joblib')
-        except:
-            print(Exception)
-        return tokenizer
+    def create_simple_tokenizer(self):
+        def simple_tokenizer(text):
+            # Split the text into tokens based on spaces
+            tokens = text.split()
+            return tokens
+        
+        return simple_tokenizer
     
     def split_texts(self, doc):
         tokenizer = self.tokenizer
@@ -97,37 +84,44 @@ class VectorUploader(FileLogger):
     def get_text_position(self, text):
         return
     
-    def threaded_upload(self, docs, filename):
-        max_retries = 3  # Maximum number of retries
-        retry_delay = 10  # Delay in seconds
-        
-        try:
-            docs = self.split_texts(docs)
-        except:
-            raise Exception(f"document anomaly detected for file {filename}")
+    def threaded_upload(self):
+        while True:
+            docs, filename = self.docs.get()
 
-        for attempt in range(max_retries):
+            if docs is None and filename is None:
+                break
+
+            max_retries = 3  # Maximum number of retries
+            retry_delay = 10  # Delay in seconds
+            
             try:
-                print(f"starting upload for {filename}")
-                text = [self.json_to_index(doc) for doc in docs]
-                results = self.search_client.upload(text)
-                is_error = False
-                for result in results:
-                    if not result.succeeded:
-                        print(f"Failed to upload document: {result.key}")
-                        is_error = True
-                        return
-                if not is_error: 
-                    #update list of processed docs
-                    print(f"Document uploaded successfully: {filename}")
-            except Exception as e:
-                if "Unauthorized" in str(e):
-                    self.refresh_client()
-                if "rate limit" in str(e).lower() or "429" in str(e):
-                    print(f"Rate limit exceeded. Retrying in {retry_delay} seconds...")
-                    time.sleep(retry_delay)
-                else:
-                    raise e          
+                docs = self.split_texts(docs)
+            except:
+                raise Exception(f"document anomaly detected for file {filename}")
+
+            for attempt in range(max_retries):
+                try:
+                    print(f"starting upload for {filename}")
+                    text = [self.json_to_index(doc) for doc in docs]
+                    results = self.search_client.upload(text)
+                    is_error = False
+                    for result in results:
+                        if not result.succeeded:
+                            print(f"Failed to upload document: {result.key}")
+                            is_error = True
+                    if not is_error: 
+                        #update list of processed docs
+                        print(f"Document uploaded successfully: {filename}")
+                        break
+                except Exception as e:
+                    if "Unauthorized" in str(e):
+                        self.refresh_client()
+                    if "rate limit" in str(e).lower() or "429" in str(e):
+                        print(f"Rate limit exceeded. Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                    else:
+                        print(f"exception logged for {str(e)}") 
+                        break        
 
     def refresh_client(self):
         self.azure_llm = llm.get_llm_client(api_type='azure',
@@ -142,36 +136,26 @@ class VectorUploader(FileLogger):
                                                 self.azure_llm,
                                                 SEARCH_API_KEY)
 
-    def upload_files(self):
-        threads = []
+    async def upload_files(self):
+        self.threads = []
         max_threads = 15  # be careful of rate limiting and CPU usage
-        self.get_docs_to_process()
-        self.read_page_content_and_enqueue()
-        while not self.docs.empty() or any(thread.is_alive() for thread in threads):
-            # process completed threads:
-            for thread in threads:
-                if not thread.is_alive():
-                    thread.join()
-                    
-            threads = [t for t in threads if t.is_alive()]
+        await self.get_docs_to_process("index-upload")
+        
+        #start consumer thread production
+        for _ in range(max_threads):
+            thread = threading.Thread(target=self.threaded_upload)
+            thread.start()
+            self.threads.append(thread)
 
-            if len(threads) < max_threads:     
-                docs, filename = self.docs.get()
-                if filename not in self.visited:
-                    self.save_visited_urls()
-                    try:
-                        thread = threading.Thread(target=self.threaded_upload, args=(docs, filename))
-                        thread.start()
-                        threads.append(thread)
-                        
-                    except Exception as e:
-                        print(f"Error writing docs to azure index {filename}: {e}")
-                        if "Unauthorized" in str(e):
-                            self.refresh_client()
-                        else:
-                            self.rejected.add(filename)
-                            self.save_visited_urls()
-                        continue
+        # start producing docs in the queue
+        await self.read_page_content_and_enqueue("index-upload")
+
+        for _ in self.threads: 
+            self.docs.put((None,None))
+
+        for thread in self.threads:
+            thread.join()
+
                 
     def embed(self, text):
         try:
@@ -242,8 +226,11 @@ class VectorUploader(FileLogger):
         return index_document
     
 if __name__ == "__main__":
-    loader = VectorUploader(DOCUMENT_DIRECTORY, VISITED_LOG, REJECTED_LOG, UNPROCESSED_DIRECTORY)
-    loader.upload_files()
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loader = VectorUploader("visited.txt","rejected.txt", credentials=AZURE_STORAGE_ACCOUNT_CRED, account_url=account_url)
+    loop.run_until_complete(loader.upload_files())
+    loop.close
     
     
 
