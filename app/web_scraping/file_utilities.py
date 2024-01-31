@@ -39,25 +39,80 @@ def count_prefixes(directory):
             prefix_counter[prefix_key] += 1
     return prefix_counter
 
+def get_duplicate_index(full_list, subsequence):
+    len_sub = len(subsequence)
+    len_full = len(full_list)
+    for i in range(len_full - len_sub + 1):
+        check_sequence = full_list[i:i+len_sub]
+        if check_sequence == subsequence:
+            return i
+    return -1
+
+def find_divergence_point(set1, set2):
+    min_length = min(len(set1), len(set2))
+    for i in range(min_length):
+        first_word = set1[i]
+        second_word = set2[i]
+        if first_word != second_word or i == min_length:
+            return i
+    return -1
+
 def remove_duplicate_passages(text):
     words = text.split()
-    passage_length = 10
+    passage_length = 20
+    step_length = 5
     total_length = len(words)
+    found_char_index = -1
     i = 0
+    loop_safety_counter = 0
 
-    while i <= len(words) - passage_length and len(words) < 5000:
-        current_passage = ' '.join(words[i:i + passage_length])
-        remaining_text = ' '.join(words[i + passage_length:])
+    if total_length > 5000:
+        # skip checking very long passages (likely anomalies anyway)
+        return
 
-        found_index = remaining_text.find(current_passage)
-        if found_index != -1:
-            # Calculate the actual index of the found duplicate in the original list
-            duplicate_index = i + passage_length + found_index // (passage_length + 1)
+    while i <= (total_length - passage_length) and loop_safety_counter<1000:
+        #handle malformed text
+        if words[i].startswith("."): 
+            i += 1
+            continue
+
+        current_passage_words = words[i:i + passage_length]
+        current_passage_text = ' '.join(current_passage_words)
+        remaining_passage_words = words[i + passage_length:]
+        remaining_passage_text = ' '.join(remaining_passage_words)
+        found_char_index = remaining_passage_text.find(current_passage_text)
+
+
+        if found_char_index != -1:
+            # Calculate the actual index of the found duplicate in the remaining passage
+            duplicate_index = get_duplicate_index(remaining_passage_words, current_passage_words)
+            # add back starting point to get index in words
+            duplicate_index = duplicate_index + i + passage_length
+            pre_dup_words = words[i:duplicate_index]
+            post_dup_words = words[duplicate_index:]
+            divergence_length = find_divergence_point(pre_dup_words, post_dup_words)
+
+            if divergence_length == 0: 
+                print("#### Error in dup checking, no duplicate found! likely malformed text.  Skipping. ")
+            #add back i to include full word list:
+            divergence_point = divergence_length + duplicate_index
             # Remove the duplicate passage
-            del words[duplicate_index:duplicate_index + passage_length]
+            if divergence_point <= total_length and divergence_length>0:
+                print(f"removing current passage: {current_passage_text} from remaining text - duplicate passage is {' '.join( words[duplicate_index:divergence_point])}")
+                del words[duplicate_index:divergence_point]
+                total_length = len(words)
+            elif divergence_point == total_length:
+                #passages don't diverge for the remainder of the text (edge case)
+                del words[duplicate_index:]
+                break
+            else:
+                print("######## error in duplication check, skipping")
+                break
 
         else:
-            i += passage_length  # Move forward by ten words
+            i += step_length
+        
+        loop_safety_counter += 1
 
     return ' '.join(words)
 

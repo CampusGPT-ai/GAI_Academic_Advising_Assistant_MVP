@@ -17,7 +17,7 @@ SAS_TOKEN=os.getenv("SAS_TOKEN")
 account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net"
 
 # Define the expiry time for the SAS token (e.g., 1 hour from now)
-expiry_time = datetime.utcnow() + timedelta(hours=1)
+expiry_time = datetime.utcnow() + timedelta(hours=12)
 
 # Define the permissions for the SAS token (e.g., read access)
 permissions = BlobSasPermissions(read=True)
