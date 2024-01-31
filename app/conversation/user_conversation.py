@@ -9,13 +9,16 @@ from cloud_services.vector_search import VectorSearchService
 from langchain.schema import SystemMessage
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
 from langchain.memory import ConversationBufferWindowMemory
-from langchain.memory.chat_message_histories import MongoDBChatMessageHistory
+from langchain_community.chat_message_histories.mongodb import MongoDBChatMessageHistory
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
+from langchain.schema import ChatGeneration
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 from settings.settings import Settings
 from conversation.streaming_parser import StreamingParser
 from util.logger_format import CustomFormatter
 import logging, sys
+from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt
+from conversation.prompt_templates.search_string_prompt import get_keyword_prompt
 
 ch = logging.StreamHandler(stream=sys.stdout)
 ch.setLevel(logging.DEBUG)
@@ -30,14 +33,8 @@ def nonewlines(s: str) -> str:
     return s.replace('\n', ' ').replace('\r', ' ')
 
 
-def get_optimized_keyword_prompt() -> ChatPromptTemplate:
-    system_instructions = """
-You are semantic search assistant that is part of the backend of a language model based chat bot tool.
-Your job is to review the user information and question below, and craft a semantic search query that will be later converted to a vector and used in 
-a similarity search against a large database of vectors in a nearest neighbor similarity search. 
-The semantic query should be designed to return information that is a close match to the users question, with enough detail to inform the search, but not so much detail that the search will be unlikely to return a result. 
-If possible, the query should be PERSONALIZED to the user by including relevant details from the users information, academic history and interests.  Use your best judgement on which personal attributes to include in the search query based on the topic and context. 
-"""
+def get_optimized_keyword_prompt(user_question, user_info) -> ChatPromptTemplate:
+    system_instructions = get_keyword_prompt(user_question, user_info)
     prompt = ChatPromptTemplate.from_messages([
         SystemMessage(content=(system_instructions)),
         MessagesPlaceholder(variable_name="history"),
@@ -49,36 +46,7 @@ If possible, the query should be PERSONALIZED to the user by including relevant 
 def generate_gpt_prompt(user_info) -> ChatPromptTemplate:
     # Start with the system message
 
-    system_instructions = f"""
-You are an academic advisor for university students.  Use the [CONTEXT] and [RESPONSE INSTRUCTIONS] below to answer student questions. \n\n
-[CONTEXT]:\n
-{user_info}
-\n\n
-[RESPONSE INSTRUCTIONS]:\n
-- Provide concise answers.\n
-- Include HTML markup in your response with headings, subheadings, break tags and hyperlink references as appropriate.  \n
-- You have inherent knowledge about the campus, courses, and other academic information.  Answer questions as if this knowledge is innate to you while giving references to the sources of the information.\n
-- Do not provide metadata about your thought processes or how you came to a response.  The student should not know you are a bot. \n
-- When possible, use the information from the provided university sources.  \n
-- If the user asks a generic question, and you do not have personalized information about that student, respond in a generic way.  For example, if the question is \"What courses do I need to graduate?\", but you do not know anything about the student, respond with generic, non-specific information about graduation requirements. \n
-- If you do have personalized information about that student, use that information in your response when it makes sense to do so.  \n
-- If you do not know the answer to a question, state in a friendly, professional way, that you do not have an answer and provide the user with information about a contact person or office to follow up with.  \n
-- Reference each fact you use from a source using square brackets, e.g., [info1.txt]. Do not merge facts from different sources; list them separately. e.g. [info1.txt][info2.pdf].\n
-- If the user's query pertains to classes or courses, and you have personalized information about the student, always reference and list the classes the student has previously taken.\n
-- before you respond, self-check your answer and make sure it makes logical sense, and that recommended actions and hyperlinks are related to the question at hand.\n
-- before you respond, check the hyperlinks provided as source references.  Make sure the link is actually correct for the citation.  
-\n\n
-"""
-
-    json_return_reminder = """
-    topic: what subject is the answer about? use no more than 3 words.
-    Format the outut as JSON with the following keys and sepearate anwswer and topic with this character sequence '<<<<':
-    topic: the topic of the conversation
-    """
-    #Return the answer as a text string and append the topic in JSON format following these examples. 
-    #Separate the answer and the topic with a this character sequence '<<<<'.
-    #response to user question { "topic": "conversation topic" }
-    #response to user question2 { "topic": "conversation topic2" }
+    system_instructions = get_gpt_system_prompt(user_info)
 
     prompt = ChatPromptTemplate.from_messages([
         SystemMessage(content=(system_instructions)),
@@ -89,11 +57,11 @@ You are an academic advisor for university students.  Use the [CONTEXT] and [RES
     logger.info(f"generated prompt template: {prompt}")
     return prompt
 
-def get_user_info(profile):
-    my_classes = "No classes taken yet"
+def get_user_info():
     
     #removed demo profile here - might need to add back in future
-    return 
+    #TODO: pull in personalized data 
+    return {"none provided"}
 
 def generate_follow_up_prompt() -> ChatPromptTemplate:
     response_schemas = [
@@ -138,7 +106,7 @@ class UserConversation:
     async def send_message(self, query_text: str) -> AsyncIterable[str]:
         model = self.ai_model.getModel()
         # add back in future version
-        user_info = 'no user selected'
+        user_info = get_user_info()
         # Step 0: setup chain processors we will in multiple chains
         # Step 0.1: setup mongo backed memory
         raw_message_history = MongoDBChatMessageHistory(
@@ -147,6 +115,7 @@ class UserConversation:
             collection_name=self.settings.RAW_MESSAGE_COLLECTION or os.getenv("RAW_MESSAGE_COLLECTION"),
             session_id=(self.conversation.id or None)
         )
+
         memory = ConversationBufferWindowMemory(
             k=self.settings.HISTORY_WINDOW_SIZE or 10,
             chat_memory=raw_message_history, 
@@ -154,12 +123,14 @@ class UserConversation:
         )
 
         # Step 0.2: create a memory runnable 
+        # langchain 'runnables' documented here: https://api.python.langchain.com/en/latest/runnables/langchain_core.runnables.base.Runnable.html#
         loaded_memory = RunnablePassthrough.assign(
             history=RunnableLambda(memory.load_memory_variables) | itemgetter("history"),
         )
+
         logger.info(f"loaded memory from conversation buffer: {loaded_memory}")
         # Step 1: Generate an optimized keyword search query based on history and current question
-        chain = loaded_memory | get_optimized_keyword_prompt() | model
+        chain : RunnablePassthrough = loaded_memory | get_optimized_keyword_prompt(query_text, user_info) | model
         chat_completion = await chain.ainvoke({"user_query": query_text, "user_info": user_info})
         step1Return = chat_completion.content
         if step1Return == "0":

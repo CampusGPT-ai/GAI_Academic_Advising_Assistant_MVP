@@ -1,5 +1,5 @@
 
-import dotenv, os
+import dotenv, os, copy
 dotenv.load_dotenv()
 from azure.core.credentials import AzureKeyCredential
 from abc import ABC, abstractmethod
@@ -54,7 +54,7 @@ class AzureSearchService(VectorSearchService):
             results.append(res["content"])
         return results
     
-    def simple_search(self, text, vector_field, select_fields, n=3):
+    def simple_search(self, text, vector_field, n=3):
         vector_query = VectorizedQuery(
         vector=self.llm_client.embed_to_array(text),
             k_nearest_neighbors=n,
@@ -63,13 +63,32 @@ class AzureSearchService(VectorSearchService):
                 # Search Query
 
         result = self.azure_search_client.search(
-            vector_queries=[vector_query],
-            select=select_fields)
-        results = []
+            vector_queries=[vector_query]
+            )
+        
+        results = {}
+        content_list = []
+        q_list = []
+        fu_list = []
+
+        def ensure_unique(content, content_set: List):
+            if content is not None and content not in content_set:
+                content_set.append(content)
+
         for res in result:
-            for item in select_fields:
-                results.append(res[item])
-        return results
+
+            results = [
+                [res.get("content", None),
+                 content_list],
+                [res.get("questions", None),
+                 q_list],
+                 [res.get("followups", None),
+                  fu_list]
+            ]
+            for r in results:
+                ensure_unique(r[0],r[1])
+
+        return content_list[:2], q_list[:2], fu_list[:2]
 
     def hybrid_search(self, text, vector_field: List[str], n):
         vqs = []
