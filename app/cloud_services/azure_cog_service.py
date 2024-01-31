@@ -54,19 +54,21 @@ class AzureSearchService(VectorSearchService):
             results.append(res["content"])
         return results
     
-    def simple_search(self, text, vector_field):
+    def simple_search(self, text, vector_field, select_fields, n=3):
         vector_query = VectorizedQuery(
         vector=self.llm_client.embed_to_array(text),
-            k_nearest_neighbors=3,
+            k_nearest_neighbors=n,
             fields=vector_field
         )
                 # Search Query
 
         result = self.azure_search_client.search(
-            vector_queries=[vector_query])
+            vector_queries=[vector_query],
+            select=select_fields)
         results = []
         for res in result:
-            results.append(res["content"])
+            for item in select_fields:
+                results.append(res[item])
         return results
 
     def hybrid_search(self, text, vector_field: List[str], n):
