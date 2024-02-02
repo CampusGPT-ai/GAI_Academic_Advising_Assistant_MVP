@@ -1,5 +1,5 @@
 import axios from 'axios';
-import Chat, { Citation, Followup, Message } from '../model/messages/messages';
+import ParentMessage, { Citation, Followup, Message } from '../model/messages/messages';
 import { BaseUrl } from "./baseURL";
 
 interface fetchMessagesParams {
@@ -32,9 +32,9 @@ interface ApiResponse {
 const fetchMessageHistory = async ({
   user,
   conversationId,
-}: fetchMessagesParams): Promise<Chat[]> => {
+}: fetchMessagesParams): Promise<ParentMessage[]> => {
   const apiUrl = `${BaseUrl()}/users/${user}/conversations/${conversationId}/messages`;
-  const chats: Chat[] = [];
+  const chats: ParentMessage[] = [];
   console.log(`fetching messages for conversationId: ${JSON.stringify(conversationId)}`)
   try {
     const response = await axios.get<ApiResponse>(apiUrl, {});
@@ -48,7 +48,7 @@ const fetchMessageHistory = async ({
 
           const chatMessages: Message[] = item.message?.message || [];
 
-          const chat_message: Chat = {
+          const chat_message: ParentMessage = {
             messages: chatMessages,
             citations: item.citations,
             follow_up_questions: item.follow_up_questions,

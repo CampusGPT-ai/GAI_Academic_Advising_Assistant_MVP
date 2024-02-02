@@ -5,4 +5,4 @@ class UserInfo:
         self.user_info: UserSession = user_info    
     
     def get_user_info(self):
-        return self.user_info
+        return self.user_info.user_id

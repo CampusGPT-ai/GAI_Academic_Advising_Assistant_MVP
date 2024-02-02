@@ -109,12 +109,13 @@ class UserConversation:
             logger.error("unable to save new chat message")
 
     @staticmethod
-    def get_citations_from_text(full_chat):
+    def get_citations_from_text(cites: List, titles: dict, sources: dict) -> List[dict]:
         #TODO: not implementd
-        cites = [Citation(citation_text='s',citation_path='s')]
+        for i in range(len(titles)):
+            cites.append({'citation_text' : titles[i],'citation_path':sources[i]})
         return cites
     
-    def query_gpt(self, full_prompt: List[Message], user_message: Message, topics: List[str], followups: str) -> bool:
+    def query_gpt(self, full_prompt: List[Message], user_message: Message, topics: List[str], followups: str, citations: List[dict]) -> bool:
         try:   
             # streaming access
             azure_streaming_result = self.ai_model.stream(full_prompt) 
@@ -129,9 +130,13 @@ class UserConversation:
                         response_text.append(output_text)
                         yield f"event: message\ndata: {json.dumps({'message': output_text})}"
                     if output.choices[0].finish_reason == 'stop':
-                        citations = self.get_citations_from_text(response_text)
                         yield f"event: topic\ndata: {json.dumps({'topic': topics[0]})}"
                         yield f"event: followups\ndata: {json.dumps({'followups': followups})}"
+                        for c in citations:
+                            yield f"event: citations\ndata: {json.dumps({'citations': c})}"
+
+                        # signal to close source in client
+                        yield f"event: stream-ended\ndata: {json.dumps({'stream-ended': 'true'})}"
                         finished = True
 
         except Exception as e:
@@ -152,17 +157,22 @@ class UserConversation:
                
         # Step 2: retrieve content from vector db
         retriever = SearchRetriever(self.ai_model, self.search_client)
-        rag, followups, topics = retriever.generate_content_and_questions(query_text, user_info)
+        content, followups = retriever.generate_content_and_questions(query_text, user_info)
 
         # step 3: create GPT prompt
-        full_prompt = [self.generate_gpt_prompt(user_info, rag, topics)]
+        full_prompt = [self.generate_gpt_prompt(user_info, content['content'], content['keywords'])]
 
         # step 4: add message history
         full_prompt, user_message = self.get_message_history(full_prompt, query_text)
 
+        # step 5: get citations
+        citations = []
+        if 'title' in content and 'source' in content:
+            citations = self.get_citations_from_text(citations, content['title'], content['source'])
+
         # step 5: query generator
         try:   
-            yield from self.query_gpt(full_prompt, user_message, topics, followups)
+            yield from self.query_gpt(full_prompt, user_message,  content['keywords'], followups, citations)
         except openai.APIConnectionError as e:
             logger.info(f"Caught APIConnectionError: {e}")
             raise e

@@ -1,21 +1,47 @@
 //src/components/pages/index.tsxfetchmessages
 
 import React, { FC, useEffect, useRef, useState } from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import fetchChatResponse from "../api/fetchChatResponse";
 import fetchConversations from "../api/fetchConversations";
 import fetchMessageHistory from "../api/fetchMessages";
-import fetchTopics from "../api/fetchTopics";
 import Conversation from "../model/conversation/conversations";
-import Message, { Citation } from "../model/messages/messages";
-import { Topic } from "../model/topic/topics";
+import ParentMessage, { Message, Citation, Timestamp, Followup } from "../model/messages/messages";
 import { UserProfile } from "../model/user/user";
 import getUserProfile from "../utilities/getDemoProfile";
-import { getFirstThreeQuestions } from "../utilities/parseTopics";
 import Footer from "../components/footer/footer";
 import Header from "../components/header/header";
 import Chat from "./chat";
 import { Box } from "@mui/material";
+import { BaseUrl } from "../api/baseURL";
+
+// Function to create a new Timestamp object with the current time
+function getCurrentTimestamp(): Timestamp {
+  return {
+    $date: Date.now() // Current time in milliseconds
+  };
+}
+
+const updateAssistantMessage = (parentMessage: ParentMessage, newAssistantMessage: string): ParentMessage => {
+
+  const assistantMsgIndex = parentMessage.messages.findIndex(msg => msg.role === 'assistant');
+
+  if (assistantMsgIndex === -1) {
+    console.error('No assistant message found');
+    return parentMessage;
+  }
+
+  const updatedMessages = parentMessage.messages.map((msg, index) =>
+    index === assistantMsgIndex ? { ...msg, message: newAssistantMessage } : msg
+  );
+
+  return {
+    ...parentMessage,
+    messages: updatedMessages,
+  };
+};
+
+
 
 /**
  * MainPage - This component manages and renders the main page of the application.
@@ -36,26 +62,24 @@ const MainPage: FC = () => {
   const navigate = useNavigate();
   const prevUserRef = useRef<UserProfile>();
   const [isLoading, setLoading] = useState(false);
-  const [sampleQuestions, setSampleQuestions] = useState([""]);
   const [title, setTitle] = useState("YOUR PERSONAL CAMPUS GUIDE"); //pull from institutions? this is the header bar title - for example: FSU
   const [user, setUser] = useState<UserProfile>();
   const [loggedIn, setLoggedIn] = useState(false);
-  const [messageHistory, setMessageHistory] = useState(Array<Message>());
+  const [messageHistory, setMessageHistory] = useState(Array<ParentMessage>());
   const [error, setError] = useState("");
   const [isError, setIsError] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [conversationHistory, setConversationHistory] = useState<Conversation[]>([]);
-
+  const [apiUrl, setApiUrl] = useState<string>();
+  const [sourceOpen, setSourceOpen] = useState<boolean>(false);
   const currentAnswerRef = useRef(null);
-  const [topicList, setTopicList] = useState<string[]>();
 
-  // workaround for being able to access state in event listener
-  const [streamingMessage, _setStreamingMessage] = useState<Message>();
-  const streamingMessageRef = useRef(streamingMessage);
-  const setStreamingMessage = (data?: Message) => {
-    streamingMessageRef.current = data;
-    _setStreamingMessage(data);
-  };
+ // event data updates
+  const [streamingMessage, setStreamingMessage] = useState<string>();
+  const [sampleQuestions, setSampleQuestions] = useState<string[]>(['none provided']);
+  const [followups, setFollowups] = useState<Followup[]>();
+  const [citations, setCitations] = useState<Citation[]>();
+
   console.log("loading main page")
 
   /**
@@ -89,135 +113,38 @@ const MainPage: FC = () => {
     }
   };
 
-  /**
-   * Fetches and sets the topics/questions to be displayed in the example chat based on database.
-   * Always runs once on first load based on useEffect empty dependency array[].
-   */
-  //TODO: update to pull topics from get topics api vs. sample data for demo app
-  const getTopics = async () => {
-    try {
-      setTopicList(await fetchTopics({}));
-    } catch (error) {
-      console.error(
-        "An error occurred while getting sample questions: ",
-        error
-      );
+  //TODO: Add logging to see what the data looks like when it comes in.  
+  useEffect(() => {
+    if (apiUrl)  {
+       
+      const source = new EventSource(apiUrl);
+      setSourceOpen(true);
+      source.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data);
+        console.log(`recieved event data ${event.data}`)
+        setStreamingMessage(prev => prev + data.message);
+      });
+      source.addEventListener('citations', (event) => {
+        const data = JSON.parse(event.data);
+        console.log(`recieved event data ${event.data}`)
+        const citations : string = data.citations;
+      })
+      source.addEventListener('followups', (event) => {
+        const data = JSON.parse(event.data);
+        console.log(`recieved event data ${event.data}`)
+      });
+      source.addEventListener('stream-ended', (event) =>
+        source.close()
+      )
+      return () => {
+        if (source.readyState !== EventSource.CLOSED) {
+          source.close();
+          setSourceOpen(false);
+          console.log('EventSource closed by the client.');
+        }
+      };
     }
-  };
-
-
-  const onChatResponseStreamOpen = () => {
-    let message = {
-      role: "bot",
-      message: ""
-    }
-    console.log("streaming response open, set streaming message");
-    setStreamingMessage(message);
-  }
-
-
-  const onChatResponseStreamUpdate = (newResponse: string, isFirstChunk: boolean) => {
-    console.log(`got response chunk: ${newResponse}`)
-    if (isFirstChunk) {
-      setLoading(prevLoading => !prevLoading);
-      if (currentAnswerRef && currentAnswerRef.current) {
-        let el = currentAnswerRef.current as HTMLElement;
-        el.innerHTML += newResponse;
-      }
-    }
-    else {
-      if (currentAnswerRef && currentAnswerRef.current) {
-        let el = currentAnswerRef.current as HTMLElement;
-        el.innerHTML = newResponse;
-      }
-    }
-  }
-
-
-  const onChatResponseMetaDataUpdate = (metaData: any, message: string) => {
-    console.log(`Updating response metadata: ${metaData}`)
-    let convo = JSON.parse(metaData.conversation)
-    let convoParsed = {
-      id: convo.id,
-      topic: convo.topic,
-      start_time: convo.start_time ? convo.start_time.$date : 0,
-      end_time: convo.end_time ? convo.end_time.$date : 0,
-    } as Conversation;
-
-    // convert citations to client format
-    //let citations = metaData.citations.map((x: any) => ({ CitationText: x.citation_text, CitationPath: x.citation_path }));
-    let citations = [] as Citation[];
-    for (var i in metaData.citations) {
-      let cit = JSON.parse(metaData.citations[i]);
-      citations.push({ CitationText: cit.citation_text, CitationPath: cit.citation_path });
-    }
-    // replace citations with inline superscript
-    for (let i in citations) {
-      let cit = citations[i];
-      console.log("replacing citation: ", cit.CitationText);
-      message = message.replaceAll("[" + cit.CitationText + "]", `<sup>${Number(i)+1}</sup>`);
-    }
-
-    //create the new message object and add it to state
-    let messageObj = {
-      role: "bot",
-      message: message,
-      topic: convoParsed.topic,
-      Citations: citations,
-      Followups: metaData.followups.map( (x: string) => ({ FollowupQuestion: x }) )
-    } as Message;
-    
-    setStreamingMessage(messageObj);
-    console.log("received conversation " + convoParsed.id + " with topic " + convoParsed.topic)
-    setSelectedConversation(convoParsed)
-  }
-
-  const onChatResponseStreamDone = () => {
-    console.log("streaming response done");
-    if (streamingMessageRef.current) {
-      let newMessage = streamingMessageRef.current;
-      console.log("streaming response done: setting streaming message in history");
-      setMessageHistory((prevMessages: Message[]) => [...prevMessages, newMessage]);
-    }
-    setStreamingMessage(undefined);
-    setLoading(false);
-  }
-  
-  const onStreamingError = (error: Error) => {
-    setIsError(prevError => !prevError);
-    console.error(`error message recieved from streaming chat ${error}`);
-    setError(error.message);
-
-  }
-
-  /**
-   * Fetches the chat response and updates the messages state.
-   * @param messageText - The text message from the user.
-   */
-  const getChatResponse = async (messageText: string) => {
-    console.log("fetching chat response start")
-    setLoading(prevLoading => !prevLoading);
-    let userMessage = { role: "user", message: messageText }
-    setMessageHistory((prevMessages: Message[]) => [...prevMessages, userMessage]);
-    try {
-      // this will need to be changed to work with streaming response
-      let user_id = user ? user.user_id : undefined;
-      
-      let conversation_id = selectedConversation ? selectedConversation._id : "null";
-      await fetchChatResponse({ messageText, conversation_id, user_id },
-        onChatResponseStreamUpdate,
-        onChatResponseMetaDataUpdate,
-        onChatResponseStreamDone,
-        onChatResponseStreamOpen,
-        onStreamingError,
-      );
-
-    } catch (error) {
-      console.error(error)
-    }
-
-   
-  };
+  }, [apiUrl]);
 
   /**
    * Fetches and sets the conversation based on selected conversation.
@@ -251,6 +178,10 @@ const MainPage: FC = () => {
     setSelectedConversation(undefined);
   };
 
+  const getChatResponse = (user_question: string) => {
+    setApiUrl
+  };
+
   /**
    * Fetches and sets the selected conversation.
    */
@@ -261,12 +192,11 @@ const MainPage: FC = () => {
         user?.user_id != undefined &&
         user?.institution != undefined
       ) {
-        setMessageHistory(
-          await fetchMessageHistory({
+      const chatMessages = await fetchMessageHistory({
             user: user.user_id,
             conversationId: conversation,
           })
-        );
+        
       }
     } catch (error) {
       console.error(`An error occurred while fetching conversations ${error}`);
@@ -300,38 +230,6 @@ const MainPage: FC = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    getTopics();
-    console.log("getting sample questions");
-
-    const sessionUser = sessionStorage.getItem("user");
-    if (sessionUser) {
-      try {
-        const user: UserProfile = JSON.parse(sessionUser); // Parse it to an object
-        setUser(user); // Set the user state
-      } catch (error) {
-        console.error("An error occurred while parsing the user: ", error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    console.log(`messages updated to: ${JSON.stringify(messageHistory)}`);
-  }, [messageHistory]);
-
-  useEffect(() => {
-    //topicList && console.log(`Got topics: ${JSON.stringify(topicList)}`)
-    topicList && setSampleQuestions(topicList.slice(0,3));
-  }, [topicList]);
-
-  useEffect(() => {
-    sampleQuestions &&
-      console.log("sample questions updated to: ", sampleQuestions);
-  }, [sampleQuestions]);
-
-  useEffect(() => {
-    console.log(`loading state change detected: ${isLoading}`)
-  },[isLoading])
   return (
     <Box sx={{backgroundColor: (theme) => theme.palette.primary.main}}>
       <Header //src/sections/header.tsx
@@ -357,6 +255,9 @@ const MainPage: FC = () => {
               conversations={conversationHistory}
               chatResponse={streamingMessage}
               currentAnswerRef={currentAnswerRef}
+              follow_up_questions={followups}
+              citations={citations}
+              sourceOpen={sourceOpen}
             />
 
 

@@ -3,7 +3,7 @@ import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
 import propTypes from "prop-types";
 import React, { FC } from "react";
 import messageSample from "../../../../model/messages/messageSample.json";
-import Message from "../../../../model/messages/messages";
+import { Message, Followup, Citation} from "../../../../model/messages/messages";
 import ChatBotChatResponse from "./chatResponse/chatBotChatResponse";
 
 //for default props
@@ -14,7 +14,9 @@ const sampleMessages = [] as Message[];
 interface ChatBotChatProps {
   isLoading?: boolean;
   isError?: boolean;
-  message?: Message;
+  message: Message;
+  follow_up_questions?: Followup[];
+  citations?: Citation[];
   onRetry?: () => void;
   onFollowupClicked: (message: string) => void;
   error?: string;
@@ -32,6 +34,8 @@ interface ChatBotChatProps {
  */
 const ChatBotChat: FC<ChatBotChatProps> = ({
   message,
+  follow_up_questions,
+  citations,
   isLoading,
   isError,
   onRetry,
@@ -71,7 +75,11 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
 
         {
         !isLoading && !isError && (
-          <ChatBotChatResponse message={message} currentAnswerRef={currentAnswerRef} onFollowupClicked={onFollowupClicked}/>)
+          <ChatBotChatResponse message={message}
+           follow_up_questions={follow_up_questions}
+            citations={citations}
+             currentAnswerRef={currentAnswerRef}
+              onFollowupClicked={onFollowupClicked}/>)
       }
     </Box>
   );

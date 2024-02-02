@@ -19,11 +19,11 @@ export type Timestamp = {
 
   }
   
-  type Chat = {
+  type ParentMessage = {
     messages: Message[];
     citations?: Citation[];
     follow_up_questions?: Followup[];
     user_session_id?: string;
   };
   
-export default Chat;
+export default ParentMessage;

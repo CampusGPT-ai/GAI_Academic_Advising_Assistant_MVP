@@ -3,7 +3,7 @@ import DOMPurify from "dompurify";
 import React, { FC, useState } from "react";
 import "../../../../../assets/styles.css";
 import messageSample from "../../../../../model/messages/messageSample.json";
-import Message from "../../../../../model/messages/messages";
+import ParentMessage, {Citation, Followup, Message} from "../../../../../model/messages/messages";
 import ChatCitation from "./chatResponseElements/chatCitation";
 import ChatFollowUp from "./chatResponseElements/chatFollowUp";
 
@@ -13,12 +13,16 @@ const sampleMessages = JSON.parse(jsonString) as Message[];
 
 interface ChatBotChatResponseProps {
   onFollowupClicked: (message: string) => void;
-  message?: Message;
+  message: Message;
+  follow_up_questions?: Followup[],
+  citations?: Citation[]
   currentAnswerRef?: React.MutableRefObject<any>;
 }
 
 const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
   message,
+  follow_up_questions,
+  citations,
   currentAnswerRef,
   onFollowupClicked,
 }) => {
@@ -41,15 +45,15 @@ const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
         />
       </Typography>
       <Grid container spacing={1}>
-        {message && message.Citations && message.Citations.length > 0 && (
+        {message && citations && citations.length > 0 && (
           <Grid className="chatBotChatReferences" item xs={12}>
             <Typography variant="subtitle1">Citations: </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-            {message.Citations.map((citation, index) => (
+            {citations.map((citation, index) => (
               <ChatCitation
                 key={index}
-                text={`${index + 1} ${citation.CitationText}`}
-                path={citation.CitationPath}
+                text={`${index + 1} ${citation.citation_text}`}
+                path={citation.citation_path}
                 onCitationClicked={(path) => {
                   console.log("Path in parent:", path);
                   path && openCitation(path);
@@ -59,14 +63,14 @@ const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
             </Box>
           </Grid>
         )}
-        {message && message.Followups && message.Followups.length > 0 && (
+        {message && follow_up_questions && follow_up_questions.length > 0 && (
           <Grid className="chatBotChatReferences" item xs={12}>
             <Typography variant="subtitle1">Follow-up Questions: </Typography>
 
-            {message.Followups.map((followup, index) => (
+            {follow_up_questions.map((followup, index) => (
               <ChatFollowUp
                 key={index}
-                text={followup.FollowupQuestion}
+                text={followup.question}
                 onFollowUpClicked={(text) => {
                   console.log("question in parent:", text);
                   text && onFollowupClicked(text);

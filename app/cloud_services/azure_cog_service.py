@@ -54,6 +54,20 @@ class AzureSearchService(VectorSearchService):
             results.append(res["content"])
         return results
     
+    @staticmethod
+    def dedup_results(result,key):
+        results=[]
+        for res in result:
+            id = res[key]
+            if results == []:
+                results.append(res)
+            else:
+                results_id_list = [result[key] for result in results if key in result]
+                if id not in results_id_list:
+                    results.append(res)
+
+        return results
+    
     def simple_search(self, text, vector_field, n=3):
         vector_query = VectorizedQuery(
         vector=self.llm_client.embed_to_array(text),
@@ -66,32 +80,8 @@ class AzureSearchService(VectorSearchService):
             vector_queries=[vector_query]
             )
         
-        results = {}
-        content_list = []
-        q_list = []
-        fu_list = []
-        kw_list = []
-
-        def ensure_unique(content, content_set: List):
-            if content is not None and content not in content_set:
-                content_set.append(content)
-
-        for res in result:
-
-            results = [
-                [res.get("content", None),
-                 content_list],
-                [res.get("questions", None),
-                 q_list],
-                 [res.get("followups", None),
-                  fu_list],
-                  [res.get("keywords",None), 
-                   kw_list]
-            ]
-            for r in results:
-                ensure_unique(r[0],r[1])
-
-        return content_list[:2], q_list[:2], fu_list[:2], kw_list[:2]
+        results = self.dedup_results(result,"content")
+        return results
 
     def hybrid_search(self, text, vector_field: List[str], n):
         vqs = []

@@ -17,8 +17,9 @@ class SearchRetriever:
         self.search_client : AzureSearchService = search_client
         
     def retrieve_content(self,query: str,n=3 ) -> list:
-        results, questions, followups, keywords = self.search_client.simple_search(query,settings.KB_FIELDS_CONTENT,n)
-        return results, questions, followups, keywords
+        results = self.search_client.simple_search(query,settings.KB_FIELDS_CONTENT,n)
+        output = self.transpose_dict(results)
+        return output
     
     @staticmethod
     def parse_questions(string):
@@ -30,6 +31,15 @@ class SearchRetriever:
         split_text = re.split(r'\n|\?|\d+\.\s*', text)
         cleaned_text = [item.strip()+'?' for item in split_text if item.strip()]
         return cleaned_text
+    
+    @staticmethod
+    def transpose_dict(results_dict):
+        keys = results_dict[0].keys()
+        transposed = {}
+        for key in keys:
+            transposed[key] = [d[key] for d in results_dict]
+
+        return transposed
     
     def get_search_string(self, input):
         prompt = get_search_prompt(input)
@@ -53,20 +63,20 @@ class SearchRetriever:
             Message(role='system', content=prompt),
             ]
         result : ChatCompletion = self.azure_llm.chat(default_messages)
-        result = self.split_questions(result.choices[0].message.content)
-        return result
+        result_split = self.split_questions(result.choices[0].message.content)
+        return result_split
     
     def generate_questions(self, user_info):
          search_string = self.get_search_string(user_info)
-         content, qs, fus, kw = self.retrieve_content(search_string,n=10)
-         result = self.refine_questions(user_info, qs)
+         results = self.retrieve_content(search_string,n=10)
+         result = self.refine_questions(user_info, results['questions'])
          return result
     
     def generate_content_and_questions(self, query, user_info):
          search_string = self.get_keyword_string(query, user_info)
-         content, qs, fus, kw = self.retrieve_content(search_string, n=10)
-         refined_qs = self.refine_questions(user_info, fus)
-         return content, refined_qs, kw
+         content = self.retrieve_content(search_string, n=10)
+         refined_qs = self.refine_questions(user_info, content['followups'])
+         return content, refined_qs
     
     @classmethod           
     def with_default_settings(cls):
@@ -82,7 +92,7 @@ class SearchRetriever:
 
         # Create an instance of the class with these default settings
         return cls(
-            ll_client=azure_llm,
+            llm_client=azure_llm,
             search_client=AzureSearchService(settings.SEARCH_ENDPOINT,
                                                 settings.SEARCH_INDEX_NAME,
                                                 azure_llm,
