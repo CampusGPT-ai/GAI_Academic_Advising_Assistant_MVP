@@ -1,45 +1,43 @@
-[{
-	"_id" : "65315d57d6f2632d416bf408",
-	"user" : "65315d56d6f2632d416bf402", 
-	"conversation" : "65315d57d6f2632d416bf406",
-	"timestamp" : {
-		"$date" : 1697708689178
-	},
-    "role": "user", 
-	"message" : "What degrees should I pursue to become a poet?"
-
-},
-{
-	"_id" : "65315d57d6f2632d416bf408",
-	"user" : "65315d56d6f2632d416bf402",
-	"conversation" : "65315d57d6f2632d416bf406",
-	"timestamp" : {
-		"$date" : 1697708689178
-	},
-    "role": "bot", 
-	"message" : "Poets come from many educational backgrounds, but English is a popular choice to pursue a career as a writer.",
-    "Citations": 
-    [
-        { 
-        "CitationPath": "www.example.com",
-        "CitationText": "some text"
-        },
-        {
-        "CitationPath": "www.anotherexample.com",
-        "CitationText": "some more text"
-        }
-
-    ],
-    "Followups": [{
-        
-        "FollowpupQuestion": "why didn't you already think of this?"
-        
-    },
+[
     {
-        
-        "FollowpupQuestion": "or this?"
-        
-    }]
-}
-
+        "end_time": null,
+        "topic": "Physics (BA) Degree, Academic Requirements, Specializations, Application Deadlines, University Policies",
+        "user_id": "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I",
+        "start_time": "2024-02-01T14:45:55.034000",
+        "messages": [
+            {
+                "message": {
+                    "user_session_id": "65b831438a91cfa283e4bcc1",
+                    "message": [
+                        {
+                            "role": "assistant",
+                            "message": "To determine the specific classes you need to graduate, I would need more information about your academic program and progress. Graduation requirements vary depending on your major, degree program, and any specializations you may have. \\n\\nTo ensure accuracy, I recommend reaching out to your academic advisor or the relevant department at your university. They will be able to provide you with a personalized list of classes required for graduation based on your specific academic situation.",
+                            "created_at": "2024-02-01T22:46:04.069000"
+                        },
+                        {
+                            "role": "user",
+                            "message": "what classes do I need to graduate?",
+                            "created_at": "2024-02-01T22:46:04.069000"
+                        }
+                    ],
+                    "id": "65bc1f2c447ee7b27f0f8937"
+                },
+                "citations": [
+                    {
+                        "citation_text": "s",
+                        "citation_path": "s"
+                    }
+                ],
+                "follow_up_questions": [
+                    "What are the courses covered under the Information Technology/Data Science Specialization?",
+                    "What is the grading policy for physics and mathematics courses?",
+                    "Can courses be repeated if the grade is below C?",
+                    "Can any exemptions be made to the academic requirements?",
+                    "Are there any financial aid options available to help with tuition costs?",
+                    "Are there any specific lab requirements for Physics majors?"
+                ]
+            }
+        ],
+        "id": "65bc1f2c447ee7b27f0f8938"
+    }
 ]

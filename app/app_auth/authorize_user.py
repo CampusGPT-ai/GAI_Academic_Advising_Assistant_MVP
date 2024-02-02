@@ -80,9 +80,12 @@ async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
 
 
     # Store session information
-    user_session = get_session_from_user(user_info)
     try:
-        if not user_session:
+        user_session = get_session_from_user(user_info)
+    except:
+        user_session = None
+    try:
+        if not user_session or user_session==None:
                 # Create a session ID
             session_guid = str(uuid4())
             session_expiry = datetime.now() + timedelta(minutes=120)
@@ -141,8 +144,6 @@ async def logout_user(session_guid: str):
     return {"message": "User logged out successfully"}
     
 # Example of a protected route using this dependency
-# @router.get("/protected_route")
-# async def protected_route(user_info: str = Depends(get_session_from_user)):
-#   return {"message": "Access to protected data", "user_info": user_info}
-
+# @router.post("/protected_route")
+# async def protected_route(session_data: UserSession = Depends(get_session_from_user), post_data: dict = Body(...)):
 

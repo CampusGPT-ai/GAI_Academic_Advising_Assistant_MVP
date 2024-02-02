@@ -1,24 +1,15 @@
 # TODO: USER PROFILE
-import openai, os
-import asyncio
-
-from operator import itemgetter
-from typing import AsyncIterable
+import openai, os, logging, sys, json
+from typing import List
 from cloud_services.gpt_models import AILLMModels
 from cloud_services.vector_search import VectorSearchService
-from langchain.schema import SystemMessage
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
-from langchain.memory import ConversationBufferWindowMemory
-from langchain_community.chat_message_histories.mongodb import MongoDBChatMessageHistory
-from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
-from langchain.schema import ChatGeneration
-from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 from settings.settings import Settings
-from conversation.streaming_parser import StreamingParser
 from util.logger_format import CustomFormatter
-import logging, sys
+from data.models import UserSession, RawChatMessage, Conversation, MessageContent, ChatMessage, Citation
+from cloud_services.openai_response_objects import StreamingChatCompletion
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt
-from conversation.prompt_templates.search_string_prompt import get_keyword_prompt
+from conversation.retrieve_docs import SearchRetriever
+from cloud_services.openai_response_objects import Message
 
 ch = logging.StreamHandler(stream=sys.stdout)
 ch.setLevel(logging.DEBUG)
@@ -29,169 +20,205 @@ logger.handlers.clear()
 logger.addHandler(ch)  
 
 
-def nonewlines(s: str) -> str:
-    return s.replace('\n', ' ').replace('\r', ' ')
-
-
-def get_optimized_keyword_prompt(user_question, user_info) -> ChatPromptTemplate:
-    system_instructions = get_keyword_prompt(user_question, user_info)
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessage(content=(system_instructions)),
-        MessagesPlaceholder(variable_name="history"),
-        HumanMessagePromptTemplate.from_template("User Profile: {user_info}\n\n User Question: {user_query}\n\n")
-    ])
-    return prompt
-
-
-def generate_gpt_prompt(user_info) -> ChatPromptTemplate:
-    # Start with the system message
-
-    system_instructions = get_gpt_system_prompt(user_info)
-
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessage(content=(system_instructions)),
-        MessagesPlaceholder(variable_name="history"),
-        HumanMessagePromptTemplate.from_template(
-            "{user_question}\n\nSources:\n{sources}") 
-    ])
-    logger.info(f"generated prompt template: {prompt}")
-    return prompt
-
-def get_user_info():
-    
-    #removed demo profile here - might need to add back in future
-    #TODO: pull in personalized data 
-    return {"none provided"}
-
-def generate_follow_up_prompt() -> ChatPromptTemplate:
-    response_schemas = [
-        ResponseSchema(name="followups", type="string", description="the three most likely follow up questions of interest as a list element"),
-        ResponseSchema(name="topic", type="string", description="what is the main subject of question the user asked? use no more than 3 words.")
-    ]
-        
-    output_parser = StructuredOutputParser(response_schemas=response_schemas)
-    format_instructions = output_parser.get_format_instructions()
-
-    follow_up_template =  """
-Based on the history of the conversation and the users question, generate 2 things:
-- three very brief follow-up questions that the user would likely ask next given the users previous question. Only generate questions and do not generate any text before 
-or after the questions, such as 'Next Questions'. Try not to repeat questions that have already been asked.
-- what subject is the users question about? use no more than 3 words.
-
-{ai_response}
-"""
-    follow_up_prompt = ChatPromptTemplate.from_template(follow_up_template)
-    follow_up_prompt.append(SystemMessage(content=format_instructions))
-    return follow_up_prompt
-
-
 class UserConversation:
 
     def __init__(
         self,
-        conversation,
         ai_model: AILLMModels,
         search_client: VectorSearchService,
-        sourcepage_field: str,
-        content_field: str,
-        settings: Settings
+        settings: Settings,
+        user_session: UserSession,
+        conversation: Conversation
     ):
         self.ai_model = ai_model
         self.search_client = search_client
-        self.sourcepage_field = sourcepage_field
-        self.content_field = content_field
-        self.conversation = conversation
         self.settings = settings
+        self.user_session : UserSession = user_session
+        self.conversation: Conversation = conversation
 
-    async def send_message(self, query_text: str) -> AsyncIterable[str]:
-        model = self.ai_model.getModel()
-        # add back in future version
-        user_info = get_user_info()
-        # Step 0: setup chain processors we will in multiple chains
-        # Step 0.1: setup mongo backed memory
-        raw_message_history = MongoDBChatMessageHistory(
-            connection_string=self.settings.MONGO_CONN_STR or os.getenv("MONGO_CONN_STR"),
-            database_name=self.settings.MONGO_DB or os.getenv("MONGO_DB"),
-            collection_name=self.settings.RAW_MESSAGE_COLLECTION or os.getenv("RAW_MESSAGE_COLLECTION"),
-            session_id=(self.conversation.id or None)
-        )
+    @staticmethod
+    def generate_gpt_prompt(user_info, rag, topics) -> Message:
+        # Start with the system message
+        system_instructions = get_gpt_system_prompt(user_info, rag, topics)
+        return Message(role="system",content=system_instructions)
 
-        memory = ConversationBufferWindowMemory(
-            k=self.settings.HISTORY_WINDOW_SIZE or 10,
-            chat_memory=raw_message_history, 
-            return_messages=True
-        )
-
-        # Step 0.2: create a memory runnable 
-        # langchain 'runnables' documented here: https://api.python.langchain.com/en/latest/runnables/langchain_core.runnables.base.Runnable.html#
-        loaded_memory = RunnablePassthrough.assign(
-            history=RunnableLambda(memory.load_memory_variables) | itemgetter("history"),
-        )
-
-        logger.info(f"loaded memory from conversation buffer: {loaded_memory}")
-        # Step 1: Generate an optimized keyword search query based on history and current question
-        chain : RunnablePassthrough = loaded_memory | get_optimized_keyword_prompt(query_text, user_info) | model
-        chat_completion = await chain.ainvoke({"user_query": query_text, "user_info": user_info})
-        step1Return = chat_completion.content
-        if step1Return == "0":
-            step1Return = query_text
-            
-        logger.info(f"generated search text: {step1Return}")
-
-        # Step 3: Send the query to Azure Search
-        r = self.search_client.getSearchClient().similarity_search(
-            query=step1Return,
-            k=3,
-            search_type="similarity",
-        )
+    @staticmethod
+    def get_user_info() -> str :
+        #removed demo profile here - might need to add back in future
+        #TODO: pull in personalized data, remove temporary mock
+        file_path = Path('app/data/test_user.json')
+        with open(file_path, 'r') as f:
+            data = json.load(f)
         
-        results = []
-        #logger.info(f"got semantic search result: {r}")
-        for doc in r:
-            page_content = doc.page_content
-            source = doc.metadata['source']
-            results.append(f"Content: {page_content}\nSource: {source}")
+        return json.dumps(data)
 
-            # Join all results into a single string, separated by a line break
-        content = "\n\n".join(results)
-        #logger.info(f"got vector database supplement: {content}")
+    @staticmethod
+    def parse_messages(message: Message) -> str:
+        return message
+    
+    def get_message_history(self, prompt: List, query_text: str) -> (str, Message):
+        message_list = []
 
-        # step 4: do a GPT call with the request and documents
-       
-        # 4.1 setup message parser and configure model with callbacks
-        model.callbacks = [StreamingParser(
-            conversation=self.conversation, 
-            user_question=query_text, 
-            memory=memory)]
-        
-        # 4.2 create and run the chain
-
-        answer_chain = loaded_memory | generate_gpt_prompt(user_info) | model 
-        full_chain = {"ai_response": answer_chain} | generate_follow_up_prompt() | model
-        
-        task = asyncio.create_task(
-            full_chain.ainvoke({"user_question": query_text, "sources": content})
-        )
-        
-        callback = model.callbacks[0]
-        
         try:
-            async for line in callback.aiter():
-                logger.info(f'yeilding line: {line}')
-                yield dict(data=line)
+            raw_message_history: List[RawChatMessage] = RawChatMessage.objects(user_session_id=self.user_session)
+        except Exception as e:
+            raise Exception(f'Unable to get chat history from database with exception {str(e)}')
+        
+        if raw_message_history:
+            try:
+                for r in raw_message_history:
+                    message_dict = json.loads(r.message)
+                    message_list.append(Message(**message_dict))
+                prompt.extend(message_list)
+            except Exception as e:
+                logger.info(f"Unable to get message history with {str(e)}")
+
+        user_message = Message(role="user", content=query_text)
+        prompt.append(user_message)
+
+        return prompt, user_message
+
+    def save_conversation(self, messages, topics):
+        if self.conversation != None:
+            self.conversation.topic = topics
+            self.conversation.messages.append(messages)
+            try:
+                self.conversation.save()
+            except Exception as e:
+                logger.error(f"unable to save conversation with {str(e)}")
+                raise e
+    
+    def save_raw_chat(self, response_text: List[str], user_message: Message) -> None:
+        content_string = "".join(response_text)
+        message_list = []
+        message_list.append(MessageContent(role='assistant', message=content_string))
+        message_list.append(MessageContent(role=user_message.role, message=user_message.content))
+        try:
+            raw_chat = RawChatMessage(user_session_id=self.user_session,message=message_list)
+            raw_chat.save()
+            return raw_chat
+        except Exception as e:
+            logger.error("unable to save chat history for message.")
+        return
+    
+    def get_augmented_chat(self, followups, citations, raw_chat):
+        try:
+            cm = ChatMessage(message=raw_chat,follow_up_questions=followups,citations=citations)
+            return cm
+        except Exception as e:
+            logger.error("unable to save new chat message")
+
+    @staticmethod
+    def get_citations_from_text(full_chat):
+        #TODO: not implementd
+        cites = [Citation(citation_text='s',citation_path='s')]
+        return cites
+    
+    def query_gpt(self, full_prompt: List[Message], user_message: Message, topics: List[str], followups: str) -> bool:
+        try:   
+            # streaming access
+            azure_streaming_result = self.ai_model.stream(full_prompt) 
+            finished = False
+            response_text = []
+            output: StreamingChatCompletion = None
+            while not finished:
+                output = next(azure_streaming_result)
+                if output:
+                    output_text = output.choices[0].delta.content
+                    if output_text != None:
+                        response_text.append(output_text)
+                        yield f"event: message\ndata: {json.dumps({'message': output_text})}"
+                    if output.choices[0].finish_reason == 'stop':
+                        citations = self.get_citations_from_text(response_text)
+                        yield f"event: topic\ndata: {json.dumps({'topic': topics[0]})}"
+                        yield f"event: followups\ndata: {json.dumps({'followups': followups})}"
+                        finished = True
 
         except Exception as e:
-            logger.info(f"Caught exception: {e}")
-            raise e
-        except openai.error.APIConnectionError as e:
-            logger.info(f"Caught APIConnectionError: {e}")
             raise e
         finally:
             try: 
-                callback.conversation.save()
-                callback.done.set()
+                raw_chat = self.save_raw_chat(response_text, user_message)
+                chat_message = self.get_augmented_chat(followups,citations,raw_chat)
+                self.save_conversation(chat_message, topics[0])
+                return finished
             except Exception as e: 
-                logger.info(f'caught exception finally {e}')
+                logger.info(f'caught exception on saving chat message in finally {e}')
                 raise e
 
-        await task
+    def send_message(self, query_text: str) -> None:
+        # Step 1: grab user info and existing conversation from source TODO: not implemented
+        user_info = self.get_user_info()
+               
+        # Step 2: retrieve content from vector db
+        retriever = SearchRetriever(self.ai_model, self.search_client)
+        rag, followups, topics = retriever.generate_content_and_questions(query_text, user_info)
+
+        # step 3: create GPT prompt
+        full_prompt = [self.generate_gpt_prompt(user_info, rag, topics)]
+
+        # step 4: add message history
+        full_prompt, user_message = self.get_message_history(full_prompt, query_text)
+
+        # step 5: query generator
+        try:   
+            yield from self.query_gpt(full_prompt, user_message, topics, followups)
+        except openai.APIConnectionError as e:
+            logger.info(f"Caught APIConnectionError: {e}")
+            raise e
+        except Exception as e:
+            logger.info(f"Caught exception: {e}")
+            raise e
+
+    @classmethod           
+    def with_default_settings(cls, user_session: UserSession, conversation: Conversation):
+        from cloud_services.llm_services import get_llm_client
+        from cloud_services.azure_cog_service import AzureSearchService
+        # Assume these are your default settings or loaded from a config file/environment
+
+        default_settings = Settings()
+        azure_llm = get_llm_client(api_type='azure',
+                                api_version=default_settings.OPENAI_API_VERSION,
+                                endpoint=default_settings.AZURE_OPENAI_ENDPOINT,
+                                model=default_settings.MODEL_NAME,
+                                deployment=default_settings.DEPLOYMENT_NAME,
+                                embedding_deployment=default_settings.EMBEDDING)
+
+        # Create an instance of the class with these default settings
+        return cls(
+            ai_model=azure_llm,
+            search_client=AzureSearchService(default_settings.SEARCH_ENDPOINT,
+                                                default_settings.SEARCH_INDEX_NAME,
+                                                azure_llm,
+                                                default_settings.SEARCH_API_KEY),
+            settings=default_settings,
+            user_session=user_session,
+            conversation=conversation
+        )
+
+
+if __name__=="__main__":
+
+    from mongoengine import connect
+
+    db_name = os.getenv("MONGO_DB")
+    db_conn = os.getenv("MONGO_CONN_STR")
+    _mongo_conn = connect(db=db_name, host=db_conn)
+
+
+    from pathlib import Path
+    print("Current Working Directory:", os.getcwd())
+    relative_path = Path('./app/data/mock_user_session.json')
+
+
+    with relative_path.open(mode='r') as file:
+        mock_user_session : UserSession = UserSession(**json.load(file))
+    
+    mock_conversation = Conversation(user_id=mock_user_session.user_id)
+
+    convo = UserConversation.with_default_settings(mock_user_session, mock_conversation)
+    
+    result = convo.send_message("what classes do I need to graduate?")
+    while True:
+        print(next(result))
+    

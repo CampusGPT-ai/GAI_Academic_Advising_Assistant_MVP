@@ -70,6 +70,7 @@ class AzureSearchService(VectorSearchService):
         content_list = []
         q_list = []
         fu_list = []
+        kw_list = []
 
         def ensure_unique(content, content_set: List):
             if content is not None and content not in content_set:
@@ -83,12 +84,14 @@ class AzureSearchService(VectorSearchService):
                 [res.get("questions", None),
                  q_list],
                  [res.get("followups", None),
-                  fu_list]
+                  fu_list],
+                  [res.get("keywords",None), 
+                   kw_list]
             ]
             for r in results:
                 ensure_unique(r[0],r[1])
 
-        return content_list[:2], q_list[:2], fu_list[:2]
+        return content_list[:2], q_list[:2], fu_list[:2], kw_list[:2]
 
     def hybrid_search(self, text, vector_field: List[str], n):
         vqs = []

@@ -4,24 +4,26 @@ export type Timestamp = {
   };
   
   export type Citation = {
-    CitationPath: string;
-    CitationText: string;
+    citation_text: string;
+    citation_path: string;
   };
   
   export type Followup = {
-    FollowupQuestion: string;
+    question: string;
   };
-  
-  type Message = {
-    //_id?: string; //could drop
-    //user?: string; //don't use it
-    //conversation?: string; //don't use this in the message
-    //timestamp?: Timestamp; //don't do anything with it
+
+  export type Message = {
     role: string;
     message: string;
-    topic?: string;
-    Citations?: Citation[];
-    Followups?: Followup[];
+    created_at: Timestamp;
+
+  }
+  
+  type Chat = {
+    messages: Message[];
+    citations?: Citation[];
+    follow_up_questions?: Followup[];
+    user_session_id?: string;
   };
   
-export default Message;
+export default Chat;

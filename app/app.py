@@ -1,8 +1,7 @@
-import openai, os
-import mimetypes
-
+import openai, os, json
+from typing import List
 from dotenv import load_dotenv
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
@@ -13,16 +12,20 @@ from functools import lru_cache
 from cloud_services.gpt_models import AILLMModels, get_llm_model
 from cloud_services.vector_search import VectorSearchService, get_search_client
 from conversation.user_conversation import UserConversation
+from conversation.retrieve_messages import get_message_history
 from azure.identity import DefaultAzureCredential
-from data.models import Topic, Conversation, ConversationRequest, ChatMessage, Institution
+from data.models import Topic, Conversation, ConversationRequest, ChatMessage, Institution, UserSession
 from settings.settings import Settings
 from util.json_helper import response_from_string
 from util.logger_format import CustomFormatter
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
+from app_auth.authorize_user import get_session_from_user
 from starlette.middleware.sessions import SessionMiddlewares
+from user.get_user_info import UserInfo
 import logging, sys
 from app_auth import authorize_user
+from conversation.retrieve_docs import SearchRetriever
 
 
 credential = DefaultAzureCredential()
@@ -118,232 +121,79 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+@app.get("/users/{user_guid}/questions")
+async def get_sample_questions(session_data: UserSession = Depends(get_session_from_user)):
+    user = UserInfo(session_data)
+    retriever : SearchRetriever = SearchRetriever.with_default_settings()
+    data = retriever.generate_questions(user.get_user_info())
+    return JSONResponse(content={"data": data}, status_code=200)
 
-@app.get("/content/{path}")
-async def get_content(path):
-    # TODO: this is just a placeholder for now
-
-    blob_container_client = app.state.blob_container_client
-    blob = await blob_container_client.get_blob_client(path).download_blob()
-    if not blob.properties or not blob.properties.has_key("content_settings"):
-        raise HTTPException(status_code=404, detail="File not found")
-    mime_type = blob.properties["content_settings"]["content_type"]
-    if mime_type == "application/octet-stream":
-        mime_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
-
-    return StreamingResponse(blob.chunks(), media_type=mime_type)
-
-# anonoymous chat is used when the user is not logged in
-@app.get("/chat/{user_question}")
-async def chat_anonymous(
-    user_question,
-    ai_model: AILLMModels = Depends(
-        lambda: get_llm_model(
-            openai.api_type,
-            app.state.settings.DEPLOYMENT_NAME or os.getenv("DEPLOYMENT_NAME"),
-            app.state.settings.MODEL_NAME or os.getenv("MODEL_NAME"),
-            app.state.settings.EMBEDDING or os.getenv("MODEL_NAME"),
-        )
-    ),
-    search_client: VectorSearchService = Depends(
-        lambda: get_search_client(
-            app.state.settings.SEARCH_ENDPOINT or os.getenv("SEARCH_ENDPOINT"),
-            app.state.settings.SEARCH_API_KEY or os.getenv("SEARCH_API_KEY"),
-            app.state.settings.SEARCH_INDEX_NAME or os.getenv("SEARCH_INDEX_NAME"),
-        )
-    ),
-):
-    conversation = Conversation()
-    #conversation.save()
-    chain = UserConversation(
-        conversation=conversation,
-        ai_model=ai_model,
-        search_client=search_client,
-        sourcepage_field=app.state.settings.KB_FIELDS_SOURCEPAGE or os.getenv("KB_FIELDS_SOURCEPAGE"),
-        content_field=app.state.settings.KB_FIELDS_CONTENT or os.getenv("KB_FIELDS_CONTENT"),
-        settings=app.state.settings,
-    )
+# unsaved chat TODO: Not implemented in client, all chats are saved always
+@app.get("/users/{user_guid}/chat/{user_question}")
+async def create_conversation(user_question, session_data: UserSession = Depends(get_session_from_user)):    
+    chain = UserConversation.with_default_settings(session_data)
+    generator = chain.send_message(user_question)
+    return EventSourceResponse(generator, media_type="text/event-stream")
+   
+# regular chat - main API
+@app.get("/users/{user_guid}/conversations/{conversation_id}/chat/{user_question}")
+async def chat(
+    user_question, 
+    conversation_id,
+    session_data: UserSession = Depends(get_session_from_user)
+): 
     try:
+        conversation = Conversation.objects(id=conversation_id).first()
+        if conversation is None:
+            return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
+        
+        chain = UserConversation.with_default_settings(session_data, conversation)
         generator = chain.send_message(user_question)
         return EventSourceResponse(generator, media_type="text/event-stream")
-
     except Exception as e:
-        logger.error(f"error getting response from gpt: {e.__str__} for {chain.ai_model}")
-        return EventSourceResponse("unable to get response from gpt.  check logs", media_type="text/event-stream")
+        return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
 
-@app.get("/institutions/{institution_id}/users/{user_id}/chat/{user_question}")
-async def create_conversation(
-    institution_id,
-    user_id,
-    user_question,
-    ai_model: AILLMModels = Depends(
-        lambda: get_llm_model(
-            openai.api_type,
-            app.state.settings.DEPLOYMENT_NAME or os.getenv("DEPLOYMENT_NAME"),
-            app.state.settings.MODEL_NAME or os.getenv("MODEL_NAME"),
-            app.state.settings.EMBEDDING or os.getenv("EMBEDDING"),
-        )
-    ),
-    search_client: VectorSearchService = Depends(
-        lambda: get_search_client(
-            app.state.settings.SEARCH_ENDPOINT or os.getenv("SEARCH_ENDPOINT"),
-            app.state.settings.SEARCH_API_KEY or os.getenv("SEARCH_API_KEY"),
-            app.state.settings.SEARCH_INDEX_NAME or os.getenv("SEARCH_INDEX_NAME")
-        )
-    ),
-):
+# return list of user conversation ids
+@app.get("/users/{user_guid}/conversations")
+async def get_conversations(session_data: UserSession = Depends(get_session_from_user)):
+    try:
+        conversations : List[Conversation] = Conversation.objects(user_id=session_data.user_id)
+        if not conversations:
+            return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
+        else:
+            conversation_topics = []
+            for c in conversations:
+                c_dict = {
+                    "topic": c.topic,
+                    "conversation_id": str(c.id),
+                    "start_time": c.start_time,
+                    "end_time": c.end_time
+                }
+                conversation_topics.append(c_dict)
+            logger.info(f"got conversations from documents {conversation_topics}")
+            return JSONResponse(conversation_topics)
+    except Exception as e:
+        return JSONResponse(content={"message": f"failed to find conversation with error {str(e)}"}, status_code=404)
 
-    logger.info(f"creating new conversation for user")
-
-    conversation = Conversation(user=user)
-    conversation.save()
-    logger.info(f"created a new conversation with id: {conversation._auto_id_field}")
-    
-    chain = UserConversation(
-        conversation=conversation,
-        ai_model=ai_model,
-        search_client=search_client,
-        sourcepage_field=app.state.settings.KB_FIELDS_SOURCEPAGE or os.getenv("KB_FIELDS_SOURCEPAGE"),
-        content_field=app.state.settings.KB_FIELDS_CONTENT or os.getenv("KB_FIELDS_CONTENT"),
-        settings=app.state.settings,
-    )
-    
-    generator = chain.send_message(user_question)
-    return EventSourceResponse(generator, media_type="text/event-stream")
-
-    
-
-@app.get("/institutions/{institution_id}/users/{user_id}/conversations/{conversation_id}/chat/{user_question}")
-async def chat(
-    institution_id,
-    user_id,
-    conversation_id,
-    user_question,
-    ai_model: AILLMModels = Depends(
-        lambda: get_llm_model(
-            openai.api_type,
-            app.state.settings.DEPLOYMENT_NAME or os.getenv("DEPLOYMENT_NAME"),
-            app.state.settings.MODEL_NAME or os.getenv("MODEL_NAME"),
-            app.state.settings.EMBEDDING or os.getenv("EMBEDDING"),
-        )
-    ),
-    search_client: VectorSearchService = Depends(
-        lambda: get_search_client(
-            app.state.settings.SEARCH_ENDPOINT or os.getenv("SEARCH_ENDPOINT"),
-            app.state.settings.SEARCH_API_KEY or os.getenv("SEARCH_API_KEY"),
-            app.state.settings.SEARCH_INDEX_NAME or os.getenv("SEARCH_INDEX_NAME"),
-        )
-    ),
-):
-    logger.info("***********************starting chat message api")
- 
-    conversation = Conversation.objects(id=conversation_id).first()
-    if conversation is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    else: 
-        logger.info(f"got conversation {conversation} for user {user} and institution {inst}")
-
-    chain = UserConversation(
-        conversation=conversation,
-        ai_model=ai_model,
-        search_client=search_client,
-        sourcepage_field=app.state.settings.KB_FIELDS_SOURCEPAGE or os.getenv("KB_FIELDS_SOURCEPAGE"),
-        content_field=app.state.settings.KB_FIELDS_CONTENT or os.getenv("KB_FIELDS_CONTENT"),
-        settings=app.state.settings,
-    )
-    generator = chain.send_message(user_question)
-    return EventSourceResponse(generator, media_type="text/event-stream")
-
-
-@app.get("/institutions")
-async def get_institution():
-    return Institution.objects().to_json()
-
-
-@app.get("/institutions/{institution_id}/users")
-async def get_profiles(institution_id):
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
-
-    return response_from_string(Profile.objects(institution=inst).to_json())
-
-
-@app.get("/institutions/{institution_id}/topics")
-async def get_topics(institution_id):
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
-
-    return response_from_string(Topic.objects(institution=inst).to_json())
-
-
-@app.get("/institutions/{institution_id}/users/{user_id}/conversations")
-async def get_conversations(institution_id, user_id):
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
-
-    user = Profile.objects(institution=inst, user_id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return response_from_string(Conversation.objects(user=user).to_json())
-
-
+# return message history for a single conversation
 @app.get(
-    "/institutions/{institution_id}/users/{user_id}/conversations/{conversation_id}/messages"
+    "/users/{user_guid}/conversations/{conversation_id}/messages"
 )
-async def get_conversations(institution_id, user_id, conversation_id):
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
-
-    user = Profile.objects(institution=inst, user_id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    conversation = Conversation.objects(id=conversation_id).first()
-    if conversation is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    logger.info(f"getting conversation for {user}, {conversation_id}: {conversation}")
-    return response_from_string(
-        ChatMessage.objects(user=user, conversation=conversation).to_json()
-    )
-
-
-@app.post("/institutions/{institution_id}/users/{user_id}/conversations")
-async def start_conversation(institution_id, user_id, request: ConversationRequest):
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
-
-    user = Profile.objects(institution=inst, user_id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    conversation = Conversation(user=user, topic=request.topic)
-    conversation.save()
-
-    return response_from_string(conversation.to_json())
-
-
-@app.get(
-    "/institutions/{institution_id}/users/{user_id}/conversations/{conversation_id}/messages"
-)
-async def get_chat_messages(institution_id, user_id, conversation_id):
-    inst = Institution.objects(institution_id=institution_id).first()
-    if inst is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
-
-    user = Profile.objects(institution=inst, user_id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    conversation = Conversation.objects(id=conversation_id).first()
-    if conversation is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-
-    return response_from_string(
-        ChatMessage.objects(conversation=conversation).to_json()
-    )
+async def get_conversations(conversation_id, session_data: UserSession = Depends(get_session_from_user)):
+    try:
+        conversation_dict = get_message_history(conversation_id)
+        logger.info(f"Getting conversation for {session_data.user_id}, {conversation_id}: {conversation_dict}")
+        return JSONResponse(content = conversation_dict, status_code = 200)
+    except Exception as e:
+        return JSONResponse(content={"message": f"failed to find conversation with error {str(e)}"}, status_code=404) 
+    
+# create new conversation id if not exists
+@app.get("users/{user_guid}/save_conversation")
+async def start_conversation(session_data: UserSession = Depends(get_session_from_user)):
+    try:
+        conversation = Conversation(user_id=session_data.user_id)
+        conversation.save()
+        return JSONResponse(content={"conversation_id": str(conversation.id)}, status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"message": f"failed to save conversation with error {str(e)}"}, status_code=404)
+    
