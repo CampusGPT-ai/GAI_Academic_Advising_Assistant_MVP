@@ -10,11 +10,9 @@ import React, { FC, useState } from "react";
 import dylan from "../../assets/images/avatars/dylan.png";
 import jamal from "../../assets/images/avatars/jamal.png";
 import tiffany from "../../assets/images/avatars/tiffany.png";
-import { Topic } from "../../model/topic/topics";
 import { UserProfile } from "../../model/user/user";
-import { preprocessTopics } from "../../utilities/parseTopics";
 import ProfilePhoto from "./profilePhoto";
-import ProfileDrawer from "../profileMenu/profileMenu";
+
 
 const avatars: Map<string, string> = new Map();
 
@@ -53,7 +51,6 @@ const Header: FC<HeaderProps> = ({
 
   //initialize available topic/question pairs on header load.
   //This is used to populate the sample questions
-  const [topics, setTopics] = useState<Topic[]>(preprocessTopics());
   const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
 
   /**
@@ -116,19 +113,6 @@ const Header: FC<HeaderProps> = ({
           </Tooltip>
         </Box>
       </Toolbar>
-
-
-      {user && (
-        <ProfileDrawer
-          setSampleQuestions={setSampleQuestions}
-          handleLogout={handleLogout}
-          user={user}
-          avatar={avatars.get(user.avatar)}
-          topics={topics}
-          drawerOpen={isProfileMenuOpen}
-          toggleDrawer={toggleDrawer}
-        />
-      )}
     </AppBar>
   );
 };

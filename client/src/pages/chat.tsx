@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
 import React, { FC } from "react";
 import Conversation from "../model/conversation/conversations";
-import Message from "../model/messages/messages";
+import ParentMessage, {Followup, Citation}  from "../model/messages/messages";
 import ChatActive from "../components/chat/chatContainer";
 
 /**
@@ -21,7 +21,9 @@ import ChatActive from "../components/chat/chatContainer";
  */
 interface ChatProps {
   sampleQuestions: string[];
-  chatResponse?: Message;
+  chatResponse?: string;
+  follow_up_questions?: Followup[];
+  citations?: Citation[];
   isLoading: boolean;
   isLoggedIn: boolean;
   sendChatClicked: (messageText: string) => void;
@@ -29,10 +31,11 @@ interface ChatProps {
   newChat: () => void;
   error: string;
   isError: boolean;
-  messageHistory: Message[];
+  messageHistory: ParentMessage[];
   conversationTitle?: string;
   conversations: Conversation[];
   currentAnswerRef: React.MutableRefObject<any>;
+  sourceOpen: boolean;
 }
 
 const Chat: FC<ChatProps> = ({
@@ -40,6 +43,8 @@ const Chat: FC<ChatProps> = ({
   isLoggedIn,
   sampleQuestions,
   chatResponse,
+  follow_up_questions,
+  citations,
   sendChatClicked,
   messageHistory,
   conversations,
@@ -48,7 +53,8 @@ const Chat: FC<ChatProps> = ({
   newChat,
   error,
   isError, 
-  currentAnswerRef
+  currentAnswerRef,
+  sourceOpen
 }) => {
   // conversations: Array<Conversation>;
   
@@ -60,6 +66,8 @@ const Chat: FC<ChatProps> = ({
           <ChatActive //src/sections/chat/chatActive
             isLoading={isLoading}
             chatResponse={chatResponse}
+            follow_up_questions={follow_up_questions}
+            citations={citations}
             messageHistory={messageHistory}
             sendChatClicked={sendChatClicked}
             error={error}
@@ -67,6 +75,7 @@ const Chat: FC<ChatProps> = ({
             sampleQuestions={sampleQuestions}
             convoTitle={conversationTitle}
             currentAnswerRef={currentAnswerRef}
+            sourceOpen={sourceOpen}
           />
         </Grid>
       </Grid>

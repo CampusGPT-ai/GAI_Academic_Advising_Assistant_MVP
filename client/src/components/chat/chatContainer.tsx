@@ -2,7 +2,7 @@ import { Box, Typography, useTheme } from "@mui/material";
 import React, { FC, useEffect, useState } from "react";
 import "../../assets/styles.css";
 import messageSample from "../../model/messages/messageSample.json";
-import Message from "../../model/messages/messages";
+import ParentMessage, {Followup, Citation} from "../../model/messages/messages";
 import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
 
@@ -28,17 +28,22 @@ import ChatMessages from "./chatElements/chatMessageContainer";
 interface ChatActiveProps {
   isLoading: boolean; //can remove
   isError?: boolean;
-  chatResponse?: Message;
+  chatResponse?: string;
+  follow_up_questions?: Followup[];
+  citations?: Citation[];
   error?: string;
-  messageHistory: Message[];  //optional history on selected conversation
+  messageHistory: ParentMessage[];  //optional history on selected conversation
   convoTitle?: string; //is conversation active, or id?? 
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
-}
+  sourceOpen: boolean;
+}[]
 
 const ChatActive: FC<ChatActiveProps> = ({
   chatResponse,
+  follow_up_questions,
+  citations,
   convoTitle,
   isLoading,
   isError,
@@ -46,7 +51,8 @@ const ChatActive: FC<ChatActiveProps> = ({
   sampleQuestions,
   messageHistory,
   sendChatClicked,
-  currentAnswerRef
+  currentAnswerRef,
+  sourceOpen
 }) => {
 
   const [userQuestion, setUserQuestion] = useState('');
@@ -103,6 +109,8 @@ const ChatActive: FC<ChatActiveProps> = ({
           <Typography variant="h2" sx={{ mb: 4 }}>{convoTitle}</Typography>
           <ChatMessages
             chatResponse={chatResponse}
+            follow_up_questions={follow_up_questions}
+            citations={citations}
             messageHistory={messageHistory}
             isLoading={isLoading}
             isError={isError}
@@ -123,6 +131,7 @@ const ChatActive: FC<ChatActiveProps> = ({
       )}
       <ChatInput 
       sendChat={handleSendClick}
+      sourceOpen={sourceOpen}
       isLoading={isLoading}></ChatInput>
     </Box>
   );
@@ -132,7 +141,7 @@ const ChatActive: FC<ChatActiveProps> = ({
 
 //for default props in storybook
 const jsonString = JSON.stringify(messageSample);
-const sampleMessages = JSON.parse(jsonString) as Message[];
+const sampleMessages = JSON.parse(jsonString) as ParentMessage[];
 const sampleQuestions = [
   "How are you?",
   "What's your name?",

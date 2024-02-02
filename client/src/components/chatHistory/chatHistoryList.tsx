@@ -41,9 +41,9 @@ const ChatHistory: FC<ChatHistoryProps> = ({
    * @param conversation - The conversation object that was selected.
    */
   function handleSelectConversation(conversation: Conversation) {
-    setSelectedConversation(conversation._id);
+    setSelectedConversation(conversation.id);
     setConversation(conversation);
-    console.log("Selected Conversation ID: ", conversation._id);
+    console.log("Selected Conversation ID: ", conversation.id);
   }
 
   return (
@@ -59,7 +59,7 @@ const ChatHistory: FC<ChatHistoryProps> = ({
                 whiteSpace: "normal",
                 textTransform: "none",
                 backgroundColor:
-                  selectedConversation === conversation._id
+                  selectedConversation === conversation.id
                     ? "rgba(0, 0, 0, 0.1)"
                     : undefined,
               }}

@@ -10,6 +10,7 @@ import DifferenceOutlinedIcon from '@mui/icons-material/DifferenceOutlined';
 interface ChatInputProps {
   sendChat: (text: string) => void;
   isLoading: boolean;
+  sourceOpen: boolean;
 }
 
 /**
@@ -19,7 +20,7 @@ interface ChatInputProps {
  * @param {boolean} props.isLoading - A flag indicating if the component is in a loading state.
  * @returns {JSX.Element} - The rendered component.
  */
-const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading }) => {
+const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading, sourceOpen }) => {
   const [message, setMessage] = useState("");
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +65,7 @@ const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading }) => {
       </IconButton>
         </Grid>
         <Grid item xs={6} sx={{display: "flex", justifyContent: "end"}}>
-      <IconButton onClick={handleSendClick} disabled={isLoading}>
+      <IconButton onClick={handleSendClick} disabled={isLoading||sourceOpen}>
         <SendIcon fontSize="large"/>
       </IconButton>
       </Grid>

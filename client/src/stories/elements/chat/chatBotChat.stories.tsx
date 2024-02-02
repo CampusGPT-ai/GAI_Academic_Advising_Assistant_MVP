@@ -1,14 +1,14 @@
 import { Meta } from "@storybook/react";
 import ChatBotChat from "../../../components/chat/chatElements/chatMessageElements/chatBotChat";
-import Message from "../../../model/messages/messages";
+import ParentMessage from "../../../model/messages/messages";
 import messageSample from "../../../model/messages/messageSample.json";
 
 
 //for default props
 const jsonString = JSON.stringify(messageSample);
-const sampleMessages = JSON.parse(jsonString) as Message[];
-sampleMessages[1].message="Hello, how can I help you today? This is some long text. This is some long text. This is some long text. This is some long text. This is some long text.  "
-sampleMessages[0].message="Hello, how can I help you today? "
+const sampleMessages = JSON.parse(jsonString) as ParentMessage[];
+sampleMessages[1].messages[0].message="Hello, how can I help you today? This is some long text. This is some long text. This is some long text. This is some long text. This is some long text.  "
+sampleMessages[0].messages[0].message="Hello, how can I help you today? "
 
 export default { component: ChatBotChat, title: "Elements/Chat/ChatBotChat" } as Meta;
 

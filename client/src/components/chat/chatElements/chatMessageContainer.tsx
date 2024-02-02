@@ -2,13 +2,12 @@ import { Box } from "@mui/material";
 import React, { FC } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
-import Message from "../../../model/messages/messages";
+import ParentMessage, { Citation, Followup, Message, Timestamp } from "../../../model/messages/messages";
 import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 
 //for default props
 const jsonString = JSON.stringify(messageSample);
-const sampleMessages = JSON.parse(jsonString) as Message[];
 
 /**
  * Props for the ChatMessages component.
@@ -20,19 +19,29 @@ interface ChatMessagesProps {
   /** Whether an error occurred while loading the component. */
   isError?: boolean;
   /** the latest bot response to stream*/
-  chatResponse?: Message;
+  chatResponse?: string;
+  follow_up_questions?: Followup[];
+  citations?: Citation[];
   /** A function to call when the component should retry loading. */
   onRetry?: () => void;
   /** An error message to display if an error occurred while loading the component. */
   error?: string;
   /**An array of messages to display as history */
-  messageHistory?: Array<Message>;
+  messageHistory?: Array<ParentMessage>;
 
   currentAnswerRef: React.MutableRefObject<any>;
 }
 
+function getCurrentTimestamp(): Timestamp {
+  return {
+    $date: Date.now() // Current time in milliseconds
+  };
+}
+
 const ChatMessages: FC<ChatMessagesProps> = ({
   chatResponse,
+  follow_up_questions,
+  citations,
   onFollowupClicked,
   isLoading,
   isError,
@@ -42,14 +51,16 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   currentAnswerRef
 }) => {
   console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
-
+  const botMessage : Message = {role: 'assistant', message: chatResponse || "", created_at: getCurrentTimestamp() }
   return (
     <Box>
       {messageHistory &&
       <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
       { chatResponse && 
         <ChatBotChat
-            message={chatResponse}
+            message={botMessage}
+            follow_up_questions={follow_up_questions}
+            citations={citations}
             isLoading={isLoading}
             onFollowupClicked={onFollowupClicked}
             isError={isError}
@@ -61,8 +72,5 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   );
 };
 
-ChatMessages.defaultProps = {
-  messageHistory: sampleMessages,
-};
 
 export default ChatMessages;

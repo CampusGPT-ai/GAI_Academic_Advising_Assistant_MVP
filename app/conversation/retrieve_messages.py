@@ -60,7 +60,6 @@ def get_message_history(conversation_id):
 
 if __name__=="__main__":
     from mongoengine import connect
-    from bson import ObjectId
 
     db_name = settings.MONGO_DB
     db_conn = settings.MONGO_CONN_STR

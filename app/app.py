@@ -1,27 +1,25 @@
-import openai, os, json
+import openai, os
 from typing import List
 from dotenv import load_dotenv
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
 from sse_starlette.sse import EventSourceResponse
 from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from cloud_services.gpt_models import AILLMModels, get_llm_model
-from cloud_services.vector_search import VectorSearchService, get_search_client
 from conversation.user_conversation import UserConversation
 from conversation.retrieve_messages import get_message_history
 from azure.identity import DefaultAzureCredential
-from data.models import Topic, Conversation, ConversationRequest, ChatMessage, Institution, UserSession
+from data.models import Conversation, UserSession
 from settings.settings import Settings
-from util.json_helper import response_from_string
+
 from util.logger_format import CustomFormatter
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
 from app_auth.authorize_user import get_session_from_user
-from starlette.middleware.sessions import SessionMiddlewares
+
 from user.get_user_info import UserInfo
 import logging, sys
 from app_auth import authorize_user
@@ -121,6 +119,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+# all validations return 401 unauthorized if no user session.  {"detail":"Invalid or expired session"}
 @app.get("/users/{user_guid}/questions")
 async def get_sample_questions(session_data: UserSession = Depends(get_session_from_user)):
     user = UserInfo(session_data)

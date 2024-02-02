@@ -14,10 +14,10 @@ const fetchMessage = (
   { conversation_id, messageText, user_id}: FetchMessagesParams,
   onStreamDone: () => void,
   onStreamOpen: () => void,
-  onMessageRecieved: (event: Event) => void,
-  onTopicRecieved: (event: Event) => void,
-  onFollowupsRecieved: (event: Event) => void,
-  onError: (event: Event) => void,
+  onMessageRecieved: (event: MessageEvent) => void,
+  onTopicRecieved: (event: MessageEvent) => void,
+  onFollowupsRecieved: (event: MessageEvent) => void,
+  onErrorMessage: (event: MessageEvent) => void,
 ) => {
   try {
     //choose endpoint depending on whether user is logged in and whether conversation exists
@@ -35,7 +35,7 @@ const fetchMessage = (
     sse.addEventListener('message', onMessageRecieved)
     sse.addEventListener('topic',onTopicRecieved)
     sse.addEventListener('followups',onFollowupsRecieved)
-    sse.addEventListener('error',onError)
+    sse.addEventListener('error',onErrorMessage)
 
     sse.onopen = function (event) {
       console.log("EventSource connection opened.");
@@ -47,7 +47,6 @@ const fetchMessage = (
       console.log("EventSource readyState: ", sse.readyState);
       sse.close();
       onStreamDone();
-      onError(event);
   };
 
     return () => {
