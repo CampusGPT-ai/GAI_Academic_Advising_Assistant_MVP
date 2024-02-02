@@ -47,7 +47,7 @@ const MainPage: FC = () => {
   const [conversationHistory, setConversationHistory] = useState<Conversation[]>([]);
 
   const currentAnswerRef = useRef(null);
-  const [topicList, setTopicList] = useState<Topic[]>();
+  const [topicList, setTopicList] = useState<string[]>();
 
   // workaround for being able to access state in event listener
   const [streamingMessage, _setStreamingMessage] = useState<Message>();
@@ -138,8 +138,7 @@ const MainPage: FC = () => {
     console.log(`Updating response metadata: ${metaData}`)
     let convo = JSON.parse(metaData.conversation)
     let convoParsed = {
-      _id: convo._id.$oid,
-      user_id: convo.user ? convo.user.$oid : "",
+      id: convo.id,
       topic: convo.topic,
       start_time: convo.start_time ? convo.start_time.$date : 0,
       end_time: convo.end_time ? convo.end_time.$date : 0,
@@ -169,7 +168,7 @@ const MainPage: FC = () => {
     } as Message;
     
     setStreamingMessage(messageObj);
-    console.log("received conversation " + convoParsed._id + " with topic " + convoParsed.topic)
+    console.log("received conversation " + convoParsed.id + " with topic " + convoParsed.topic)
     setSelectedConversation(convoParsed)
   }
 
@@ -228,7 +227,6 @@ const MainPage: FC = () => {
       try {
         setConversationHistory(
           await fetchConversations({
-            institution: "demo",
             user: user.user_id,
           })
         );
@@ -265,7 +263,6 @@ const MainPage: FC = () => {
       ) {
         setMessageHistory(
           await fetchMessageHistory({
-            institution: "demo",
             user: user.user_id,
             conversationId: conversation,
           })
@@ -279,7 +276,7 @@ const MainPage: FC = () => {
   useEffect(() => {
     console.log(`selected conversation has changed.  Conversation id is ${JSON.stringify(selectedConversation)} `)
     selectedConversation != undefined &&
-      getSelectedConversationMessages(selectedConversation._id);
+      getSelectedConversationMessages(selectedConversation.id);
     selectedConversation === undefined && setMessageHistory([]);
   }, [selectedConversation]);
 
@@ -324,7 +321,7 @@ const MainPage: FC = () => {
 
   useEffect(() => {
     //topicList && console.log(`Got topics: ${JSON.stringify(topicList)}`)
-    topicList && setSampleQuestions(getFirstThreeQuestions(topicList));
+    topicList && setSampleQuestions(topicList.slice(0,3));
   }, [topicList]);
 
   useEffect(() => {

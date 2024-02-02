@@ -1,51 +1,65 @@
 import axios from 'axios';
-import Message, { Citation, Followup } from '../model/messages/messages';
+import Chat, { Citation, Followup, Message } from '../model/messages/messages';
 import { BaseUrl } from "./baseURL";
 
 interface fetchMessagesParams {
-  institution: string;
   user: string;
   conversationId: string;
 }
 
+interface NestedApiMessage {
+  user_session_id: string;
+  message: Message[];
+  id: string;
+}
+
+interface ApiMessage {
+  message?: NestedApiMessage;
+  citations?: Citation[];
+  follow_up_questions?: Followup[];
+}
+
+interface ApiResponse {
+  end_time: string | null;
+  topic: string;
+  user_id: string;
+  start_time: string;
+  messages: ApiMessage[];
+  id: string;
+}
+
+
 const fetchMessageHistory = async ({
-  institution,
   user,
   conversationId,
-}: fetchMessagesParams): Promise<Message[]> => {
-  const apiUrl = `${BaseUrl()}/institutions/${institution}/users/${user}/conversations/${conversationId}/messages`;
-  const messages: Message[] = [];
+}: fetchMessagesParams): Promise<Chat[]> => {
+  const apiUrl = `${BaseUrl()}/users/${user}/conversations/${conversationId}/messages`;
+  const chats: Chat[] = [];
   console.log(`fetching messages for conversationId: ${JSON.stringify(conversationId)}`)
   try {
-    const response = await axios.get(apiUrl, {});
+    const response = await axios.get<ApiResponse>(apiUrl, {});
     
     if (response.data && Array.isArray(response.data)) {
       console.log(`Got response from messages API: ${JSON.stringify(response.data)}`)
 
-      response.data.forEach(item => {
-
-        const citations: Citation[] = item.citations.map((citation: { citation_path: string; citation_text: string; }) => ({
-          CitationPath: citation.citation_path,
-          CitationText: citation.citation_text,
-        }));
+      response.data.forEach((chatSession : ApiResponse) => {
         
-        const followUps: Followup[] = item.follow_up_questions.map((followup: string) => ({
-          FollowupQuestion: followup,
-        }));
+        chatSession.messages.forEach((item : ApiMessage) => {
 
-        messages.push({
-          role: 'user',
-          message: item.user_question,
-        });
-        messages.push({
-          role: 'bot',
-          message: item.bot_response,
-          Citations: citations,
-          Followups: followUps,
-        });
+          const chatMessages: Message[] = item.message?.message || [];
 
+          const chat_message: Chat = {
+            messages: chatMessages,
+            citations: item.citations,
+            follow_up_questions: item.follow_up_questions,
+            user_session_id: chatSession.id
+          }
+
+          chats.push(chat_message);
         });
-        return messages
+      });
+      return chats;
+
       
     } else {
       console.log('Unexpected response format:', response);

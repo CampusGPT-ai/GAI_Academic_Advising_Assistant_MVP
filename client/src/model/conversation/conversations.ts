@@ -1,9 +1,10 @@
+import { Timestamp } from "../messages/messages";
+
 type Conversation = {
-    _id: string;
-    user_id?: string;
+    id: string;
     topic?: string;
-    start_time: number;
-    end_time?: number;
+    start_time: Timestamp;
+    end_time?: Timestamp;
 };
 
 

@@ -4,7 +4,7 @@ import openai
 from azure.identity import DefaultAzureCredential
 import logging, sys, os
 import cloud_services.openai_response_objects as openai_response_objects
-from cloud_services.openai_response_objects import Message, Embedding, ChatCompletion
+from cloud_services.openai_response_objects import Message, Embedding, ChatCompletion, StreamingChatCompletion
 import tiktoken, re
 from typing import List 
 from langchain_openai import AzureOpenAIEmbeddings
@@ -162,6 +162,21 @@ class AzureLLMClients(AILLMClients):
 )
         self.model = model
         self.deployment = deployment
+
+    def stream(self, messages: List[Message]):
+        message_list =  [model.model_dump() for model in  messages]
+
+        try:
+            result = self.client.chat.completions.create(
+                model = self.deployment,
+                messages = message_list,
+                stream=True
+            )
+
+            for chunk in result:
+                yield openai_response_objects.parse_completion_object(True,chunk)
+        except Exception as e:
+            raise e
 
     def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:
         """
@@ -398,7 +413,20 @@ if __name__ == "__main__":
     
     # langchain_result = langchain_client.chat(langchain_messages)
     # azure_result = azure_llm_client.chat(default_messages)
+    azure_streaming_result = azure_llm_client.stream(default_messages)
     # openai_result = openai_client.chat(is_streaming=False, messages=default_messages)
     # langchain_embedding = langchain_client.embed("some text to embed")
-    azure_embedding = azure_llm_client.embed("some text to embed")
-    print(azure_embedding)
+    # azure_embedding = azure_llm_client.embed("some text to embed")
+    
+    # streaming access
+    finished = False
+    while not finished:
+        output : StreamingChatCompletion = next(azure_streaming_result)
+        if output:
+            output_text = output.choices[0].delta.content
+            if output_text != None:
+                print(output_text)
+            if output.choices[0].finish_reason == 'stop':
+                finished = True
+        
+

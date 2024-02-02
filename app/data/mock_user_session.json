@@ -1,0 +1,11 @@
+{
+	"id" : "65b831438a91cfa283e4bcc1",
+	"user_id" : "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I",
+	"session_id" : "9059884c-e06c-474c-ad03-2e64daba3378",
+	"session_start" : {
+		"$date" : 1706541249964
+	},
+	"session_end" : {
+		"$date" : 1706548449964
+	}
+}

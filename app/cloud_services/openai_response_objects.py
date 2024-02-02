@@ -49,10 +49,39 @@ class AIMessage(BaseMessage):
     pass
 
 class Choice(BaseModel):
-    finish_reason: str
+    finish_reason: Optional[str] = None
     index: int
     logprobs: Optional[str]
     message: Union[ChatCompletionMessage, AIMessage]
+
+class ChoiceDelta(BaseModel):
+    content: Optional[str] = None
+    function_call: Optional[str] = None
+    role: Optional[str] = None
+    tool_calls: Optional[str] = None
+
+class StreamingDelta(BaseModel):
+    delta: ChoiceDelta
+    finish_reason: Optional[str] = None
+    index: int
+    logprobs: Optional[str]
+
+class StreamingChatCompletion(BaseModel):
+    id: str
+    choices: List[StreamingDelta]
+    created: datetime
+    model: str
+    object: str
+    system_fingerprint: Optional[str] = None
+
+    @validator('created', pre=True)
+    def convert_timestamp_to_datetime(cls, value):
+        if isinstance(value, int):
+            return datetime.utcfromtimestamp(value)
+        elif isinstance(value, datetime):
+            return value
+        raise ValueError("Invalid type for 'created', must be int or datetime")
+       
 
 class ChatCompletion(BaseModel):
     id: str
@@ -95,10 +124,17 @@ def to_dict(obj):
 # Function to parse the JSON string into a Pydantic object
 def parse_completion_object(is_streaming: bool, json_string: object) -> ChatCompletion:
     obj_dict = to_dict(json_string)
-    if is_streaming:
-        return ChatCompletion(**obj_dict)
-    else:
-        return ChatCompletion(**obj_dict)
+    try:
+        if is_streaming:
+            if obj_dict["id"] == '':
+                #incomplete stream
+                return None
+            else:
+                return StreamingChatCompletion(**obj_dict)
+        else:
+            return ChatCompletion(**obj_dict)
+    except Exception as e:
+        raise e
     
 def parse_completion_string(is_streaming: bool, json_string: str) -> ChatCompletion:
     if is_streaming:
