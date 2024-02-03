@@ -1,33 +1,53 @@
 import React from 'react';
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { InteractionStatus } from "@azure/msal-browser";
+import { EventType } from "@azure/msal-browser";
 import { useEffect, useState } from "react";
-import sendTokenToBackend from './api/validateToken';
+
+
 
 export default function ProtectedRoute({children}) {
     const { instance, accounts, inProgress } = useMsal();
-    const [sessionId, getSessionId] = useState();
+    const [userSessionValues, setuserSessionValues] = useState();
     const isAuthenticated = useIsAuthenticated();
+
+
+
+    instance.addEventCallback((event) => {
+        // set active account after redirect
+        if (event.eventType === EventType.LOGIN_SUCCESS && event.payload.account) {
+            console.log("login success")
+            const account = event.payload.account;
+            instance.setActiveAccount(account);
+        }
+        }, error=>{
+        console.log('error', error);
+        });
+
     // console.log(`checking login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`)
 
     useEffect(() => {
-        if (!isAuthenticated && inProgress === InteractionStatus.None) {
+        if (!isAuthenticated && inProgress === "none") {
             // Initiate login only if no other interaction is in progress
-            console.log(`initiating login for instance ${JSON.stringify(instance)}`);
-            instance.loginRedirect(); // or loginPopup
+            // console.log(`initiating login for instance ${JSON.stringify(instance)}`);
+            console.log(`in progress: ${inProgress}`)
+            console.log(`is Authenticated: ${isAuthenticated}`)
+            try {
+                instance.loginRedirect(); // or loginPopup
+            } catch (e) {
+                console.error("Login failed:", e);
+                // Optionally, update state to show error message to the user
+                // setError(e); // You would need to define `setError` and `error` state with `useState`
+            }
         }
+        return () => {
+        };
     }, [isAuthenticated, inProgress, instance]);
-    
 
-    useEffect(() => {
-        if (accounts.length > 0 && inProgress === "none") {
-            console.log(`sending token to backend for ${JSON.stringify(accounts[0].username)}`)
-            getSessionId(sendTokenToBackend(accounts[0], instance));
-        }
-    },[accounts, inProgress])
 
     // Render content conditionally based on the authentication status
     if (isAuthenticated) {
+        console.log(`returning auth status: ${isAuthenticated}`)
     // User is authenticated, render the protected content
     return (
         <div>
@@ -40,7 +60,7 @@ export default function ProtectedRoute({children}) {
     } else {
         // User is not authenticated, and no interaction is in progress
         // Optionally, render a message, a loading indicator or return null
-        return <div>Please wait...</div>;
+        return <div>error loading authentication: </div>;
     }
 
 }

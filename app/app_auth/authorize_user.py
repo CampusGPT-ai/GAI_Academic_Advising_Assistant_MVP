@@ -10,6 +10,9 @@ import os
 from datetime import datetime, timedelta
 from data.models import UserSession
 import logging
+from settings.settings import Settings
+
+settings = Settings()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,7 +29,7 @@ CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
-    issuer_url = f"https://sts.windows.net/{TENANT_ID}/"
+    issuer_url = f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/v2.0"
     jwks_client = PyJWKClient(f"{issuer_url}/discovery/keys")
     signing_key = jwks_client.get_signing_key_from_jwt(token)
 
@@ -147,3 +150,7 @@ async def logout_user(session_guid: str):
 # @router.post("/protected_route")
 # async def protected_route(session_data: UserSession = Depends(get_session_from_user), post_data: dict = Body(...)):
 
+
+if __name__=="__main__":
+    token="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImtXYmthYTZxczh3c1RuQndpaU5ZT2hIYm5BdyIsImtpZCI6ImtXYmthYTZxczh3c1RuQndpaU5ZT2hIYm5BdyJ9.eyJhdWQiOiI4MjhkMzBjOS05NjE5LTRhMTItODYwNC05NmQ0NDY1Mzk1OGYiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9iYjkzMmYxNS1lZjM4LTQyYmEtOTFmYy1mM2M1OWQ1ZGQxZjEvIiwiaWF0IjoxNzA2OTIwMjYwLCJuYmYiOjE3MDY5MjAyNjAsImV4cCI6MTcwNjkyNDg4MywiYWNyIjoiMSIsImFpbyI6IkFWUUFxLzhWQUFBQThBeHQ3MngwM01ld0p3NWFQc09Rb05hNTVuTlppdHR1eDV0bnk0U2NXVUpMa3R3MHNNMmpadUZsWEh3RDZ5a1VIUStnc2ljRlB5dmk1TktRVGFvdzVaWlk5OVAwRlZQQ0ZYbENBc0t2bzg0PSIsImFtciI6WyJwd2QiLCJtZmEiXSwiYXBwaWQiOiI4MjhkMzBjOS05NjE5LTRhMTItODYwNC05NmQ0NDY1Mzk1OGYiLCJhcHBpZGFjciI6IjAiLCJmYW1pbHlfbmFtZSI6IlNjaHdhYmVyIiwiZ2l2ZW5fbmFtZSI6Ik1hcnkiLCJpcGFkZHIiOiIyNjAxOjYwMDo4ZjAxOjExNjA6OGMzYTphMzdmOjgxNjM6YjFjYSIsIm5hbWUiOiJNYXJ5IFNjaHdhYmVyIEFkbWluIiwib2lkIjoiMTUwNjYzZWUtMzJjNi00YzJhLWI1ZTItMzZmNWE2ZjkzMTJkIiwib25wcmVtX3NpZCI6IlMtMS01LTIxLTI3MDI0MDUyNS0xNjczMTAwNzAyLTUwNjcwMjU1NC0zMzYxMTcyIiwicmgiOiIwLkFRNEFGUy1UdXpqdnVrS1JfUFBGblYzUjhja3dqWUlabGhKS2hnU1cxRVpUbFk4T0FCWS4iLCJzY3AiOiJVc2VyLlJlYWQiLCJzdWIiOiJBX2lYRzlMUWpHODZQVFkxc2dHLVNtOUpPM0liTWxsaVJrWm9rM0JoVDhJIiwidGlkIjoiYmI5MzJmMTUtZWYzOC00MmJhLTkxZmMtZjNjNTlkNWRkMWYxIiwidW5pcXVlX25hbWUiOiJtYTEzNzU2NWFkbWluQHVjZi5lZHUiLCJ1cG4iOiJtYTEzNzU2NWFkbWluQHVjZi5lZHUiLCJ1dGkiOiJjQ1h5cUJxU2JFcWpsS2FRUlpWSkFBIiwidmVyIjoiMS4wIn0.AMAu1woVCSXLEeH725C0-MbZ6QbnlsGXsF8dAAsa9k51RY4SyLUCOGP_0lYrUW8r29f6PNnHSKRBkI5FLUcIZ-Q04rJdfnCHBiwel8qo7mYD_JMx4fldR3sFFx9aOizREUCTixQT6LuGoGthuj4YBdL5NTbwKNCVnyMjoxAAbXCEJjxrfBs8twhrY5AxUJCV4JRP168_ihMsKCzDXeF-a24gutjAZUpjm9Pv-x3wQLUdR9J0HyI0-Aa9L-m0WK13dJRtpNw_3C6xxb2wHuvUuOCm2GZrB36kfWSERZKOhFiDBhDueL98NTVX2-Jxk22FrIBpcO9I5ZIeArM7258GkA"
+    verify_token(token)

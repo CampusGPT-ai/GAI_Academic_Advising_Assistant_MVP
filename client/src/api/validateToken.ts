@@ -32,8 +32,6 @@ const sendTokenToBackend = async(account: AccountInfo, instance: IPublicClientAp
 
             });
 
-            const data: BackendResponse = await backendResponse.json();
-
             if (!backendResponse.ok) {
                 // Handle the scenario where the token is not valid
                 console.error('Token validation failed');
@@ -41,6 +39,8 @@ const sendTokenToBackend = async(account: AccountInfo, instance: IPublicClientAp
             } else {
                 // Token is valid, user is considered logged in on the server
                 console.log('User logged in successfully');
+                const data: BackendResponse = await backendResponse.json();
+                return data.session_id
                 // You can perform further actions here if needed
             }
         } catch (error: any) {

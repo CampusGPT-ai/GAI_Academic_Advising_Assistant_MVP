@@ -34,4 +34,7 @@ class Settings(BaseSettings):
      AZURE_STORAGE_CONTAINER: str
      
      APP_NAME: str
-     
+
+     AZURE_CLIENT_ID: str
+     AZURE_TENANT_ID: str
+     AZURE_CLIENT_SECRET: str
