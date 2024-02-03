@@ -32,7 +32,6 @@ avatars.set("tiffany", tiffany);
  */
 interface HeaderProps {
   title: string;
-  user: UserProfile | undefined;
   loggedIn: boolean;
   handleLogout: () => void;
   profileButtonClicked: () => void;
@@ -41,7 +40,6 @@ interface HeaderProps {
 
 const Header: FC<HeaderProps> = ({
   title,
-  user,
   loggedIn,
   profileButtonClicked,
   handleLogout,
@@ -103,12 +101,6 @@ const Header: FC<HeaderProps> = ({
               color="inherit"
               onClick={toggleDrawer(!isProfileMenuOpen)}
             >
-              {user && (
-                <ProfilePhoto
-                  isLoggedIn={loggedIn}
-                  imgPath={avatars.get(user.avatar)}
-                />
-              )}
             </IconButton>
           </Tooltip>
         </Box>
@@ -125,7 +117,6 @@ const users = JSON.parse(jsonString) as UserProfile[];
 Header.defaultProps = {
   title: "FSU CS Academy",
   loggedIn: true,
-  user: users[0],
   profileButtonClicked: () => {
     console.log("profile button clicked");
   },

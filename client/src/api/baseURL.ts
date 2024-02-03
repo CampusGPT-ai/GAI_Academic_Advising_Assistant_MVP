@@ -22,7 +22,7 @@ export const RedirectUrl = () => {
     console.log(`Base URL Domain: ${DOMAIN},Base URL environment: ${ENV}`)
     let BASE_URL = '';
     if (DOMAIN === 'development') {
-      BASE_URL = 'http://localhost:5001';
+      BASE_URL = 'http://localhost:3000';
     } else {
       if (ENV === 'production') {
         BASE_URL = `https://${APP_BASE}.azurewebsites.net`;

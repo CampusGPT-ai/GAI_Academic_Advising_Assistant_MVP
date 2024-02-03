@@ -9,18 +9,19 @@ from fastapi.security import OAuth2PasswordBearer
 from cryptography.hazmat.primitives import serialization
 import jwt
 from jwt import PyJWKClient
-
+from settings.settings import Settings
+settings = Settings()
 load_dotenv()
 
 # Environment Variables
-CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
-TENANT_ID = os.getenv("AZURE_TENANT_ID")
-CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
+CLIENT_ID = settings.AZURE_CLIENT_ID
+TENANT_ID = settings.AZURE_TENANT_ID
+CLIENT_SECRET = settings.AZURE_CLIENT_SECRET
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 SCOPE = [f"{CLIENT_ID}/.default"]  # Use a more appropriate scope for client credentials flow
 
 # The issuer URL & audience from your Azure app registration
-issuer_url = f"https://sts.windows.net/{TENANT_ID}/"
+issuer_url = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0"
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -45,7 +46,7 @@ def test_acquire_token():
         print("Error details:", result.get("error_description"))
         
 def verify_token(token):
-    jwks_client = PyJWKClient(f"{issuer_url}/discovery/keys")
+    jwks_client = PyJWKClient(f"https://login.microsoftonline.com/{TENANT_ID}/discovery/v2.0/keys")
     signing_key = jwks_client.get_signing_key_from_jwt(token)
     decoded_token = jwt.decode(
         token, 
@@ -61,5 +62,9 @@ def verify_token(token):
 
 # Run the test
 if __name__ == "__main__":
+
     token = test_acquire_token()
+    token = token.encode()
+
     verify_token(token)
+    print("end")

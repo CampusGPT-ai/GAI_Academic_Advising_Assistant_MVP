@@ -1,6 +1,6 @@
 //src/components/pages/index.tsxfetchmessages
 
-import React, { FC, useEffect, useRef, useState } from "react";
+import React, { FC, useEffect, useRef, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import fetchChatResponse from "../api/fetchChatResponse";
 import fetchConversations from "../api/fetchConversations";
@@ -14,7 +14,9 @@ import Header from "../components/header/header";
 import Chat from "./chat";
 import { Box } from "@mui/material";
 import { BaseUrl } from "../api/baseURL";
-
+import sendTokenToBackend from '../api/validateToken';
+import { useMsal
+ } from "@azure/msal-react";
 // Function to create a new Timestamp object with the current time
 function getCurrentTimestamp(): Timestamp {
   return {
@@ -59,11 +61,12 @@ const updateAssistantMessage = (parentMessage: ParentMessage, newAssistantMessag
  * The main page component that displays the header and routes to other pages.
  */
 const MainPage: FC = () => {
+  const { instance, accounts, inProgress } = useMsal();
   const navigate = useNavigate();
   const prevUserRef = useRef<UserProfile>();
   const [isLoading, setLoading] = useState(false);
   const [title, setTitle] = useState("YOUR PERSONAL CAMPUS GUIDE"); //pull from institutions? this is the header bar title - for example: FSU
-  const [user, setUser] = useState<UserProfile>();
+  const [user, setUser] = useState<string | undefined>();
   const [loggedIn, setLoggedIn] = useState(false);
   const [messageHistory, setMessageHistory] = useState(Array<ParentMessage>());
   const [error, setError] = useState("");
@@ -82,6 +85,24 @@ const MainPage: FC = () => {
 
   console.log("loading main page")
 
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await sendTokenToBackend(accounts[0], instance);
+        console.log(`fetched user from backend ${userData}`)
+        setUser(userData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    if (accounts && accounts.length > 0) {
+      fetchUser();
+    }
+  }, [accounts, instance]); // Re-run the effect when accounts or instance changes
+
+
   /**
    * Handles the profile button click event and navigates to the login page.
    */
@@ -96,21 +117,6 @@ const MainPage: FC = () => {
    */
   const getSampleQuestions = (questionList: string[]) => {
     setSampleQuestions(questionList);
-  };
-
-  /**
-   * Fetches and sets the user data based on the user_id and loads chat page.
-   * @param user_id - The ID of the user.
-   */
-  //TODO: update to get user from db vs. dummy profile for demo app
-  const getUser = async (user_id: string) => {
-    try {
-      const user: UserProfile = getUserProfile(user_id);
-      setUser(user);
-      sessionStorage.setItem("user", JSON.stringify(user));
-    } catch (error) {
-      console.error(`An error occurred while getting user profile: ${error}`);
-    }
   };
 
   //TODO: Add logging to see what the data looks like when it comes in.  
@@ -150,11 +156,11 @@ const MainPage: FC = () => {
    * Fetches and sets the conversation based on selected conversation.
    */
   const getConversations = async () => {
-    if (user?.user_id != undefined && user?.institution != undefined) {
+    if (user != undefined) {
       try {
         setConversationHistory(
           await fetchConversations({
-            user: user.user_id,
+            user: user
           })
         );
       } catch (error) {
@@ -166,7 +172,7 @@ const MainPage: FC = () => {
   };
 
   const logoutUser = () => {
-    console.log("logging out user: ", user?.full_name);
+    console.log("logging out user: ", user);
     sessionStorage.removeItem("user");
     setUser(undefined);
   };
@@ -179,7 +185,15 @@ const MainPage: FC = () => {
   };
 
   const getChatResponse = (user_question: string) => {
-    setApiUrl
+    let apiUrl = ''
+    if (user && user != null) {
+      if (selectedConversation && selectedConversation.id != null && selectedConversation.id != 'null') {
+        apiUrl =  `${BaseUrl()}/users/${user}/conversations/${selectedConversation.id}/chat/${user_question}`
+      } else{
+        apiUrl =  `${BaseUrl()}/users/${user}/chat/${user_question}`
+      }
+    } 
+    setApiUrl(apiUrl)
   };
 
   /**
@@ -187,13 +201,9 @@ const MainPage: FC = () => {
    */
   const getSelectedConversationMessages = async (conversation: string) => {
     try {
-      if (
-        conversation != null &&
-        user?.user_id != undefined &&
-        user?.institution != undefined
-      ) {
+      if (conversation != null && user != undefined ) {
       const chatMessages = await fetchMessageHistory({
-            user: user.user_id,
+            user: user,
             conversationId: conversation,
           })
         
@@ -213,10 +223,9 @@ const MainPage: FC = () => {
   //** On user change effects: get new conversation history, update previous user reference, set loggedin flags.
   useEffect(() => {
     if (user != undefined) {
-      if (prevUserRef.current === undefined || prevUserRef.current != user) {
+      if (prevUserRef.current === undefined) {
         resetConversation();
         getConversations();
-        prevUserRef.current = user;
         setLoggedIn(true);
         navigate("chat");
       }
@@ -238,7 +247,6 @@ const MainPage: FC = () => {
         loggedIn={loggedIn}
         profileButtonClicked={profileButtonClicked}
         setSampleQuestions={getSampleQuestions} //this should change the questions visible in the chat pane
-        user={user}
       />
 
             <Chat

@@ -12,6 +12,8 @@
 - Microsoft.ContainerInstance
 
 2. create service principal, managed identity, and resource groups in azure portal or CLI.  Note rg name, managed identity name, client id, tenant id, and secret
+-in service principal, check manifest, set accesstokenAcceptedVersion to 2
+- under authentication add local host and app website urls
 3. run bicep template in what_if_deployments, look for errors and correct
 4. configure environment variables in azure application, respecting specific required naming
 4. configure application authorization - enable microsoft auth with service principal
