@@ -5,7 +5,7 @@ import messageSample from "../../../model/messages/messageSample.json";
 import ParentMessage, { Citation, Followup, Message, Timestamp } from "../../../model/messages/messages";
 import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
-
+import ChatUserChat from "./chatMessageElements/chatUserChat";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 
@@ -16,6 +16,7 @@ interface ChatMessagesProps {
   onFollowupClicked: (message: string) => void;
   /** Whether the component is currently loading. */
   isLoading?: boolean;
+  userQuestion?: string;
   /** Whether an error occurred while loading the component. */
   isError?: boolean;
   /** the latest bot response to stream*/
@@ -40,6 +41,7 @@ function getCurrentTimestamp(): Timestamp {
 
 const ChatMessages: FC<ChatMessagesProps> = ({
   chatResponse,
+  userQuestion,
   follow_up_questions,
   citations,
   onFollowupClicked,
@@ -53,9 +55,10 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
   const botMessage : Message = {role: 'assistant', message: chatResponse || "", created_at: getCurrentTimestamp() }
   return (
-    <Box>
+    <Box display="flex" flexGrow={1}>
       {messageHistory &&
       <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
+      { isLoading && userQuestion && <ChatUserChat text={userQuestion}></ChatUserChat>}
       { chatResponse && 
         <ChatBotChat
             message={botMessage}

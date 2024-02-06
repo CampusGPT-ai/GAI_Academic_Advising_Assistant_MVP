@@ -1,4 +1,4 @@
-import openai, os
+import openai, os, json
 from typing import List
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
@@ -18,7 +18,7 @@ from settings.settings import Settings
 from util.logger_format import CustomFormatter
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
-from app_auth.authorize_user import get_session_from_user
+from app_auth.authorize_user import get_session_from_session
 
 from user.get_user_info import UserInfo
 import logging, sys
@@ -120,26 +120,26 @@ app.add_middleware(
 )
 
 # all validations return 401 unauthorized if no user session.  {"detail":"Invalid or expired session"}
-@app.get("/users/{user_guid}/questions")
-async def get_sample_questions(session_data: UserSession = Depends(get_session_from_user)):
+@app.get("/users/{session_guid}/questions")
+async def get_sample_questions(session_data: UserSession = Depends(get_session_from_session)):
     user = UserInfo(session_data)
     retriever : SearchRetriever = SearchRetriever.with_default_settings()
     data = retriever.generate_questions(user.get_user_info())
     return JSONResponse(content={"data": data}, status_code=200)
 
 # unsaved chat TODO: Not implemented in client, all chats are saved always
-@app.get("/users/{user_guid}/chat/{user_question}")
-async def create_conversation(user_question, session_data: UserSession = Depends(get_session_from_user)):    
+@app.get("/users/{session_guid}/chat/{user_question}")
+async def create_conversation(user_question, session_data: UserSession = Depends(get_session_from_session)):    
     chain = UserConversation.with_default_settings(session_data)
     generator = chain.send_message(user_question)
     return EventSourceResponse(generator, media_type="text/event-stream")
    
 # regular chat - main API
-@app.get("/users/{user_guid}/conversations/{conversation_id}/chat/{user_question}")
+@app.get("/users/{session_guid}/conversations/{conversation_id}/chat/{user_question}")
 async def chat(
     user_question, 
     conversation_id,
-    session_data: UserSession = Depends(get_session_from_user)
+    session_data: UserSession = Depends(get_session_from_session)
 ): 
     try:
         conversation = Conversation.objects(id=conversation_id).first()
@@ -153,46 +153,59 @@ async def chat(
         return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
 
 # return list of user conversation ids
-@app.get("/users/{user_guid}/conversations")
-async def get_conversations(session_data: UserSession = Depends(get_session_from_user)):
+@app.get("/users/{session_guid}/conversations")
+async def get_conversations(session_data: UserSession = Depends(get_session_from_session)):
     try:
-        conversations : List[Conversation] = Conversation.objects(user_id=session_data.user_id)
+        logger.info(f"session info: {session_data.session_id}, {session_data.session_end}")
+        if 'user_id' in session_data:
+            logger.info(f"finding conversations for user: {session_data.user_id}")
+            conversations : List[Conversation] = Conversation.objects(user_id=session_data.user_id)
         if not conversations:
+            logger.error("conversation not found in db")
             return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
         else:
             conversation_topics = []
-            for c in conversations:
-                c_dict = {
-                    "topic": c.topic,
-                    "conversation_id": str(c.id),
-                    "start_time": c.start_time,
-                    "end_time": c.end_time
-                }
-                conversation_topics.append(c_dict)
+            if conversations:
+                for c in conversations:
+                    c_dict = {
+                        
+                        "topic": c.topic,
+                        "id": str(c.id),
+                        "start_time": c.start_time.isoformat() if c.start_time else None,
+                        "end_time": c.end_time.isoformat() if c.end_time else None,
+                    }
+                    conversation_topics.append(c_dict)
+            else:
+                raise
             logger.info(f"got conversations from documents {conversation_topics}")
-            return JSONResponse(conversation_topics)
+            response = JSONResponse(content=conversation_topics,status_code=200)
+            logger.info(f"response serialized to json: ${response}")
+            return response
     except Exception as e:
+        logger.error(f"failed to find conversation with error {str(e)}")
         return JSONResponse(content={"message": f"failed to find conversation with error {str(e)}"}, status_code=404)
 
 # return message history for a single conversation
 @app.get(
-    "/users/{user_guid}/conversations/{conversation_id}/messages"
+    "/users/{session_guid}/conversations/{conversation_id}/messages"
 )
-async def get_conversations(conversation_id, session_data: UserSession = Depends(get_session_from_user)):
+async def get_conversations(conversation_id, session_data: UserSession = Depends(get_session_from_session)):
     try:
         conversation_dict = get_message_history(conversation_id)
         logger.info(f"Getting conversation for {session_data.user_id}, {conversation_id}: {conversation_dict}")
         return JSONResponse(content = conversation_dict, status_code = 200)
     except Exception as e:
-        return JSONResponse(content={"message": f"failed to find conversation with error {str(e)}"}, status_code=404) 
+        logger.error(f"failed to find conversation with error {str(e)}")
+        return JSONResponse(content={"message": f"failed to get messages with error {str(e)}"}, status_code=404) 
     
 # create new conversation id if not exists
-@app.get("users/{user_guid}/save_conversation")
-async def start_conversation(session_data: UserSession = Depends(get_session_from_user)):
+@app.get("/users/{session_guid}/save_conversation")
+async def start_conversation(session_data: UserSession = Depends(get_session_from_session)):
+    logger.info("try saving conversation for session ")
     try:
         conversation = Conversation(user_id=session_data.user_id)
         conversation.save()
-        return JSONResponse(content={"conversation_id": str(conversation.id)}, status_code=200)
+        return JSONResponse(content={"id": str(conversation.id), "start_time": str(conversation.start_time)}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"message": f"failed to save conversation with error {str(e)}"}, status_code=404)
     

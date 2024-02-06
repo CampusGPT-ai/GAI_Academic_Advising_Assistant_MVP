@@ -2,6 +2,7 @@ import React from 'react';
 import { AccountInfo, IPublicClientApplication } from '@azure/msal-browser';
 import { BaseUrl } from './baseURL';
 interface BackendResponse {
+    user_id?: string;
     session_id?: string;
     account?: string;
     instance: any,
@@ -40,6 +41,7 @@ const sendTokenToBackend = async(account: AccountInfo, instance: IPublicClientAp
                 // Token is valid, user is considered logged in on the server
                 console.log('User logged in successfully');
                 const data: BackendResponse = await backendResponse.json();
+                console.log(`Received user data from backend response ${JSON.stringify(data)}`)
                 return data.session_id
                 // You can perform further actions here if needed
             }

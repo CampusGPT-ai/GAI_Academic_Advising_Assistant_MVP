@@ -1,6 +1,7 @@
 import React, { FC } from 'react';
-import { Button } from "@mui/material";
-
+import { Button, Typography } from "@mui/material";
+import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
+import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 /**
  * Props for the ChatSampleQuestions component.
  */
@@ -30,12 +31,19 @@ const ChatSampleQuestion: FC<ChatSampleQuestionsProps> = ({ text, isLoading, onS
 
   return (
     <Button 
-      variant="contained" 
-      sx={{ margin: "10px" }} 
+      variant="outlined"
+      color='primary'
+      sx={{ margin: "10px",
+            width: "100%",
+          display: "flex",
+          justifyContent: "space-between"
+        }} 
       onClick={handleQuestionClick} 
       disabled={isLoading} // Button is disabled when isLoading is true
+      startIcon={<TipsAndUpdatesOutlinedIcon />}
+      endIcon={<ArrowRightAltIcon />}
     >
-      {text}
+      <Typography variant="body1" p={1} textAlign={"left"}>{text}</Typography>
     </Button>
   );
 };

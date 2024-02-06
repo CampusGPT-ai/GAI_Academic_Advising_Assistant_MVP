@@ -52,6 +52,8 @@ export const lightTheme = createTheme({
       subtitle2: 'h2',
       body1: 'span',
       body2: 'span',
+      body3: 'span',
+
     },
     fontWeightLight: 200,
     fontWeightRegular: 400,
@@ -63,22 +65,44 @@ export const lightTheme = createTheme({
     },
     h1: {
       fontSize: '2rem', // Adjust as needed
-      fontWeight: 'bold', // Adjust as needed
-      color: '#515abb', // Adjust as needed
+      fontWeight: 600, // Adjust as needed
+      color: '#000', // Adjust as needed
     },
     bodylight: {
       fontSize: '1rem', // Adjust as needed
       fontWeight: 300, // Adjust as needed
       color: '#fff', // Adjust as needed
     },
+
+    body1: {
+      fontSize: '.9rem', // Adjust as needed
+      fontWeight: 400, // Adjust as needed
+      color: '#000', // Adjust as needed
+    },
+    body2: {
+      fontSize: '.8rem', // Adjust as needed
+      fontWeight: 400, // Adjust as needed
+      color: '#000', // Adjust as needed
+    },
     h2: {
+      fontSize: '1.8rem', // Adjust as needed
+      fontWeight: 400, // Adjust as needed
+      color: '#000', // Adjust as needed
+    },
+    h3: {
       fontSize: '1.5rem', // Adjust as needed
       fontWeight: 400, // Adjust as needed
       color: '#000', // Adjust as needed
     },
+    h5: {
+      fontSize: '1rem', // Adjust as needed
+      fontWeight: 500, // Adjust as needed
+      color: '#fff', // Adjust as needed
+    },
     h6: {
       fontSize: '1rem', // Adjust as needed
-      color: '#F1AD00', // Adjust as needed
+      fontWeight: 600, // Adjust as needed
+      color: '#fff', // Adjust as needed
     }
   },
 });

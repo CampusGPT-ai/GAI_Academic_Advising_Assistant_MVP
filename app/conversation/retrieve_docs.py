@@ -67,8 +67,8 @@ class SearchRetriever:
         return result_split
     
     def generate_questions(self, user_info):
-         search_string = self.get_search_string(user_info)
-         results = self.retrieve_content(search_string,n=10)
+         #search_string = self.get_search_string(user_info)
+         results = self.retrieve_content(user_info, n=10)
          result = self.refine_questions(user_info, results['questions'])
          return result
     

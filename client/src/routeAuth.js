@@ -2,13 +2,12 @@ import React from 'react';
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { InteractionStatus } from "@azure/msal-browser";
 import { EventType } from "@azure/msal-browser";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 
 
 export default function ProtectedRoute({children}) {
-    const { instance, accounts, inProgress } = useMsal();
-    const [userSessionValues, setuserSessionValues] = useState();
+    const { instance, inProgress } = useMsal();
     const isAuthenticated = useIsAuthenticated();
 
 

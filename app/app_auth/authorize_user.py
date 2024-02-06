@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
+import jwt, json
 from jwt import PyJWKClient
 from typing import Optional
 from uuid import uuid4
@@ -21,16 +21,21 @@ router = APIRouter()
 
 from fastapi.responses import JSONResponse
 
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
-CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
-TENANT_ID = os.getenv("AZURE_TENANT_ID")
-CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
+CLIENT_ID = settings.AZURE_CLIENT_ID
+TENANT_ID = settings.AZURE_TENANT_ID
+CLIENT_SECRET = settings.AZURE_CLIENT_SECRET
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
     issuer_url = f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/v2.0"
-    jwks_client = PyJWKClient(f"{issuer_url}/discovery/keys")
+    jwks_client = PyJWKClient(f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/discovery/v2.0/keys")
     signing_key = jwks_client.get_signing_key_from_jwt(token)
 
     try:
@@ -50,32 +55,24 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
             raise credentials_exception
         return username
     except:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
-)
+        raise credentials_exception
 
 
 @router.post("/validate_token")
 async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
     logger.info(f"Received token: {token}")
+    if not token or token == None:
+        raise credentials_exception
     try:
         # Validate the token
-        user_info = verify_token(token)  # Implement this function'
+        user_info = verify_token(token)  
         logger.info(f"Token valid for user: {user_info}")
     except HTTPException as e:
         logger.error(f"Token validation error: {e.detail}")
         raise
     except Exception as e:
         logger.error(f"Unexpected error in token validation: {e}")
-        raise credentials_exception
+        raise Exception(f"Unexpected token validation exception: {str(e)}")
 
     if not user_info:
         logger.error("No user info retrieved, token may be invalid")
@@ -85,6 +82,7 @@ async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
     # Store session information
     try:
         user_session = get_session_from_user(user_info)
+        logger.info(f"got existing session for user: {user_session}")
     except:
         user_session = None
     try:
@@ -98,7 +96,15 @@ async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
                                     session_start=datetime.now(),
                                     session_end=session_expiry
                                     )
-            user_session.save()
+            
+
+            # ensure session is unique 
+            try:
+                get_session_from_session(session_guid)
+                logger.info("No existing session found....saving")
+            except:
+                user_session.save()
+                
             logger.info(f"Session created with ID: {session_guid} for user: {user_info}")
         else: 
             logger.info(f"user session already exists with session id {user_session.session_id}, {user_session.user_id}")
@@ -106,26 +112,41 @@ async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
         logger.error(f"Error saving session to the database: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    return {"session_id": user_session.session_id}
+    return {"user_id": user_session.user_id, "session_id": user_session.session_id}
 
 
 def get_session_from_session(session_guid: str):
     current_time = datetime.now()
-    session_data = UserSession.objects(session_id=session_guid).first()
+    session_data = UserSession.objects(session_id=session_guid, session_end__gt=current_time).first()
 
 
     if not session_data or session_data.session_end < current_time:
-        raise HTTPException(status_code=401, detail="Invalid or expired session")
+        message = ''
+        if session_data:
+            message = f'session expired on {session_data.session_end}'
+        else: 
+            message = 'no session found'
+        raise HTTPException(status_code=401, detail=message)
 
     return session_data
 
 def get_session_from_user(user_guid: str):
+
     current_time = datetime.now()
-    session_data = UserSession.objects(user_id=user_guid).first()
+    try:
+        logger.info(f"querying user session data for {user_guid}")
+        session_data = UserSession.objects(user_id=user_guid, session_end__gt=current_time).first()
 
+        if not session_data or session_data.session_end < current_time:
+            logger.info(f"current session is expired...returning none.  session data: {session_data.session_end if session_data else 'no session'}")
+            raise HTTPException(status_code=401, detail="Invalid or expired session")
 
-    if not session_data or session_data.session_end < current_time:
-        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    except Exception as e:
+        logger.info(f"no active session found with error: {str(e)}")
+        session_data = None
+
+    logger.info(f"querying session data from db...returning...{session_data}")
+
 
     return session_data
 
