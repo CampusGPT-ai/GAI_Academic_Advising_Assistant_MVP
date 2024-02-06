@@ -153,8 +153,8 @@ class UserConversation:
         # Step 1: grab user info and existing conversation from source TODO: not implemented
         user_info = UserInfo(self.user_session).get_user_info()
                
-        # Step 2: retrieve content from vector db
-        retriever = SearchRetriever(self.ai_model, self.search_client)
+        # Step 2: retrieve content from vector db (with default settings uses GPT 3.5)
+        retriever = SearchRetriever.with_default_settings()
         content, followups = retriever.generate_content_and_questions(query_text, user_info)
 
         # step 3: create GPT prompt
@@ -179,17 +179,26 @@ class UserConversation:
             raise e
 
     @classmethod           
-    def with_default_settings(cls, user_session: UserSession, conversation: Conversation):
+    def with_default_settings(cls, user_session: UserSession, conversation: Conversation, model_num='GPT35'):
         from cloud_services.llm_services import get_llm_client
         from cloud_services.azure_cog_service import AzureSearchService
         # Assume these are your default settings or loaded from a config file/environment
 
         default_settings = Settings()
+        
+        if model_num=='GPT35':
+            selected_model = default_settings.GPT35_MODEL_NAME
+            selected_deployment = default_settings.GPT35_DEPLOYMENT_NAME
+        else:
+            selected_model = default_settings.GPT4_MODEL_NAME,
+            selected_deployment = default_settings.GPT4_DEPLOYMENT_NAME
+
+        
         azure_llm = get_llm_client(api_type='azure',
                                 api_version=default_settings.OPENAI_API_VERSION,
                                 endpoint=default_settings.AZURE_OPENAI_ENDPOINT,
-                                model=default_settings.MODEL_NAME,
-                                deployment=default_settings.DEPLOYMENT_NAME,
+                                model=selected_model,
+                                deployment=selected_deployment,
                                 embedding_deployment=default_settings.EMBEDDING)
 
         # Create an instance of the class with these default settings
@@ -224,7 +233,7 @@ if __name__=="__main__":
     
     mock_conversation = Conversation(user_id=mock_user_session.user_id)
 
-    convo = UserConversation.with_default_settings(mock_user_session, mock_conversation)
+    convo = UserConversation.with_default_settings(mock_user_session, mock_conversation, model_num='GPT4')
     
     result = convo.send_message("what classes do I need to graduate?")
     while True:

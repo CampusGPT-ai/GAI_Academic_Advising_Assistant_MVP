@@ -3,17 +3,17 @@ import DOMPurify from "dompurify";
 import React, { FC, useState } from "react";
 import "../../../../../assets/styles.css";
 import messageSample from "../../../../../model/messages/messageSample.json";
-import ParentMessage, {Citation, Followup, Message} from "../../../../../model/messages/messages";
+import ParentMessage, {Citation, Followup, MessageContent} from "../../../../../model/messages/messages";
 import ChatCitation from "./chatResponseElements/chatCitation";
 import ChatFollowUp from "./chatResponseElements/chatFollowUp";
 
 //for default props
 const jsonString = JSON.stringify(messageSample);
-const sampleMessages = JSON.parse(jsonString) as Message[];
+const sampleMessages = JSON.parse(jsonString) as MessageContent[];
 
 interface ChatBotChatResponseProps {
   onFollowupClicked: (message: string) => void;
-  message: Message;
+  message: MessageContent;
   follow_up_questions?: Followup[],
   citations?: Citation[]
   currentAnswerRef?: React.MutableRefObject<any>;

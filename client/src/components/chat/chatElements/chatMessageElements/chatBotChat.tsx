@@ -3,18 +3,18 @@ import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
 import propTypes from "prop-types";
 import React, { FC } from "react";
 import messageSample from "../../../../model/messages/messageSample.json";
-import { Message, Followup, Citation} from "../../../../model/messages/messages";
+import { MessageContent, Followup, Citation} from "../../../../model/messages/messages";
 import ChatBotChatResponse from "./chatResponse/chatBotChatResponse";
 
 //for default props
 const jsonString = JSON.stringify(messageSample);
 //const sampleMessages = JSON.parse(jsonString) as Message[];
-const sampleMessages = [] as Message[];
+const sampleMessages = [] as MessageContent[];
 
 interface ChatBotChatProps {
   isLoading?: boolean;
   isError?: boolean;
-  message: Message;
+  message: MessageContent;
   follow_up_questions?: Followup[];
   citations?: Citation[];
   onRetry?: () => void;

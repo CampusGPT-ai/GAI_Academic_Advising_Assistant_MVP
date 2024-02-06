@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import React, { FC } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
-import ParentMessage, { Citation, Followup, Message, Timestamp } from "../../../model/messages/messages";
+import ParentMessage, { Citation, Followup, MessageContent, Timestamp } from "../../../model/messages/messages";
 import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 import ChatUserChat from "./chatMessageElements/chatUserChat";
@@ -28,7 +28,7 @@ interface ChatMessagesProps {
   /** An error message to display if an error occurred while loading the component. */
   error?: string;
   /**An array of messages to display as history */
-  messageHistory?: Array<ParentMessage>;
+  messageHistory?: ParentMessage[];
 
   currentAnswerRef: React.MutableRefObject<any>;
 }
@@ -53,7 +53,8 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   currentAnswerRef
 }) => {
   console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
-  const botMessage : Message = {role: 'assistant', message: chatResponse || "", created_at: getCurrentTimestamp() }
+  const botMessage : MessageContent = {role: 'assistant', message: chatResponse || "", created_at: getCurrentTimestamp() }
+  console.log(`created bot message with placeholder: ${JSON.stringify(botMessage)}`)
   return (
     <Box display="flex" flexGrow={1}>
       {messageHistory &&
