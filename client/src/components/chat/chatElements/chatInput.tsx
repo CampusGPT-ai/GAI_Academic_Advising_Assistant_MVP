@@ -1,6 +1,7 @@
 import SendIcon from "@mui/icons-material/Send";
 import Box from "@mui/material/Box";
 import Grid from '@mui/material/Grid';
+import { useTheme } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import React, { ChangeEvent, FC, KeyboardEvent, useState } from "react";
@@ -10,7 +11,6 @@ import DifferenceOutlinedIcon from '@mui/icons-material/DifferenceOutlined';
 interface ChatInputProps {
   sendChat: (text: string) => void;
   isLoading: boolean;
-  sourceOpen: boolean;
 }
 
 /**
@@ -20,9 +20,9 @@ interface ChatInputProps {
  * @param {boolean} props.isLoading - A flag indicating if the component is in a loading state.
  * @returns {JSX.Element} - The rendered component.
  */
-const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading, sourceOpen }) => {
+const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading, }) => {
   const [message, setMessage] = useState("");
-
+  const theme = useTheme();
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
   };
@@ -42,31 +42,23 @@ const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading, sourceOpen }) => {
   };
 
   return (
-    <Box  sx={{ mt: 4 }} width="60%">
-      <TextField
-        placeholder="Type your question to get started."
-        variant="standard"
+    <Box  sx={{ mt: 4 }} width="90%">
+
+      <Grid container spacing={1} width="100%" mt={1}>
+        <Grid item xs={10}>
+        <TextField
+        placeholder="What's on your mind today?"
+        variant="outlined"
         value={message}
         onChange={handleInputChange}
         onKeyPress={handleKeyPress}
         fullWidth
         disabled={isLoading}
       />
-      <Grid container width="100%" mt={1}>
-        <Grid item xs={6} sx={{display: "flex", justifyContent: "start"}} >
-        <IconButton onClick={handleSendClick} disabled={isLoading}>
-        <TipsAndUpdatesOutlinedIcon fontSize="large" />        
-      </IconButton>
-      <IconButton onClick={handleSendClick} disabled={isLoading}>
-      <HistoryOutlinedIcon fontSize="large"></HistoryOutlinedIcon>
-      </IconButton>
-      <IconButton onClick={handleSendClick} disabled={isLoading}>
-      <DifferenceOutlinedIcon fontSize="large"></DifferenceOutlinedIcon>
-      </IconButton>
         </Grid>
-        <Grid item xs={6} sx={{display: "flex", justifyContent: "end"}}>
-      <IconButton onClick={handleSendClick} disabled={isLoading||sourceOpen}>
-        <SendIcon fontSize="large"/>
+        <Grid item xs={2} sx={{display: "flex", justifyContent: "start"}}>
+      <IconButton onClick={handleSendClick} disabled={isLoading}>
+        <SendIcon fontSize="medium" color="primary"/>
       </IconButton>
       </Grid>
       </Grid>

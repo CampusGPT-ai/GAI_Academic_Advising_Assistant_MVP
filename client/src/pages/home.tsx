@@ -1,22 +1,30 @@
 //src/components/pages/index.tsxfetchmessages
 
-import React, { FC, useEffect, useRef, useState, useContext } from "react";
+import React, { FC, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import fetchChatResponse from "../api/fetchChatResponse";
 import fetchConversations from "../api/fetchConversations";
 import fetchMessageHistory from "../api/fetchMessages";
 import Conversation from "../model/conversation/conversations";
-import ParentMessage, { Message, Citation, Timestamp, Followup } from "../model/messages/messages";
-import { UserProfile } from "../model/user/user";
-import getUserProfile from "../utilities/getDemoProfile";
+import ParentMessage, { Citation, Timestamp, Followup } from "../model/messages/messages";
 import Footer from "../components/footer/footer";
-import Header from "../components/header/header";
 import Chat from "./chat";
-import { Box } from "@mui/material";
+import { Box, Container, Divider, Button } from "@mui/material";
 import { BaseUrl } from "../api/baseURL";
 import sendTokenToBackend from '../api/validateToken';
-import { useMsal
- } from "@azure/msal-react";
+import { useMsal, useIsAuthenticated } from "@azure/msal-react";
+
+import AppBar from '@mui/material/AppBar';
+import { useTheme } from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
+
+import IconButton from '@mui/material/IconButton';
+import MenuIcon from '@mui/icons-material/Menu';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import fetchSampleQuestions from "../api/fetchQuestions";
+import fetchConversationId from "../api/fetchConversationId";
+import DrawerContainer from "../components/menuDrawer/drawerContainer";
+
 // Function to create a new Timestamp object with the current time
 function getCurrentTimestamp(): Timestamp {
   return {
@@ -44,6 +52,16 @@ const updateAssistantMessage = (parentMessage: ParentMessage, newAssistantMessag
 };
 
 
+enum AppStatus {
+  LoggingIn = "AUTHENTICATING",
+  InitializingData = "LOADING DATA",
+  GettingMessageHistory = "GETTING MESSAGE HISTORY",
+  SavingConversation = "SAVING CONVERSATION",
+  GeneratingChatResponse = "GENERATING CHAT RESPONSE",
+  Idle = "IDLE",
+  Error = "ERROR" // you can add as many statuses as needed
+}
+
 
 /**
  * MainPage - This component manages and renders the main page of the application.
@@ -62,100 +80,86 @@ const updateAssistantMessage = (parentMessage: ParentMessage, newAssistantMessag
  */
 const MainPage: FC = () => {
   const { instance, accounts, inProgress } = useMsal();
-  const navigate = useNavigate();
-  const prevUserRef = useRef<UserProfile>();
+  const account = accounts[0];
+  const isAuthenticated = useIsAuthenticated();
+  const prevUserRef = useRef<string>();
   const [isLoading, setLoading] = useState(false);
-  const [title, setTitle] = useState("YOUR PERSONAL CAMPUS GUIDE"); //pull from institutions? this is the header bar title - for example: FSU
+  const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
   const [user, setUser] = useState<string | undefined>();
-  const [loggedIn, setLoggedIn] = useState(false);
   const [messageHistory, setMessageHistory] = useState(Array<ParentMessage>());
-  const [error, setError] = useState("");
   const [isError, setIsError] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [conversationHistory, setConversationHistory] = useState<Conversation[]>([]);
   const [apiUrl, setApiUrl] = useState<string>();
-  const [sourceOpen, setSourceOpen] = useState<boolean>(false);
-  const currentAnswerRef = useRef(null);
+  const [sampleQuestions, setSampleQuestions] = useState<string[]>();
+  const [userInput, setUserInput] = useState<string>();
 
- // event data updates
+  // track current values for state change
+  const currentAnswerRef = useRef();
+  const questionsRef = useRef<string[]>();
+  const conversationHistoryRef = useRef<Conversation[]>();
+  const messageRef = useRef<ParentMessage[]>();
+
+  // event data updates
   const [streamingMessage, setStreamingMessage] = useState<string>();
-  const [sampleQuestions, setSampleQuestions] = useState<string[]>(['none provided']);
-  const [followups, setFollowups] = useState<Followup[]>();
-  const [citations, setCitations] = useState<Citation[]>();
+  const [followups, setFollowups] = useState<Followup[]>([]);
+  const [citations, setCitations] = useState<Citation[]>([]);
 
   console.log("loading main page")
 
+  const theme = useTheme()
 
-  useEffect(() => {
-    const fetchUser = async () => {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [isClosing, setIsClosing] = React.useState(false);
+  const drawerWidth = 240;
+
+  const handleDrawerToggle = () => {
+    if (!isClosing) {
+      setMobileOpen(!mobileOpen);
+    }
+  };
+
+  const fetchUser = async () => {
+    setUser(undefined)
+    console.log(`is authenticated: ${isAuthenticated} and is inProgress: ${inProgress}`)
+    if (isAuthenticated && inProgress === 'none') {
+
       try {
+
         const userData = await sendTokenToBackend(accounts[0], instance);
         console.log(`fetched user from backend ${userData}`)
         setUser(userData);
+
       } catch (error) {
         console.error('Error fetching user data:', error);
       }
-    };
-
-    if (accounts && accounts.length > 0) {
-      fetchUser();
     }
-  }, [accounts, instance]); // Re-run the effect when accounts or instance changes
-
-
-  /**
-   * Handles the profile button click event and navigates to the login page.
-   */
-  const profileButtonClicked = () => {
-    console.log("profile button clicked");
-    navigate("login");
   };
+
 
   /**
    * Resets the sample questions based on user preferences.
    * @param questionList - The list of questions to be displayed.
    */
-  const getSampleQuestions = (questionList: string[]) => {
-    setSampleQuestions(questionList);
+  const getSampleQuestions = async () => {
+    if (user != undefined) {
+      try {
+        setSampleQuestions(
+          await fetchSampleQuestions({ user })
+        );
+      }
+      catch {
+        console.error("error on getting sample questions")
+      }
+    }
   };
 
-  //TODO: Add logging to see what the data looks like when it comes in.  
-  useEffect(() => {
-    if (apiUrl)  {
-       
-      const source = new EventSource(apiUrl);
-      setSourceOpen(true);
-      source.addEventListener('message', (event) => {
-        const data = JSON.parse(event.data);
-        console.log(`recieved event data ${event.data}`)
-        setStreamingMessage(prev => prev + data.message);
-      });
-      source.addEventListener('citations', (event) => {
-        const data = JSON.parse(event.data);
-        console.log(`recieved event data ${event.data}`)
-        const citations : string = data.citations;
-      })
-      source.addEventListener('followups', (event) => {
-        const data = JSON.parse(event.data);
-        console.log(`recieved event data ${event.data}`)
-      });
-      source.addEventListener('stream-ended', (event) =>
-        source.close()
-      )
-      return () => {
-        if (source.readyState !== EventSource.CLOSED) {
-          source.close();
-          setSourceOpen(false);
-          console.log('EventSource closed by the client.');
-        }
-      };
-    }
-  }, [apiUrl]);
 
   /**
    * Fetches and sets the conversation based on selected conversation.
    */
   const getConversations = async () => {
+    setAppStatus(AppStatus.InitializingData)
     if (user != undefined) {
       try {
         setConversationHistory(
@@ -173,8 +177,8 @@ const MainPage: FC = () => {
 
   const logoutUser = () => {
     console.log("logging out user: ", user);
-    sessionStorage.removeItem("user");
     setUser(undefined);
+    instance.logout();
   };
 
   /**
@@ -184,94 +188,293 @@ const MainPage: FC = () => {
     setSelectedConversation(undefined);
   };
 
-  const getChatResponse = (user_question: string) => {
+  //change API url to match user_question
+  const getChatResponse = async () => {
+    if (userInput) {
+    console.log(`getting chat response for ${userInput} with ${JSON.stringify(user)}, conversation id: ${JSON.stringify(selectedConversation)}`)
     let apiUrl = ''
     if (user && user != null) {
-      if (selectedConversation && selectedConversation.id != null && selectedConversation.id != 'null') {
-        apiUrl =  `${BaseUrl()}/users/${user}/conversations/${selectedConversation.id}/chat/${user_question}`
-      } else{
-        apiUrl =  `${BaseUrl()}/users/${user}/chat/${user_question}`
+      if (selectedConversation && selectedConversation != null) {
+        apiUrl = `${BaseUrl()}/users/${user}/conversations/${selectedConversation.id}/chat/${userInput}`
+        setApiUrl(apiUrl)
+      } else {
+        console.log(`no conversation selected.  getting conversation id.`)
+        setAppStatus(AppStatus.SavingConversation)
       }
-    } 
-    setApiUrl(apiUrl)
+    }
+  }
   };
+
+  const saveNewConversation = async () => {
+    console.log(`fetching new conversation id`)
+    if (user) {
+      setSelectedConversation(await fetchConversationId({ user }));
+  }
+};
 
   /**
    * Fetches and sets the selected conversation.
    */
-  const getSelectedConversationMessages = async (conversation: string) => {
+  const getSelectedConversationMessages = async () => {
     try {
-      if (conversation != null && user != undefined ) {
-      const chatMessages = await fetchMessageHistory({
-            user: user,
-            conversationId: conversation,
-          })
-        
+      if (selectedConversation != null && user != undefined) {
+        setMessageHistory(await fetchMessageHistory({
+          user: user,
+          conversationId: selectedConversation.id,
+        }))
+
       }
     } catch (error) {
       console.error(`An error occurred while fetching conversations ${error}`);
     }
   };
 
+
+  const runApp = () => {
+    if (appStatus !== AppStatus.Idle) { setLoading(true) }
+    //disable all question submit while app is processing data
+    switch (appStatus) {
+      case AppStatus.InitializingData:
+        getConversations();
+        getSampleQuestions();
+        break
+      case AppStatus.GettingMessageHistory:
+        getSelectedConversationMessages();
+        break
+      case AppStatus.SavingConversation:
+        saveNewConversation()
+        break
+      case AppStatus.GeneratingChatResponse:
+        getChatResponse();
+        break
+      case AppStatus.LoggingIn:
+        fetchUser();
+        break
+      case AppStatus.Idle:
+        setLoading(false);
+        break
+      default:
+        break
+    }
+  };
+
+  //event detector: run app on status change event
+  useEffect(() => {
+    console.log(`app status updated to ${appStatus}`)
+    runApp()
+  }, [appStatus])
+
+  
+  //pull message history when conversation id selection changes
+  //conversation changes when user selects new conversation from history list, or attemps to send a chat without any conversation saved (new chat)
   useEffect(() => {
     console.log(`selected conversation has changed.  Conversation id is ${JSON.stringify(selectedConversation)} `)
-    selectedConversation != undefined &&
-      getSelectedConversationMessages(selectedConversation.id);
-    selectedConversation === undefined && setMessageHistory([]);
+    // handle save conversation event output
+    if (selectedConversation != undefined && appStatus === AppStatus.SavingConversation) { 
+      console.log(`app status set back to generating chat response`)
+      setAppStatus(AppStatus.GeneratingChatResponse) }
+
+    // handle select conversation click event
+    else if (selectedConversation != undefined && messageHistory !== messageRef.current) { setAppStatus(AppStatus.GettingMessageHistory) }
+    else if (selectedConversation === undefined) { setMessageHistory([]) };
+
+    return () => {
+      if (appStatus !== AppStatus.GeneratingChatResponse) { setAppStatus(AppStatus.Idle) }
+    }
   }, [selectedConversation]);
 
-  //** On user change effects: get new conversation history, update previous user reference, set loggedin flags.
+
+  //kick off user query
   useEffect(() => {
-    if (user != undefined) {
-      if (prevUserRef.current === undefined) {
-        resetConversation();
-        getConversations();
-        setLoggedIn(true);
-        navigate("chat");
+    setAppStatus(AppStatus.GeneratingChatResponse)
+  }, [userInput])
+
+  // update status and references on completion of data pulls
+  useEffect(() => {
+    //verify data load
+    if (appStatus !== AppStatus.Idle) {
+      if (conversationHistory !== undefined && sampleQuestions !== undefined) {
+        // reset reference values
+        if (conversationHistory !== conversationHistoryRef.current) { conversationHistoryRef.current = conversationHistory }
+        if (sampleQuestions !== questionsRef.current) { questionsRef.current = sampleQuestions }
+        setAppStatus(AppStatus.Idle)
       }
+      if (messageHistory !== undefined && messageHistory !== messageRef.current) {
+        messageRef.current = messageHistory;
+        setAppStatus(AppStatus.Idle)
+      }
+
+    }
+  }
+    , [conversationHistory, sampleQuestions, messageHistory])
+
+  // on user change, log in and/or reinitialize data
+  useEffect(() => {
+    // login
+    if (user === undefined) {
+      setAppStatus(AppStatus.LoggingIn)
+    }
+    // user changed from previous/undefined for first login
+    if (user !== undefined && prevUserRef.current !== user) {
+      setAppStatus(AppStatus.InitializingData)
+      resetConversation()
+      prevUserRef.current = user
     }
 
+    // user logging out
     if (user === undefined && prevUserRef.current != undefined) {
       console.log("logged out.  User set to undefined");
       prevUserRef.current = undefined;
-      setLoggedIn(false);
+      setAppStatus(AppStatus.Idle)
       window.location.reload();
     }
-  }, [user]);
+  }, [, user])
+
+  //msal event detection
+  useEffect(() => {
+    setAppStatus(AppStatus.LoggingIn)
+  }, [accounts, instance, isAuthenticated, inProgress]); // Re-run the effect when accounts or instance changes
+
+  // event source
+  useEffect(() => {
+    if (apiUrl) {
+
+      const source = new EventSource(apiUrl);
+      setLoading(true);
+      source.addEventListener('message', (event) => {
+        console.log(`Received raw event data: ${event.data}`)
+        const data = JSON.parse(event.data);
+        console.log(`recieved event data ${data}`)
+        setStreamingMessage(prev => prev + data.message);
+      });
+      source.addEventListener('citations', (event) => {
+        const data = JSON.parse(event.data);
+        console.log(`recieved event data ${event.data}`)
+        const newCitation: Citation = data.citations; 
+        setCitations((prevCitations) => [...prevCitations, newCitation]);
+      })
+      source.addEventListener('followups', (event) => {
+        const data = JSON.parse(event.data);
+        setFollowups(event.data.split(","));
+      });
+      source.addEventListener('stream-ended', (event) => {
+        source.close();
+        setAppStatus(AppStatus.Idle);
+      }
+      )
+      return () => {
+        if (source.readyState !== EventSource.CLOSED) {
+          setAppStatus(AppStatus.Idle)
+          source.close();
+          console.log('EventSource closed by the client.');
+        }
+      };
+    }
+  }, [apiUrl]);
+
+
+  const mainContentStyles = {
+    flexGrow: 1,
+    p: 3,
+    width: { sm: `calc(100% - ${drawerWidth}px)` },
+    mt: { xs: 8, sm: 0 }, // Adjust the margin top to align with the AppBar height.
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    ...(mobileOpen && {
+      width: `calc(100% - ${drawerWidth}px)`,
+      ml: `${drawerWidth}px`,
+      transition: theme.transitions.create(['margin', 'width'], {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+    }),
+  };
 
   return (
-    <Box sx={{backgroundColor: (theme) => theme.palette.primary.main}}>
-      <Header //src/sections/header.tsx
-        title={title}
-        handleLogout={logoutUser}
-        loggedIn={loggedIn}
-        profileButtonClicked={profileButtonClicked}
-        setSampleQuestions={getSampleQuestions} //this should change the questions visible in the chat pane
-      />
+    <Box sx={{ display: 'flex', flexDirection: 'column',height: '100vh', maxWidth: '1200px', }}>
+      <CssBaseline />
+      <AppBar
+        position='relative'
+        elevation={0}
+        sx={{
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          maxWidth: '100%',
+          ml: { sm: `${drawerWidth}px` },
+          backgroundColor: "#fff"
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{
+              mr: 2,
+              display: { sm: 'none' },
 
-            <Chat
-              setConversation={setSelectedConversation}
-              conversationTitle={selectedConversation?.topic}
-              newChat={resetConversation}
-              error={error}
-              isError={isError}
-              isLoading={isLoading}
-              sampleQuestions={sampleQuestions}
-              isLoggedIn={loggedIn}
-              sendChatClicked={getChatResponse}
-              messageHistory={messageHistory}
-              conversations={conversationHistory}
-              chatResponse={streamingMessage}
-              currentAnswerRef={currentAnswerRef}
-              follow_up_questions={followups}
-              citations={citations}
-              sourceOpen={sourceOpen}
-            />
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Box display="flex" width="100%" justifyContent={"center"} mt={2}>
+            <Typography variant="h2" noWrap component="div" color="#000">
+              Your personal <Typography variant="h1" color="primary">AI Assistant </Typography>
+            </Typography>
+          </Box>
+        </Toolbar>
+      </AppBar>
+      <DrawerContainer conversationList={conversationHistory}
+       handleSelectConversation={setSelectedConversation}
+        resetConversation={resetConversation}
+         account={account}/>
+    
+      {/**main page content here */}
+      <Container component="main" sx={{
+        display: "flex",
+        flexGrow: 1,
+        marginLeft: { sm: `${drawerWidth}px`, xs: 0 },
+        width: { sm: `calc(100% - ${drawerWidth}px)`, xs: "100%" },
+        marginRight: "0"
+      }}>
+        <Box
+          component="main"
+          display="flex"
+          flexGrow={1}
+          sx={{
+            mainContentStyles
+          }}
+        >
+          <Chat
+            setConversation={setSelectedConversation}
+            conversationTitle={selectedConversation?.topic}
+            newChat={resetConversation}
+            isError={isError}
+            isLoading={isLoading}
+            sampleQuestions={sampleQuestions}
+            sendChatClicked={setUserInput}
+            messageHistory={messageHistory}
+            conversations={conversationHistory}
+            chatResponse={streamingMessage}
+            currentAnswerRef={currentAnswerRef}
+            follow_up_questions={followups}
+            citations={citations}
+            chatWidth={"100%"}
+          /></Box>
+      </Container>
 
-
-      <Footer></Footer>
+      <Box component="footer" sx={{
+        width: { sm: `calc(100% - ${drawerWidth}px)` },
+        maxWidth: '100%',
+        ml: { sm: `${drawerWidth}px` },
+      }}>
+        <Footer></Footer>
+      </Box>
     </Box>
+
   );
-};
+}
 
 export default MainPage;

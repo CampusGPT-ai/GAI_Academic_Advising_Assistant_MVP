@@ -1,15 +1,13 @@
 # TODO: USER PROFILE
 import openai, os, logging, sys, json
 from typing import List
-from cloud_services.gpt_models import AILLMModels
-from cloud_services.vector_search import VectorSearchService
 from settings.settings import Settings
 from util.logger_format import CustomFormatter
-from data.models import UserSession, RawChatMessage, Conversation, MessageContent, ChatMessage, Citation
-from cloud_services.openai_response_objects import StreamingChatCompletion
+from data.models import UserSession, RawChatMessage, Conversation, MessageContent, ChatMessage
+from cloud_services.openai_response_objects import StreamingChatCompletion, Message
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt
 from conversation.retrieve_docs import SearchRetriever
-from cloud_services.openai_response_objects import Message
+from user.get_user_info import UserInfo
 
 ch = logging.StreamHandler(stream=sys.stdout)
 ch.setLevel(logging.DEBUG)
@@ -24,8 +22,8 @@ class UserConversation:
 
     def __init__(
         self,
-        ai_model: AILLMModels,
-        search_client: VectorSearchService,
+        ai_model,
+        search_client,
         settings: Settings,
         user_session: UserSession,
         conversation: Conversation
@@ -128,15 +126,15 @@ class UserConversation:
                     output_text = output.choices[0].delta.content
                     if output_text != None:
                         response_text.append(output_text)
-                        yield f"event: message\ndata: {json.dumps({'message': output_text})}"
+                        yield {"event": "message", "data": json.dumps({'message': output_text})}
                     if output.choices[0].finish_reason == 'stop':
-                        yield f"event: topic\ndata: {json.dumps({'topic': topics[0]})}"
-                        yield f"event: followups\ndata: {json.dumps({'followups': followups})}"
+                        yield {"event": "topic", "data": json.dumps({'topic': topics[0]})}
+                        yield {"event": "followups","data": json.dumps({'followups': followups})}
                         for c in citations:
-                            yield f"event: citations\ndata: {json.dumps({'citations': c})}"
+                            yield {"event": "citations", "data": json.dumps({'citations': c})}
 
                         # signal to close source in client
-                        yield f"event: stream-ended\ndata: {json.dumps({'stream-ended': 'true'})}"
+                        yield {"event": "stream-ended", "data": json.dumps({'stream-ended': 'true'})}
                         finished = True
 
         except Exception as e:
@@ -153,7 +151,7 @@ class UserConversation:
 
     def send_message(self, query_text: str) -> None:
         # Step 1: grab user info and existing conversation from source TODO: not implemented
-        user_info = self.get_user_info()
+        user_info = UserInfo(self.user_session).get_user_info()
                
         # Step 2: retrieve content from vector db
         retriever = SearchRetriever(self.ai_model, self.search_client)

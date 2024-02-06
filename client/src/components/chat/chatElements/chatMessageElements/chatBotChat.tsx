@@ -56,7 +56,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
         boxShadow: theme.shadows[2],
         backgroundColor: theme.palette.primary.contrastText,
       }}>
-        {isLoading && (
+        {isLoading && message.message !== '' && (
           <div>
             <CircularProgress
               size={20}

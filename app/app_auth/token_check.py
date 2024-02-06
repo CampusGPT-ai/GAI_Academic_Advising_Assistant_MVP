@@ -64,7 +64,6 @@ def verify_token(token):
 if __name__ == "__main__":
 
     token = test_acquire_token()
-    token = token.encode()
 
     verify_token(token)
     print("end")

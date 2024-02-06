@@ -1,59 +1,32 @@
-[{
-    "id": "5064127e-bd3a-4d90-806e-59325670a33b",
-    "session_id": "9c08e533-9617-47bb-9e8c-e5128c7730e7",
-    "user_id": "0d14fcdc-e531-4f39-95a9-22a3df9359b1",
-    "topic": "Dormitory Costs",
-    "start_time": 1696862665.6951098,
-    "end_time": 1696862783.246161,
-    "isNew": false,
-    "_rid": "cv8wAPBiwWABAAAAAAAAAA==",
-    "_self": "dbs/cv8wAA==/colls/cv8wAPBiwWA=/docs/cv8wAPBiwWABAAAAAAAAAA==/",
-    "_etag": "\"0b02b9e2-0000-0100-0000-6524123f0000\"",
-    "_attachments": "attachments/",
-    "_ts": 1696862783
-},
-{
-    "id": "5064127e-bd3a-4d90-806e-59325670a33b",
-    "session_id": "9c08e533-9617-47bb-9e8c-e5128c7730e7",
-    "user_id": "0d14fcdc-e531-4f39-95a9-22a3df9359b1",
-    "topic": "What's for Dinner",
-    "start_time": 1696862665.6951098,
-    "end_time": 1696862783.246161,
-    "isNew": false,
-    "_rid": "cv8wAPBiwWABAAAAAAAAAA==",
-    "_self": "dbs/cv8wAA==/colls/cv8wAPBiwWA=/docs/cv8wAPBiwWABAAAAAAAAAA==/",
-    "_etag": "\"0b02b9e2-0000-0100-0000-6524123f0000\"",
-    "_attachments": "attachments/",
-    "_ts": 1696862783
-}
-,
-{
-    "id": "5064127e-bd3a-4d90-806e-59325670a33b",
-    "session_id": "9c08e533-9617-47bb-9e8c-e5128c7730e7",
-    "user_id": "0d14fcdc-e531-4f39-95a9-22a3df9359b1",
-    "topic": "Some other topic",
-    "start_time": 1696862665.6951098,
-    "end_time": 1696862783.246161,
-    "isNew": false,
-    "_rid": "cv8wAPBiwWABAAAAAAAAAA==",
-    "_self": "dbs/cv8wAA==/colls/cv8wAPBiwWA=/docs/cv8wAPBiwWABAAAAAAAAAA==/",
-    "_etag": "\"0b02b9e2-0000-0100-0000-6524123f0000\"",
-    "_attachments": "attachments/",
-    "_ts": 1696862783
-}
-,
-{
-    "id": "5064127e-bd3a-4d90-806e-59325670a33b",
-    "session_id": "9c08e533-9617-47bb-9e8c-e5128c7730e7",
-    "user_id": "0d14fcdc-e531-4f39-95a9-22a3df9359b1",
-    "topic": "Some topic that's getting kinda long and might wrap",
-    "start_time": 1696862665.6951098,
-    "end_time": 1696862783.246161,
-    "isNew": false,
-    "_rid": "cv8wAPBiwWABAAAAAAAAAA==",
-    "_self": "dbs/cv8wAA==/colls/cv8wAPBiwWA=/docs/cv8wAPBiwWABAAAAAAAAAA==/",
-    "_etag": "\"0b02b9e2-0000-0100-0000-6524123f0000\"",
-    "_attachments": "attachments/",
-    "_ts": 1696862783
-}
+[
+    {
+        "topic": "Physics (BA) Degree, Academic Requirements, Specializations, Application Deadlines, University Policies",
+        "conversation_id": "65bc1e6b24ea835e402e6b1b",
+        "start_time": "2024-02-01T14:42:34.234000",
+        "end_time": null
+    },
+    {
+        "topic": "Physics (BA) Degree, Academic Requirements, Specializations, Application Deadlines, University Policies",
+        "conversation_id": "65bc1f2c447ee7b27f0f8938",
+        "start_time": "2024-02-01T14:45:55.034000",
+        "end_time": null
+    },
+    {
+        "topic": "Physics (BA) Degree, Academic Requirements, Specializations, Application Deadlines, University Policies",
+        "conversation_id": "65bc23890d66bc962a084dec",
+        "start_time": "2024-02-01T15:04:33.360000",
+        "end_time": null
+    },
+    {
+        "topic": "Civil Engineering Master's Program, Admission Requirements, Online Course Restrictions, Tuition Fees, Thesis and Non-thesis Options",
+        "conversation_id": "65bc2a26693d90a6d65c06d1",
+        "start_time": "2024-02-01T15:32:44.389000",
+        "end_time": null
+    },
+    {
+        "topic": "Physics (BA) Degree, Academic Requirements, Specializations, Application Deadlines, University Policies",
+        "conversation_id": "65bd1db362312f516300d48c",
+        "start_time": "2024-02-02T08:51:08.760000",
+        "end_time": null
+    }
 ]

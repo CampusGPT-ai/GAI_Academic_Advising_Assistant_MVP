@@ -20,49 +20,46 @@ import ChatActive from "../components/chat/chatContainer";
  * @property {Conversation[]} conversations - An array of all available conversations.
  */
 interface ChatProps {
-  sampleQuestions: string[];
+  sampleQuestions?: string[];
   chatResponse?: string;
   follow_up_questions?: Followup[];
   citations?: Citation[];
   isLoading: boolean;
-  isLoggedIn: boolean;
+
   sendChatClicked: (messageText: string) => void;
   setConversation: (conversation: Conversation) => void;
   newChat: () => void;
-  error: string;
+
   isError: boolean;
   messageHistory: ParentMessage[];
   conversationTitle?: string;
   conversations: Conversation[];
   currentAnswerRef: React.MutableRefObject<any>;
-  sourceOpen: boolean;
+
+  chatWidth: string;
 }
 
 const Chat: FC<ChatProps> = ({
   isLoading,
-  isLoggedIn,
+
   sampleQuestions,
   chatResponse,
   follow_up_questions,
   citations,
   sendChatClicked,
   messageHistory,
-  conversations,
-  setConversation,
   conversationTitle,
-  newChat,
-  error,
+
   isError, 
   currentAnswerRef,
-  sourceOpen
+
+  chatWidth
 }) => {
   // conversations: Array<Conversation>;
   
   return (
  
-      <Box height={"100%"} display="flex" justifyContent={"center"} width="100vw">
-      <Grid container width="100%" m={10}>
-        <Grid item xs={12}>
+      <Box height={"100%"} display="flex" justifyContent={"center"} width={chatWidth}>
           <ChatActive //src/sections/chat/chatActive
             isLoading={isLoading}
             chatResponse={chatResponse}
@@ -70,22 +67,19 @@ const Chat: FC<ChatProps> = ({
             citations={citations}
             messageHistory={messageHistory}
             sendChatClicked={sendChatClicked}
-            error={error}
+
             isError={isError}
             sampleQuestions={sampleQuestions}
             convoTitle={conversationTitle}
             currentAnswerRef={currentAnswerRef}
-            sourceOpen={sourceOpen}
+
           />
-        </Grid>
-      </Grid>
       </Box>
  
   );
 };
 
 Chat.defaultProps = {
-  isLoggedIn: true,
   isLoading: false,
   sampleQuestions: ["question 1", "question 2", "question 3"],
 };

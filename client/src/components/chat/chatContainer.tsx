@@ -1,11 +1,11 @@
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme, Grid } from "@mui/material";
 import React, { FC, useEffect, useState } from "react";
 import "../../assets/styles.css";
 import messageSample from "../../model/messages/messageSample.json";
 import ParentMessage, {Followup, Citation} from "../../model/messages/messages";
 import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
-
+import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQuestion";
 
 /**
  * this component is the active chat component that is displayed when the user is in a chat.
@@ -31,13 +31,12 @@ interface ChatActiveProps {
   chatResponse?: string;
   follow_up_questions?: Followup[];
   citations?: Citation[];
-  error?: string;
+
   messageHistory: ParentMessage[];  //optional history on selected conversation
   convoTitle?: string; //is conversation active, or id?? 
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
-  sourceOpen: boolean;
 }[]
 
 const ChatActive: FC<ChatActiveProps> = ({
@@ -47,12 +46,12 @@ const ChatActive: FC<ChatActiveProps> = ({
   convoTitle,
   isLoading,
   isError,
-  error,
+
   sampleQuestions,
   messageHistory,
   sendChatClicked,
   currentAnswerRef,
-  sourceOpen
+
 }) => {
 
   const [userQuestion, setUserQuestion] = useState('');
@@ -96,18 +95,18 @@ const ChatActive: FC<ChatActiveProps> = ({
     <Box sx={{alignItems: "center", 
     width: "95%", p: 2,
     display: "flex",
+    flexGrow: 1,
+    height: "100%",
     flexDirection: "column",
-    borderRadius: 2, 
-    flexWrap: "wrap",
-    boxShadow: 3, 
-    overflow: 'hidden',
-    backgroundColor: theme.palette.primary.light,
+    borderRadius: 1, 
+    justifyContent: "space-between"
     }}>
       {messageHistory && messageHistory.length>0 ? (
         <>
         {loggingStatement(`mesage history recieved: ${messageHistory}`)}
           <Typography variant="h2" sx={{ mb: 4 }}>{convoTitle}</Typography>
           <ChatMessages
+            userQuestion={userQuestion}
             chatResponse={chatResponse}
             follow_up_questions={follow_up_questions}
             citations={citations}
@@ -116,22 +115,26 @@ const ChatActive: FC<ChatActiveProps> = ({
             isError={isError}
             onFollowupClicked={handleQuestionClick}
             onRetry={handleRetry}
-            error={error}
             currentAnswerRef={currentAnswerRef}
           />
         </>
       ) : (
         <>
-        <Box justifyContent="center" mt="100px" width="100%" display="flex">
-          <Typography variant="h2" sx={{ mb: 4 }}>What's on your mind today?<br></br><br></br></Typography>
-          </Box>
+
+          <Grid container spacing={2} direction={'row'}>
+          {sampleQuestions?.map((question, index) => (
+            <Grid item xs={12} sm={6} key={index} >
+
+                <ChatSampleQuestion onSampleQuestionsClicked={handleQuestionClick} text={question} isLoading={isLoading}/>
+            </Grid>
+            ))}
+          </Grid>
           
     
         </>
       )}
       <ChatInput 
       sendChat={handleSendClick}
-      sourceOpen={sourceOpen}
       isLoading={isLoading}></ChatInput>
     </Box>
   );
@@ -140,8 +143,8 @@ const ChatActive: FC<ChatActiveProps> = ({
 
 
 //for default props in storybook
-const jsonString = JSON.stringify(messageSample);
-const sampleMessages = JSON.parse(jsonString) as ParentMessage[];
+const jsonstring = JSON.stringify(messageSample);
+const sampleMessages = JSON.parse(jsonstring) as ParentMessage[];
 const sampleQuestions = [
   "How are you?",
   "What's your name?",
