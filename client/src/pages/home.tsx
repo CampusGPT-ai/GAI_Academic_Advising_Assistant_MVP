@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import fetchConversations from "../api/fetchConversations";
 import fetchMessageHistory from "../api/fetchMessages";
 import Conversation from "../model/conversation/conversations";
-import ParentMessage, { Citation, Timestamp, Followup } from "../model/messages/messages";
+import ParentMessage, { Citation, Timestamp, Followup, Message} from "../model/messages/messages";
 import Footer from "../components/footer/footer";
 import Chat from "./chat";
 import { Box, Container, Divider, Button } from "@mui/material";
@@ -31,26 +31,6 @@ function getCurrentTimestamp(): Timestamp {
     $date: Date.now() // Current time in milliseconds
   };
 }
-
-const updateAssistantMessage = (parentMessage: ParentMessage, newAssistantMessage: string): ParentMessage => {
-
-  const assistantMsgIndex = parentMessage.messages.findIndex(msg => msg.role === 'assistant');
-
-  if (assistantMsgIndex === -1) {
-    console.error('No assistant message found');
-    return parentMessage;
-  }
-
-  const updatedMessages = parentMessage.messages.map((msg, index) =>
-    index === assistantMsgIndex ? { ...msg, message: newAssistantMessage } : msg
-  );
-
-  return {
-    ...parentMessage,
-    messages: updatedMessages,
-  };
-};
-
 
 enum AppStatus {
   LoggingIn = "AUTHENTICATING",
@@ -86,7 +66,7 @@ const MainPage: FC = () => {
   const [isLoading, setLoading] = useState(false);
   const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
   const [user, setUser] = useState<string | undefined>();
-  const [messageHistory, setMessageHistory] = useState(Array<ParentMessage>());
+  const [messageHistory, setMessageHistory] = useState<ParentMessage[]>();
   const [isError, setIsError] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [conversationHistory, setConversationHistory] = useState<Conversation[]>([]);
@@ -106,6 +86,8 @@ const MainPage: FC = () => {
   const [citations, setCitations] = useState<Citation[]>([]);
 
   console.log("loading main page")
+  console.log("selected conversation: ",JSON.stringify(selectedConversation))
+  console.log(`message history: ${JSON.stringify(messageHistory)}`)
 
   const theme = useTheme()
 
@@ -119,6 +101,7 @@ const MainPage: FC = () => {
     }
   };
 
+  // retrieve token with user id from backend
   const fetchUser = async () => {
     setUser(undefined)
     console.log(`is authenticated: ${isAuthenticated} and is inProgress: ${inProgress}`)
@@ -134,6 +117,10 @@ const MainPage: FC = () => {
         console.error('Error fetching user data:', error);
       }
     }
+    else {
+      setAppStatus(AppStatus.Idle)
+    }
+
   };
 
 
@@ -153,7 +140,6 @@ const MainPage: FC = () => {
       }
     }
   };
-
 
   /**
    * Fetches and sets the conversation based on selected conversation.
@@ -175,6 +161,7 @@ const MainPage: FC = () => {
     }
   };
 
+// TODO: not implemented yet
   const logoutUser = () => {
     console.log("logging out user: ", user);
     setUser(undefined);
@@ -205,6 +192,7 @@ const MainPage: FC = () => {
   }
   };
 
+  // save new conversation if conversation id === null
   const saveNewConversation = async () => {
     console.log(`fetching new conversation id`)
     if (user) {
@@ -218,6 +206,7 @@ const MainPage: FC = () => {
   const getSelectedConversationMessages = async () => {
     try {
       if (selectedConversation != null && user != undefined) {
+        console.log("fetching message history from api")
         setMessageHistory(await fetchMessageHistory({
           user: user,
           conversationId: selectedConversation.id,
@@ -229,7 +218,7 @@ const MainPage: FC = () => {
     }
   };
 
-
+// kick off actions when app status changes 
   const runApp = () => {
     if (appStatus !== AppStatus.Idle) { setLoading(true) }
     //disable all question submit while app is processing data
@@ -268,14 +257,15 @@ const MainPage: FC = () => {
   //pull message history when conversation id selection changes
   //conversation changes when user selects new conversation from history list, or attemps to send a chat without any conversation saved (new chat)
   useEffect(() => {
-    console.log(`selected conversation has changed.  Conversation id is ${JSON.stringify(selectedConversation)} `)
+    console.log(`selected conversation has changed.  Conversation id is ${JSON.stringify(selectedConversation)} and message history is ${messageHistory} `)
     // handle save conversation event output
     if (selectedConversation != undefined && appStatus === AppStatus.SavingConversation) { 
       console.log(`app status set back to generating chat response`)
       setAppStatus(AppStatus.GeneratingChatResponse) }
 
     // handle select conversation click event
-    else if (selectedConversation != undefined && messageHistory !== messageRef.current) { setAppStatus(AppStatus.GettingMessageHistory) }
+    else if (selectedConversation != undefined && (messageHistory === undefined || messageHistory.length === 0 || messageHistory !== messageRef.current)) { 
+      setAppStatus(AppStatus.GettingMessageHistory) }
     else if (selectedConversation === undefined) { setMessageHistory([]) };
 
     return () => {
@@ -300,6 +290,7 @@ const MainPage: FC = () => {
         setAppStatus(AppStatus.Idle)
       }
       if (messageHistory !== undefined && messageHistory !== messageRef.current) {
+        console.log("got new message history", JSON.stringify(messageHistory))
         messageRef.current = messageHistory;
         setAppStatus(AppStatus.Idle)
       }
@@ -310,6 +301,7 @@ const MainPage: FC = () => {
 
   // on user change, log in and/or reinitialize data
   useEffect(() => {
+
     // login
     if (user === undefined) {
       setAppStatus(AppStatus.LoggingIn)
@@ -449,6 +441,7 @@ const MainPage: FC = () => {
         >
           <Chat
             setConversation={setSelectedConversation}
+            appStatus={appStatus}
             conversationTitle={selectedConversation?.topic}
             newChat={resetConversation}
             isError={isError}

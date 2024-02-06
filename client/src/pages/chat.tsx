@@ -3,6 +3,7 @@ import React, { FC } from "react";
 import Conversation from "../model/conversation/conversations";
 import ParentMessage, {Followup, Citation}  from "../model/messages/messages";
 import ChatActive from "../components/chat/chatContainer";
+import ChatHistory from "../components/chatHistory/chatHistoryList";
 
 /**
  * Props for the Chat component.
@@ -25,13 +26,14 @@ interface ChatProps {
   follow_up_questions?: Followup[];
   citations?: Citation[];
   isLoading: boolean;
+  appStatus?: string;
 
   sendChatClicked: (messageText: string) => void;
   setConversation: (conversation: Conversation) => void;
   newChat: () => void;
 
   isError: boolean;
-  messageHistory: ParentMessage[];
+  messageHistory?: ParentMessage[];
   conversationTitle?: string;
   conversations: Conversation[];
   currentAnswerRef: React.MutableRefObject<any>;
@@ -41,7 +43,7 @@ interface ChatProps {
 
 const Chat: FC<ChatProps> = ({
   isLoading,
-
+  appStatus,
   sampleQuestions,
   chatResponse,
   follow_up_questions,
@@ -55,7 +57,8 @@ const Chat: FC<ChatProps> = ({
 
   chatWidth
 }) => {
-  // conversations: Array<Conversation>;
+  console.log(`current app status is ${appStatus}`)
+  console.log("loading chat page with ",JSON.stringify(ChatHistory))
   
   return (
  

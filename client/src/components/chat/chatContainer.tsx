@@ -32,7 +32,7 @@ interface ChatActiveProps {
   follow_up_questions?: Followup[];
   citations?: Citation[];
 
-  messageHistory: ParentMessage[];  //optional history on selected conversation
+  messageHistory?: ParentMessage[];  //optional history on selected conversation
   convoTitle?: string; //is conversation active, or id?? 
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
@@ -53,7 +53,7 @@ const ChatActive: FC<ChatActiveProps> = ({
   currentAnswerRef,
 
 }) => {
-
+  console.log(`current message history is ${JSON.stringify(messageHistory)}`);
   const [userQuestion, setUserQuestion] = useState('');
   const theme = useTheme()
 
@@ -92,6 +92,7 @@ const ChatActive: FC<ChatActiveProps> = ({
   })
   //console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
   return (
+    
     <Box sx={{alignItems: "center", 
     width: "95%", p: 2,
     display: "flex",
@@ -143,8 +144,8 @@ const ChatActive: FC<ChatActiveProps> = ({
 
 
 //for default props in storybook
-const jsonstring = JSON.stringify(messageSample);
-const sampleMessages = JSON.parse(jsonstring) as ParentMessage[];
+// const jsonstring = JSON.stringify(messageSample);
+// const sampleMessages = JSON.parse(jsonstring) as ParentMessage[];
 const sampleQuestions = [
   "How are you?",
   "What's your name?",
@@ -153,7 +154,7 @@ const sampleQuestions = [
 
 
 ChatActive.defaultProps = {
-  messageHistory: sampleMessages,
+  // messageHistory: sampleMessages,
   sampleQuestions: sampleQuestions,
 };
 

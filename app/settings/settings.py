@@ -14,8 +14,10 @@ class Settings(BaseSettings):
      OPENAI_API_VERSION: str
      AZURE_OPENAI_ENDPOINT: str
      AZURE_OPENAI_API_KEY: str
-     DEPLOYMENT_NAME: str
-     MODEL_NAME: str
+     GPT4_DEPLOYMENT_NAME: str
+     GPT4_MODEL_NAME: str
+     GPT35_DEPLOYMENT_NAME: str
+     GPT35_MODEL_NAME: str
      EMBEDDING: str
      MONGO_DB: str
      MONGO_CONN_STR: str

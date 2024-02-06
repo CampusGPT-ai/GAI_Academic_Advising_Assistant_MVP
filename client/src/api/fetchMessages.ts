@@ -1,31 +1,11 @@
 import axios from 'axios';
 import ParentMessage, { Citation, Followup, Message } from '../model/messages/messages';
 import { BaseUrl } from "./baseURL";
+import Conversation from '../model/conversation/conversations';
 
 interface fetchMessagesParams {
   user: string;
   conversationId: string;
-}
-
-interface NestedApiMessage {
-  user_session_id: string;
-  message: Message[];
-  id: string;
-}
-
-interface ApiMessage {
-  message?: NestedApiMessage;
-  citations?: Citation[];
-  follow_up_questions?: Followup[];
-}
-
-interface ApiResponse {
-  end_time: string | null;
-  topic: string;
-  user_id: string;
-  start_time: string;
-  messages: ApiMessage[];
-  id: string;
 }
 
 
@@ -34,41 +14,32 @@ const fetchMessageHistory = async ({
   conversationId,
 }: fetchMessagesParams): Promise<ParentMessage[]> => {
   const apiUrl = `${BaseUrl()}/users/${user}/conversations/${conversationId}/messages`;
-  const chats: ParentMessage[] = [];
   console.log(`fetching messages for conversationId: ${JSON.stringify(conversationId)}`)
+
   try {
-    const response = await axios.get<ApiResponse>(apiUrl, {});
-    
-    if (response.data && Array.isArray(response.data)) {
-      console.log(`Got response from messages API: ${JSON.stringify(response.data)}`)
-
-      response.data.forEach((chatSession : ApiResponse) => {
-        
-        chatSession.messages.forEach((item : ApiMessage) => {
-
-          const chatMessages: Message[] = item.message?.message || [];
-
-          const chat_message: ParentMessage = {
-            messages: chatMessages,
-            citations: item.citations,
-            follow_up_questions: item.follow_up_questions,
-            user_session_id: chatSession.id
-          }
-
-          chats.push(chat_message);
-        });
-      });
+      // Making the axios call and expecting the response to be of type ApiMessage
+      const response = await axios.get(apiUrl, {});
+      //console.log(`recieved data from api: ${JSON.stringify(response)}`)
+      const chats: ParentMessage[] = []
+      // console.log(`recieved response.data from api: ${JSON.stringify(response.data)}`)
+      const parsedData = JSON.parse(response.data)
+      // console.log(`recieved response.data[0] from api: ${JSON.stringify(parsedData[0])}`)
+      // console.log(`recieved response.data[0].messages from api: ${JSON.stringify(parsedData[0].messages)}`)
+      // Extracting data from response
+      if (parsedData[0].messages.length>0) {
+        parsedData[0].messages.forEach((message: ParentMessage) => {
+        chats.push(message)
+       }
+       );
+      }
+      // console.log(`returning list of parent messages ${JSON.stringify(chats)}`)
       return chats;
 
-      
-    } else {
-      console.log('Unexpected response format:', response);
-      throw new Error('Unexpected response format');
-    }
   } catch (error) {
     console.error(error);
     throw error;
   }
+
 };
 
 export default fetchMessageHistory;

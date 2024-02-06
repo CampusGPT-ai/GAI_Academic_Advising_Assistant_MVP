@@ -79,15 +79,21 @@ class SearchRetriever:
          return content, refined_qs
     
     @classmethod           
-    def with_default_settings(cls):
+    def with_default_settings(cls, model_num='GPT35'):
         from cloud_services.llm_services import get_llm_client
         from cloud_services.azure_cog_service import AzureSearchService
+        if model_num=='GPT35':
+            selected_model = settings.GPT35_MODEL_NAME,
+            selected_deployment = settings.GPT35_DEPLOYMENT_NAME
+        else:
+            selected_model = settings.GPT4_MODEL_NAME,
+            selected_deployment = settings.GPT4_DEPLOYMENT_NAME
 
         azure_llm = get_llm_client(api_type='azure',
                                 api_version=settings.OPENAI_API_VERSION,
                                 endpoint=settings.AZURE_OPENAI_ENDPOINT,
-                                model=settings.MODEL_NAME,
-                                deployment=settings.DEPLOYMENT_NAME,
+                                model=selected_model,
+                                deployment=selected_deployment,
                                 embedding_deployment=settings.EMBEDDING)
 
         # Create an instance of the class with these default settings
@@ -102,6 +108,7 @@ class SearchRetriever:
     
 if __name__ == "__main__":
     retriever = SearchRetriever.with_default_settings()
+    retriever4= SearchRetriever.with_default_settings()
     from pathlib import Path
 
     file_path = Path('app/data/test_user.json')

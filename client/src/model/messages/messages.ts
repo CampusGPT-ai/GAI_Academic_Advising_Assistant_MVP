@@ -12,18 +12,22 @@ export type Timestamp = {
     question: string;
   };
 
-  export type Message = {
+  export type MessageContent = {
     role: string;
     message: string;
     created_at: Timestamp;
+  }
 
+  export type Message = {
+    id: string,
+    user_session_id: string,
+    message: MessageContent[];
   }
   
   type ParentMessage = {
-    messages: Message[];
+    message: Message;
     citations?: Citation[];
     follow_up_questions?: Followup[];
-    user_session_id?: string;
   };
   
 export default ParentMessage;

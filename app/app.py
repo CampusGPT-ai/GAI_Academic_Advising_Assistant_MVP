@@ -126,13 +126,6 @@ async def get_sample_questions(session_data: UserSession = Depends(get_session_f
     retriever : SearchRetriever = SearchRetriever.with_default_settings()
     data = retriever.generate_questions(user.get_user_info())
     return JSONResponse(content={"data": data}, status_code=200)
-
-# unsaved chat TODO: Not implemented in client, all chats are saved always
-@app.get("/users/{session_guid}/chat/{user_question}")
-async def create_conversation(user_question, session_data: UserSession = Depends(get_session_from_session)):    
-    chain = UserConversation.with_default_settings(session_data)
-    generator = chain.send_message(user_question)
-    return EventSourceResponse(generator, media_type="text/event-stream")
    
 # regular chat - main API
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat/{user_question}")
@@ -146,7 +139,7 @@ async def chat(
         if conversation is None:
             return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
         
-        chain = UserConversation.with_default_settings(session_data, conversation)
+        chain = UserConversation.with_default_settings(session_data, conversation, model_num='GPT4')
         generator = chain.send_message(user_question)
         return EventSourceResponse(generator, media_type="text/event-stream")
     except Exception as e:

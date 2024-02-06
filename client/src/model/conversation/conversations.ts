@@ -7,6 +7,7 @@ type Conversation = {
     start_time: Timestamp;
     end_time?: Timestamp;
     messages?: ParentMessage[];
+    user_id?: string,
 };
 
 
