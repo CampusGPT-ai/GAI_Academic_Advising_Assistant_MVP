@@ -12,6 +12,14 @@ export type Timestamp = {
     question: string;
   };
 
+  export type MessageSimple = {
+    role: string;
+    message: string;
+    created_at: Timestamp;
+    citations?: Citation[];
+    follow_up_questions?: Followup[];
+  }
+
   export type MessageContent = {
     role: string;
     message: string;

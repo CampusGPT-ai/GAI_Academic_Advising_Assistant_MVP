@@ -1,5 +1,5 @@
 # TODO: USER PROFILE
-import openai, os, logging, sys, json
+import openai, os, logging, sys, json, re
 from typing import List
 from settings.settings import Settings
 from util.logger_format import CustomFormatter
@@ -120,33 +120,75 @@ class UserConversation:
             finished = False
             response_text = []
             output: StreamingChatCompletion = None
+            buffer = ''  # Buffer to hold incoming JSON chunks
+            response_in_progress = False
             while not finished:
                 output = next(azure_streaming_result)
-                if output:
+                if output and output.choices[0].delta.content:
                     output_text = output.choices[0].delta.content
-                    if output_text != None:
+                    output_text = output_text.replace(r'"',"").replace(r"```","").replace("json","")
+                    output_text = output_text.replace("\n","").replace("{","").replace("}","")
+                    if output_text == '' or output_text == ' ':
+                        continue
+                    buffer += output_text
+                    response_index = buffer.find(r'response:')
+                    topic_index = (buffer.find(r'topic: ')+len(r'topic: '))
+                    if response_in_progress:
                         response_text.append(output_text)
                         yield {"event": "message", "data": json.dumps({'message': output_text})}
-                    if output.choices[0].finish_reason == 'stop':
-                        yield {"event": "topic", "data": json.dumps({'topic': topics[0]})}
-                        yield {"event": "followups","data": json.dumps({'followups': followups})}
-                        for c in citations:
-                            yield {"event": "citations", "data": json.dumps({'citations': c})}
+                        if (output_text.endswith(".\"") or output_text.endswith(".\"\n")) and response_in_progress:
+                            response_in_progress = False
+                    elif not response_in_progress and response_index != -1:
+                        response_index_start = response_index + len(r'response: ')
+                        response_in_progress = True
+                        if buffer[response_index:] and buffer[response_index_start:] != '':
+                            yield {"event": "message", "data": json.dumps({'message': buffer[response_index_start:] })}
+                            response_text.append(buffer[response_index_start:])
 
-                        # signal to close source in client
-                        yield {"event": "stream-ended", "data": json.dumps({'stream-ended': 'true'})}
-                        finished = True
+                if output and output.choices[0].finish_reason == 'stop':
+
+                    # try get topic from response:
+                    new_topic = topics[0]
+                    if topic_index > len(r'topic: '):
+                        new_topic = buffer[topic_index:response_index]
+                        new_topic = new_topic.replace(r', ','')
+                    # return conversation reference 
+                    if self.conversation: 
+                        c_dict = {
+                            "topic": new_topic,
+                            "id": str(self.conversation.id),
+                            "start_time": self.conversation.start_time.isoformat() if self.conversation.start_time else None,
+                            "end_time":self.conversation.end_time.isoformat() if self.conversation.end_time else None,
+                        }
+
+                    yield {"event": "conversation", "data": json.dumps({'message': c_dict})}
+                    yield {"event": "topic", "data": json.dumps({'topic': new_topic})}
+                    yield {"event": "followups","data": json.dumps({'followups': followups})}
+                    for c in citations:
+                        yield {"event": "citations", "data": json.dumps({'citations': c})}
+
+                    # signal to close source in client
+                    yield {"event": "stream-ended", "data": json.dumps({'stream-ended': 'true'})}
+                    finished = True
 
         except Exception as e:
+            yield {"event": "error", "data": json.dumps({'error': str(e)})}
+            yield {"event": "stream-ended", "data": json.dumps({'stream-ended': 'true'})}
+            logger.error(f"error on streaming response {str(e)}")
             raise e
         finally:
             try: 
+                new_topic = buffer[topic_index:response_index]
+                new_topic = new_topic.replace(r', ','')
+                logger.info(f'saving response with response text: {"".join(response_text)}')
                 raw_chat = self.save_raw_chat(response_text, user_message)
                 chat_message = self.get_augmented_chat(followups,citations,raw_chat)
-                self.save_conversation(chat_message, topics[0])
+                self.save_conversation(chat_message, new_topic)
                 return finished
             except Exception as e: 
-                logger.info(f'caught exception on saving chat message in finally {e}')
+                yield {"event": "error", "data": json.dumps({'error': str(e)})}
+                yield {"event": "stream-ended", "data": json.dumps({'stream-ended': 'true'})}
+                logger.error(f'caught exception on saving chat message in finally {e}')
                 raise e
 
     def send_message(self, query_text: str) -> None:

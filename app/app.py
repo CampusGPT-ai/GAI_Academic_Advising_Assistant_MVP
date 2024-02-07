@@ -127,7 +127,7 @@ async def get_sample_questions(session_data: UserSession = Depends(get_session_f
     data = retriever.generate_questions(user.get_user_info())
     return JSONResponse(content={"data": data}, status_code=200)
    
-# regular chat - main API
+# regular chat - main API.  creates new conversation is conversation doesn't exist.  
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat/{user_question}")
 async def chat(
     user_question, 
@@ -135,7 +135,14 @@ async def chat(
     session_data: UserSession = Depends(get_session_from_session)
 ): 
     try:
-        conversation = Conversation.objects(id=conversation_id).first()
+        logger.info(f'got data from api call: {user_question}, {conversation_id}')
+        if conversation_id=='0':
+            logger.info("saving new conversation")
+            conversation = Conversation(user_id=session_data.user_id)
+            conversation.save()
+            logger.info(f'got conversation information {conversation.id}')
+        else: 
+            conversation = Conversation.objects(id=conversation_id).first()
         if conversation is None:
             return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
         
@@ -190,15 +197,4 @@ async def get_conversations(conversation_id, session_data: UserSession = Depends
     except Exception as e:
         logger.error(f"failed to find conversation with error {str(e)}")
         return JSONResponse(content={"message": f"failed to get messages with error {str(e)}"}, status_code=404) 
-    
-# create new conversation id if not exists
-@app.get("/users/{session_guid}/save_conversation")
-async def start_conversation(session_data: UserSession = Depends(get_session_from_session)):
-    logger.info("try saving conversation for session ")
-    try:
-        conversation = Conversation(user_id=session_data.user_id)
-        conversation.save()
-        return JSONResponse(content={"id": str(conversation.id), "start_time": str(conversation.start_time)}, status_code=200)
-    except Exception as e:
-        return JSONResponse(content={"message": f"failed to save conversation with error {str(e)}"}, status_code=404)
     

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { BaseUrl } from "./baseURL";
 
 interface fetchParams {
-  user: string;
+  user?: string;
 
 }
 
@@ -15,22 +15,22 @@ const fetchSampleQuestions = async ({
   console.log(`fetching questions for user`)
   try {
     const response = await axios.get(apiUrl, {});
-    console.log("got data from questions api: ", JSON.stringify(response.data))
+    //console.log("got data from questions api: ", JSON.stringify(response.data))
 
     const questions = response.data.data;
     
     if (questions && Array.isArray(questions)) {
-      console.log(`Got response from questions API: ${JSON.stringify(questions)}`)
+      //console.log(`Got response from questions API: ${JSON.stringify(questions)}`)
 
       questions.forEach((question : string) => {
-        console.log(question)
+        //console.log(question)
         });
 
       return questions.slice(0,4);
 
       
     } else {
-      console.log('Unexpected response format:', response);
+      console.error('Unexpected response format:', response);
       throw new Error('Unexpected response format');
     }
   } catch (error) {

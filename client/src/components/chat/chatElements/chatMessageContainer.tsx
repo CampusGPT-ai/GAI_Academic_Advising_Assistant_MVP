@@ -6,6 +6,7 @@ import ParentMessage, { Citation, Followup, MessageContent, Timestamp } from "..
 import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 import ChatUserChat from "./chatMessageElements/chatUserChat";
+import { MessageSimple } from "../../../model/messages/messages";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 
@@ -17,18 +18,17 @@ interface ChatMessagesProps {
   /** Whether the component is currently loading. */
   isLoading?: boolean;
   userQuestion?: string;
-  /** Whether an error occurred while loading the component. */
-  isError?: boolean;
+  appStatus?: string;
+
   /** the latest bot response to stream*/
   chatResponse?: string;
   follow_up_questions?: Followup[];
   citations?: Citation[];
   /** A function to call when the component should retry loading. */
   onRetry?: () => void;
-  /** An error message to display if an error occurred while loading the component. */
-  error?: string;
+
   /**An array of messages to display as history */
-  messageHistory?: ParentMessage[];
+  messageHistory?: MessageSimple[];
 
   currentAnswerRef: React.MutableRefObject<any>;
 }
@@ -44,34 +44,33 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   userQuestion,
   follow_up_questions,
   citations,
+  appStatus,
   onFollowupClicked,
   isLoading,
-  isError,
   onRetry,
-  error,
   messageHistory, 
   currentAnswerRef
 }) => {
-  console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
-  const botMessage : MessageContent = {role: 'assistant', message: chatResponse || "", created_at: getCurrentTimestamp() }
-  console.log(`created bot message with placeholder: ${JSON.stringify(botMessage)}`)
+
+  
   return (
-    <Box display="flex" flexGrow={1}>
+    <Box display="flex" flexDirection={'column'}>
       {messageHistory &&
       <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
-      { isLoading && userQuestion && <ChatUserChat text={userQuestion}></ChatUserChat>}
-      { chatResponse && 
+      { appStatus==="GENERATING CHAT RESPONSE"  && <ChatUserChat text={userQuestion}></ChatUserChat>}
+
+      { chatResponse && appStatus==="GENERATING CHAT RESPONSE" && 
+      <Box><Box sx={{ height: "50px" }} />
         <ChatBotChat
-            message={botMessage}
+            message={chatResponse}
             follow_up_questions={follow_up_questions}
             citations={citations}
             isLoading={isLoading}
             onFollowupClicked={onFollowupClicked}
-            isError={isError}
             onRetry={onRetry}
-            error={error}
             currentAnswerRef={currentAnswerRef}
-          />}
+          />
+          </Box>}
     </Box>
   );
 };

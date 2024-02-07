@@ -14,7 +14,7 @@ const sampleMessages = [] as MessageContent[];
 interface ChatBotChatProps {
   isLoading?: boolean;
   isError?: boolean;
-  message: MessageContent;
+  message: string;
   follow_up_questions?: Followup[];
   citations?: Citation[];
   onRetry?: () => void;
@@ -44,7 +44,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
   currentAnswerRef
 }) => {
   const theme = useTheme();
-  console.log(`is loading? ${isLoading}`)
+  //console.log(`checking message content on bot return: ${JSON.stringify(message.message)}`)
   return (
       
       <Box sx={{
@@ -56,7 +56,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
         boxShadow: theme.shadows[2],
         backgroundColor: theme.palette.primary.contrastText,
       }}>
-        {isLoading && message.message !== '' && (
+        {message === '' && (
           <div>
             <CircularProgress
               size={20}
@@ -73,8 +73,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
   ) */
 }
 
-        {
-        !isLoading && !isError && (
+        {!isError && (
           <ChatBotChatResponse message={message}
            follow_up_questions={follow_up_questions}
             citations={citations}
@@ -112,7 +111,7 @@ ChatBotChat.defaultProps = {
   isLoading: false,
   isError: false,
   error: "this is an error",
-  message: sampleMessages[1],
+  message: "this is a message",
 };
 
 export default ChatBotChat;

@@ -21,7 +21,7 @@ const sendTokenToBackend = async(account: AccountInfo, instance: IPublicClientAp
             
 
             const token: string = response.accessToken;
-            console.log(`Got token from login: ${token}`);
+            //console.log(`Got token from login: ${token}`);
 
             // Send the token to your backend
             const backendResponse = await fetch(endpoint, {
