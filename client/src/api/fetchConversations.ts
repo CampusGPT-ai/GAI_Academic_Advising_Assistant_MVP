@@ -3,7 +3,7 @@ import Conversation from "../model/conversation/conversations";
 import { BaseUrl } from "./baseURL";
 
 interface fetchConversationsParams {
-  user: string;
+  user?: string;
 }
 
 interface ConversationsApiResponse {
@@ -21,7 +21,7 @@ const fetchConversations = async ({
     const response : ConversationsApiResponse = await axios.get(apiUrl, {});
     
     if (response.data && Array.isArray(response.data)) {
-      console.log(`Got response from conversations API: ${JSON.stringify(response.data)}`)
+      //console.log(`Got response from conversations API: ${JSON.stringify(response.data)}`)
       return response.data.map(convo => ({
         id: convo.id,
         topic: convo.topic,
@@ -29,7 +29,7 @@ const fetchConversations = async ({
         end_time: convo.end_time ? convo.end_time : undefined,
       }));
     } else {
-      console.log('Unexpected response format:', response);
+      console.error('Unexpected response format:', response);
       throw new Error('Unexpected response format');
     }
   } catch (error) {

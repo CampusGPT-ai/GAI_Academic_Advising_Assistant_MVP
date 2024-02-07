@@ -19,7 +19,7 @@ export const BaseUrl = () => {
   
 
 export const RedirectUrl = () => {
-    console.log(`Base URL Domain: ${DOMAIN},Base URL environment: ${ENV}`)
+    // console.log(`Base URL Domain: ${DOMAIN},Base URL environment: ${ENV}`)
     let BASE_URL = '';
     if (DOMAIN === 'development') {
       BASE_URL = 'http://localhost:3000';

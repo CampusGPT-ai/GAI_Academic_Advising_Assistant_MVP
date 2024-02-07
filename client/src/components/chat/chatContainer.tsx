@@ -2,7 +2,7 @@ import { Box, Typography, useTheme, Grid } from "@mui/material";
 import React, { FC, useEffect, useState } from "react";
 import "../../assets/styles.css";
 import messageSample from "../../model/messages/messageSample.json";
-import ParentMessage, {Followup, Citation} from "../../model/messages/messages";
+import ParentMessage, {Followup, Citation, MessageSimple} from "../../model/messages/messages";
 import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
 import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQuestion";
@@ -27,13 +27,11 @@ import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQue
  */
 interface ChatActiveProps {
   isLoading: boolean; //can remove
-  isError?: boolean;
   chatResponse?: string;
   follow_up_questions?: Followup[];
   citations?: Citation[];
-
-  messageHistory?: ParentMessage[];  //optional history on selected conversation
-  convoTitle?: string; //is conversation active, or id?? 
+  messageHistory?: MessageSimple[];  //optional history on selected conversation
+  appStatus?: string;
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
@@ -43,20 +41,18 @@ const ChatActive: FC<ChatActiveProps> = ({
   chatResponse,
   follow_up_questions,
   citations,
-  convoTitle,
   isLoading,
-  isError,
-
+  appStatus,
   sampleQuestions,
   messageHistory,
   sendChatClicked,
   currentAnswerRef,
 
 }) => {
-  console.log(`current message history is ${JSON.stringify(messageHistory)}`);
+  
   const [userQuestion, setUserQuestion] = useState('');
   const theme = useTheme()
-
+  //console.log(`user questions is set to ${userQuestion} with ${appStatus}`);
   /**
    * Sets the message state to the input text.
    * @param inputText - The text to set as the message state.
@@ -86,10 +82,7 @@ const ChatActive: FC<ChatActiveProps> = ({
     }
   },[userQuestion])
 
-  
-  const loggingStatement = ((message: string) => {
-    console.log(message)
-  })
+
   //console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
   return (
     
@@ -99,13 +92,12 @@ const ChatActive: FC<ChatActiveProps> = ({
     flexGrow: 1,
     height: "100%",
     flexDirection: "column",
+    mt: 2,
     borderRadius: 1, 
     justifyContent: "space-between"
     }}>
-      {messageHistory && messageHistory.length>0 ? (
+      {((messageHistory && messageHistory.length>0) || appStatus === "GENERATING CHAT RESPONSE" ) ? (
         <>
-        {loggingStatement(`mesage history recieved: ${messageHistory}`)}
-          <Typography variant="h2" sx={{ mb: 4 }}>{convoTitle}</Typography>
           <ChatMessages
             userQuestion={userQuestion}
             chatResponse={chatResponse}
@@ -113,7 +105,7 @@ const ChatActive: FC<ChatActiveProps> = ({
             citations={citations}
             messageHistory={messageHistory}
             isLoading={isLoading}
-            isError={isError}
+            appStatus={appStatus}
             onFollowupClicked={handleQuestionClick}
             onRetry={handleRetry}
             currentAnswerRef={currentAnswerRef}

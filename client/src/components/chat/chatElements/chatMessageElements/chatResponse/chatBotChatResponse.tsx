@@ -13,7 +13,7 @@ const sampleMessages = JSON.parse(jsonString) as MessageContent[];
 
 interface ChatBotChatResponseProps {
   onFollowupClicked: (message: string) => void;
-  message: MessageContent;
+  message: string;
   follow_up_questions?: Followup[],
   citations?: Citation[]
   currentAnswerRef?: React.MutableRefObject<any>;
@@ -27,7 +27,7 @@ const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
   onFollowupClicked,
 }) => {
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
-  const messageWithLineBreaks = message ? message.message.replace(/\n/g, '<br>') : "";
+  const messageWithLineBreaks = message ? message.replace(/\n/g, '<br>') : "";
   const sanitizedHTML = DOMPurify.sanitize(messageWithLineBreaks);
 
   const openCitation = (path: string) => {
@@ -39,10 +39,8 @@ const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
   };
   return (
     <Box>
-      <Typography variant="body1" ref={currentAnswerRef}>
-        <span
-          dangerouslySetInnerHTML={{ __html: message ? sanitizedHTML : "" }}
-        />
+      <Typography variant="body1">
+        {sanitizedHTML}
       </Typography>
       <Grid container spacing={1}>
         {message && citations && citations.length > 0 && (

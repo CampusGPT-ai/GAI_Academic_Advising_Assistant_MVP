@@ -1,9 +1,8 @@
 import { Box, Grid } from "@mui/material";
 import React, { FC } from "react";
 import Conversation from "../model/conversation/conversations";
-import ParentMessage, {Followup, Citation}  from "../model/messages/messages";
+import ParentMessage, {Followup, Citation, MessageSimple}  from "../model/messages/messages";
 import ChatActive from "../components/chat/chatContainer";
-import ChatHistory from "../components/chatHistory/chatHistoryList";
 
 /**
  * Props for the Chat component.
@@ -27,17 +26,10 @@ interface ChatProps {
   citations?: Citation[];
   isLoading: boolean;
   appStatus?: string;
-
   sendChatClicked: (messageText: string) => void;
-  setConversation: (conversation: Conversation) => void;
-  newChat: () => void;
 
-  isError: boolean;
-  messageHistory?: ParentMessage[];
-  conversationTitle?: string;
-  conversations: Conversation[];
+  messageHistory?: MessageSimple[];
   currentAnswerRef: React.MutableRefObject<any>;
-
   chatWidth: string;
 }
 
@@ -50,15 +42,12 @@ const Chat: FC<ChatProps> = ({
   citations,
   sendChatClicked,
   messageHistory,
-  conversationTitle,
-
-  isError, 
+ 
   currentAnswerRef,
-
   chatWidth
 }) => {
   console.log(`current app status is ${appStatus}`)
-  console.log("loading chat page with ",JSON.stringify(ChatHistory))
+  //console.log("loading chat page with ",JSON.stringify(ChatHistory))
   
   return (
  
@@ -70,10 +59,9 @@ const Chat: FC<ChatProps> = ({
             citations={citations}
             messageHistory={messageHistory}
             sendChatClicked={sendChatClicked}
+            appStatus={appStatus}
 
-            isError={isError}
             sampleQuestions={sampleQuestions}
-            convoTitle={conversationTitle}
             currentAnswerRef={currentAnswerRef}
 
           />

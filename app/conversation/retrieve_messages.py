@@ -19,38 +19,48 @@ def get_message_history(conversation_id):
         if not conversation:
             raise Exception("failed to find conversation")
         
-        conversation_list = []
         message_list = []
-        message_small_list = []
-        citation_list = []
+
+        # should always be one but query returns array
         for c in conversation:
             messages = c.messages
+
+            #data contains topic, start, end, id
+            #messages are a list of message objects that need to be parsed further
             c_dict = c._data
+            c_dict["id"]=str(c_dict["id"])
+            del c_dict['messages']
 
             for m in messages:
-                raw_messages = m.message
-                m_dict = m._data
-                citations = m.citations
 
-                for cit in citations:
+                #data contains two chat messages with references (follow ups, citations)
+                m_dict = m._data
+
+                citation_list = []
+                for cit in m.citations:
                     cit_dict = cit._data
                     citation_list.append(cit_dict)
                 
-                r_dict = raw_messages._data
-                r_dict["user_session_id"] = str(r_dict["user_session_id"].id)
-
-                for r in raw_messages.message:
-                    message_small_list.append(r._data)
+                m_dict['citations'] = citation_list
                 
-                r_dict["message"]= message_small_list
-                m_dict["citations"] = citation_list
-                m_dict["message"] = r_dict
-                message_list.append(m_dict)
+                new_message = {}
 
-            c_dict['messages'] = message_list
-            conversation_list.append(c_dict)
+                #get chats
+                message_small_list = []
+                for r in m.message.message:
+                    message_small_list.append(r._data)
 
-        json_data = json.dumps(conversation_list, cls=CustomJSONEncoder)
+                message_small_list = sorted(message_small_list, key=lambda x: (x['role']), reverse=True)
+
+                for role in message_small_list:
+                    new_message = role
+                    if role["role"] == 'assistant':
+                        new_message["citations"]=citation_list
+                        new_message["followups"]=m_dict["follow_up_questions"]
+                    message_list.append(new_message)
+        sorted_messages = sorted(message_list, key=lambda x: (x['created_at']), reverse=True)
+
+        json_data = json.dumps(sorted_messages, cls=CustomJSONEncoder)
 
         return json_data
 
@@ -75,4 +85,5 @@ if __name__=="__main__":
     with relative_path.open(mode='r') as file:
         mock_user_session : UserSession = UserSession(**json.load(file))
     
-    get_message_history(conversation_id="65bc1f2c447ee7b27f0f8938")
+    get_message_history(conversation_id="65bc1e6b24ea835e402e6b1b")
+

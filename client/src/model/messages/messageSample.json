@@ -1,43 +1,218 @@
 [
     {
-        "end_time": null,
-        "topic": "Physics (BA) Degree, Academic Requirements, Specializations, Application Deadlines, University Policies",
-        "user_id": "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I",
-        "start_time": "2024-02-01T14:45:55.034000",
-        "messages": [
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:43:06.139000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, it would be helpful to know more about your academic program and progress. Please provide information about your major or area of study, as well as any courses you have already completed. With that information, I can provide you with a tailored list of classes required for graduation.",
+        "created_at": "2024-02-01T22:43:06.139000",
+        "citations": [
             {
-                "message": {
-                    "user_session_id": "65b831438a91cfa283e4bcc1",
-                    "message": [
-                        {
-                            "role": "assistant",
-                            "message": "To determine the specific classes you need to graduate, I would need more information about your academic program and progress. Graduation requirements vary depending on your major, degree program, and any specializations you may have. nnTo ensure accuracy, I recommend reaching out to your academic advisor or the relevant department at your university. They will be able to provide you with a personalized list of classes required for graduation based on your specific academic situation.",
-                            "created_at": "2024-02-01T22:46:04.069000"
-                        },
-                        {
-                            "role": "user",
-                            "message": "what classes do I need to graduate?",
-                            "created_at": "2024-02-01T22:46:04.069000"
-                        }
-                    ],
-                    "id": "65bc1f2c447ee7b27f0f8937"
-                },
-                "citations": [
-                    {
-                        "citation_text": "s",
-                        "citation_path": "s"
-                    }
-                ],
-                "follow_up_questions": [
-                    "What are the courses covered under the Information Technology/Data Science Specialization?",
-                    "What is the grading policy for physics and mathematics courses?",
-                    "Can courses be repeated if the grade is below C?",
-                    "Can any exemptions be made to the academic requirements?",
-                    "Are there any financial aid options available to help with tuition costs?",
-                    "Are there any specific lab requirements for Physics majors?"
-                ]
+                "citation_text": "s",
+                "citation_path": "s"
             }
         ],
-        "id": "65bc1f2c447ee7b27f0f8938"
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:43:04.957000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the classes you need to graduate, I would need more information about your academic program and progress. Please provide me with your current major and any relevant details about your academic standing. This will help me provide you with accurate and personalized information regarding your graduation requirements.",
+        "created_at": "2024-02-01T22:43:04.957000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:43:03.874000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, I would need more information about your academic program and progress. Please provide me with the name of your major or degree program, as well as any other relevant details about your coursework or specialization. With that information, I will be able to provide you with an accurate answer.",
+        "created_at": "2024-02-01T22:43:03.874000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:43:02.580000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, it would be helpful for me to know your academic major and any specializations you may have chosen. Could you please provide me with that information?",
+        "created_at": "2024-02-01T22:43:02.580000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:43:01.500000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, I would need more information about your current academic program and progress. The course requirements for graduation can vary depending on your major, degree program, and university policies. I recommend contacting your academic advisor or reviewing your degree programs official requirements for accurate and personalized information. They will be able to provide you with a list of courses you need to complete in order to graduate successfully.",
+        "created_at": "2024-02-01T22:43:01.500000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:42:59.805000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, it would be helpful to know which degree program you are pursuing and your academic standing. Could you please provide more details about your degree program and your current status?",
+        "created_at": "2024-02-01T22:42:59.805000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:42:58.599000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, I would need more information about your major and academic requirements. Can you please provide me with your academic major?",
+        "created_at": "2024-02-01T22:42:58.599000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:42:53.312000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, I would need more information about your academic program, major, and any specific requirements that may apply. Please provide me with those details so that I can provide you with accurate information.",
+        "created_at": "2024-02-01T22:42:53.312000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
+    },
+    {
+        "role": "user",
+        "message": "what classes do I need to graduate?",
+        "created_at": "2024-02-01T22:42:46.376000"
+    },
+    {
+        "role": "assistant",
+        "message": "To determine the specific classes you need to graduate, I would need more information about your academic program and progress. Graduation requirements vary depending on your major and university policies. I recommend consulting with your academic advisor or accessing your universitys official website for a complete list of degree requirements and course sequencing for your particular major. They will be able to provide you with personalized information based on your academic record.",
+        "created_at": "2024-02-01T22:42:46.376000",
+        "citations": [
+            {
+                "citation_text": "s",
+                "citation_path": "s"
+            }
+        ],
+        "followups": [
+            "What are the courses covered under the Information Technology/Data Science Specialization?",
+            "What is the grading policy for physics and mathematics courses?",
+            "Can courses be repeated if the grade is below C?",
+            "Are there any exemptions that can be made to the academic requirements?",
+            "What are the deadlines for undergraduate applications?",
+            "Are there any financial aid options available to help with tuition costs?"
+        ]
     }
 ]
