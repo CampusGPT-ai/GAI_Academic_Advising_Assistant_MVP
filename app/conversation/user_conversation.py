@@ -8,6 +8,8 @@ from cloud_services.openai_response_objects import StreamingChatCompletion, Mess
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt
 from conversation.retrieve_docs import SearchRetriever
 from user.get_user_info import UserInfo
+from cloud_services.openai_response_objects import Message
+from pathlib import Path
 
 ch = logging.StreamHandler(stream=sys.stdout)
 ch.setLevel(logging.DEBUG)
@@ -44,7 +46,7 @@ class UserConversation:
     def get_user_info() -> str :
         #removed demo profile here - might need to add back in future
         #TODO: pull in personalized data, remove temporary mock
-        file_path = Path('app/data/test_user.json')
+        file_path = Path('data/test_user.json')
         with open(file_path, 'r') as f:
             data = json.load(f)
         
@@ -122,6 +124,8 @@ class UserConversation:
             output: StreamingChatCompletion = None
             buffer = ''  # Buffer to hold incoming JSON chunks
             response_in_progress = False
+            topic_index = 0
+            response_index = 0
             while not finished:
                 output = next(azure_streaming_result)
                 if output and output.choices[0].delta.content:
@@ -280,4 +284,4 @@ if __name__=="__main__":
     result = convo.send_message("what classes do I need to graduate?")
     while True:
         print(next(result))
-    
+

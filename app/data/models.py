@@ -32,7 +32,7 @@ class RawChatMessage(Document):
     _auto_id_field = 'id'
     # removing reference to profile, pending gather login
     # user = ReferenceField(Profile)
-    user_session_id = ReferenceField(UserSession, required=True)
+    user_session_id = ReferenceField('UserSession', required=True)
     message = ListField(EmbeddedDocumentField(MessageContent))
     meta = {
         'collection': 'raw_chat_message',  # the name of your collection in the database
