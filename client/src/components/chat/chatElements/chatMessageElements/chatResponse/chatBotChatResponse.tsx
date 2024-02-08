@@ -3,7 +3,7 @@ import DOMPurify from "dompurify";
 import React, { FC, useState } from "react";
 import "../../../../../assets/styles.css";
 import messageSample from "../../../../../model/messages/messageSample.json";
-import ParentMessage, {Citation, Followup, MessageContent} from "../../../../../model/messages/messages";
+import ParentMessage, { Citation, MessageContent } from "../../../../../model/messages/messages";
 import ChatCitation from "./chatResponseElements/chatCitation";
 import ChatFollowUp from "./chatResponseElements/chatFollowUp";
 
@@ -14,7 +14,7 @@ const sampleMessages = JSON.parse(jsonString) as MessageContent[];
 interface ChatBotChatResponseProps {
   onFollowupClicked: (message: string) => void;
   message: string;
-  follow_up_questions?: Followup[],
+  follow_up_questions?: string[],
   citations?: Citation[]
   currentAnswerRef?: React.MutableRefObject<any>;
 }
@@ -29,7 +29,8 @@ const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   const messageWithLineBreaks = message ? message.replace(/\n/g, '<br>') : "";
   const sanitizedHTML = DOMPurify.sanitize(messageWithLineBreaks);
-
+  console.log(`follow up in chatbotchatresponse ${JSON.stringify(follow_up_questions)}`)
+  const labelsCol = 2;
   const openCitation = (path: string) => {
     setIframeSrc(path);
   };
@@ -42,41 +43,55 @@ const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
       <Typography variant="body1">
         {sanitizedHTML}
       </Typography>
-      <Grid container spacing={1}>
-        {message && citations && citations.length > 0 && (
-          <Grid className="chatBotChatReferences" item xs={12}>
-            <Typography variant="subtitle1">Citations: </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-            {citations.map((citation, index) => (
-              <ChatCitation
-                key={index}
-                text={`${index + 1} ${citation.citation_text}`}
-                path={citation.citation_path}
-                onCitationClicked={(path) => {
-                  console.log("Path in parent:", path);
-                  path && openCitation(path);
-                }}
-              />
-            ))}
-            </Box>
-          </Grid>
-        )}
-        {message && follow_up_questions && follow_up_questions.length > 0 && (
-          <Grid className="chatBotChatReferences" item xs={12}>
-            <Typography variant="subtitle1">Follow-up Questions: </Typography>
+      <Box height="20px"></Box>
+      <Grid container spacing={3} direction={'row'}>
+        <Grid item xs={labelsCol} direction={'row'}>
+          <Typography variant="subtitle1">Citations: </Typography>
 
-            {follow_up_questions.map((followup, index) => (
-              <ChatFollowUp
-                key={index}
-                text={followup.question}
-                onFollowUpClicked={(text) => {
-                  console.log("question in parent:", text);
-                  text && onFollowupClicked(text);
-                }}
-              />
-            ))}
-          </Grid>
-        )}
+
+        </Grid>
+        <Grid item xs={(12-labelsCol)}>
+          {message && citations && citations.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
+              {citations.slice(0, 3).map((citation, index) => (
+                <ChatCitation
+                  key={index}
+                  text={`${index + 1} ${citation.citation_text}`}
+                  path={citation.citation_path}
+                  onCitationClicked={(path) => {
+                    console.log("Path in parent:", path);
+                    path && openCitation(path);
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+        </Grid>
+        <Grid item xs={labelsCol}>
+          <Typography variant="subtitle1">Follow-up Questions: </Typography>
+        </Grid>
+        <Grid item xs={(12-labelsCol)}>
+          {message && follow_up_questions && follow_up_questions.length > 0 && (
+            <Grid className="chatBotChatReferences" item xs={12}>
+
+              <Grid container spacing={2} direction={'row'}>
+
+                {follow_up_questions.slice(0, 4).map((followup, index) => (
+                  <Grid item xs={6} key={index}>
+                    <ChatFollowUp
+                      text={followup}
+                      onFollowUpClicked={(text) => {
+                        console.log("question in parent:", text);
+                        text && onFollowupClicked(text);
+                      }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+
+            </Grid>
+          )}
+        </Grid>
       </Grid>
 
       {/* Render the Dialog with the iframe when iframeSrc is not null */}

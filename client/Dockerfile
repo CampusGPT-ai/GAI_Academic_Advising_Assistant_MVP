@@ -1,4 +1,3 @@
-
 FROM node:16-alpine AS build
 
 WORKDIR /frontend
@@ -10,7 +9,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . ./
-
+RUN chmod +x node_modules/.bin/react-scripts
 # Build the React application
 RUN npm run build
 

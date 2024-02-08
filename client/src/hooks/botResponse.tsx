@@ -1,24 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Citation } from '../model/messages/messages';
-import { Followup } from '../model/messages/messages';
 import Conversation from '../model/conversation/conversations';
 
 interface StreamData {
   streamingMessage?: string;
   streamingConversation?: Conversation;
   citations: Citation[];
-  followups: Followup[];
+  followups: string[];
   isStreaming: boolean;
   streamingError?: string;
 }
 
 
 
-function useStreamData(apiUrl?: string): StreamData {
+function useStreamData(apiUrl?: string, setSelectedConversation?: (conversation: Conversation) => void, getSelectedConversationMessages?: () => void): StreamData {
   const [streamingMessage, setStreamingMessage] = useState<string>();
   const [citations, setCitations] = useState<Citation[]>([]);
-  const [conversation, setConversation] = useState<Conversation>();
-  const [followups, setFollowups] = useState<Followup[]>([]);
+  const [followups, setFollowups] = useState<string[]>([]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string>();
 
@@ -33,7 +31,7 @@ function useStreamData(apiUrl?: string): StreamData {
       if (isMounted) {
         source.addEventListener('conversation', event => {
           const data = JSON.parse(event.data);
-          setConversation(data.message);
+          setSelectedConversation && setSelectedConversation(data.message);
         });
 
         source.addEventListener('message', event => {
@@ -51,8 +49,8 @@ function useStreamData(apiUrl?: string): StreamData {
         });
 
         source.addEventListener('followups', event => {
-
           const data = JSON.parse(event.data);
+          console.log(`got followups from event source ${event.data}`)
           setFollowups(prevFollowups => [...prevFollowups, ...data.followups]);
          
         });
@@ -61,6 +59,7 @@ function useStreamData(apiUrl?: string): StreamData {
         //cleanup - close source, change streaming indicator, reset streaming message
         console.log(`detecting event listener for stream ended`)
         source.addEventListener('stream-ended', () => {
+          getSelectedConversationMessages && getSelectedConversationMessages()
           console.log(`stream end detected`)
           source.close();
           setStreamingMessage('');
@@ -85,7 +84,7 @@ function useStreamData(apiUrl?: string): StreamData {
     !isStreaming && setStreamingMessage('');
   },[isStreaming])
 
-  return { streamingMessage, citations, followups, isStreaming, streamingError: error, streamingConversation: conversation
+  return { streamingMessage, citations, followups, isStreaming, streamingError: error
    };
 }
 

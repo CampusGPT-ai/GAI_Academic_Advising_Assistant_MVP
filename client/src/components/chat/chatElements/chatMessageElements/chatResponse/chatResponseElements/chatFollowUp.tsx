@@ -1,4 +1,4 @@
-import { Button, useTheme } from "@mui/material";
+import { Button, useTheme, Typography } from "@mui/material";
 import React, { FC } from "react";
 
 interface ChatFollowUpProps {
@@ -6,20 +6,26 @@ interface ChatFollowUpProps {
   onFollowUpClicked?: (text: string | undefined) => void;
 }
 
-const ChatFollowUp: FC<ChatFollowUpProps> = ({ text, onFollowUpClicked }) => {
+const ChatFollowUp: FC<ChatFollowUpProps> = ({ text, onFollowUpClicked }) => 
+{
   const theme = useTheme()
   const elevationLevel = 2;
+  console.log(`got follow up question for ${text}`)
+
   return (   
       <Button variant="text"
         sx={{ background: theme.palette.primary.light,
+          textTransform: 'none',
+          height: '100%',
           boxShadow: theme.shadows[elevationLevel],
-          margin: "10px",
+          padding: "10px",
+          m: '1',
           '&:hover': {
             background:  theme.palette.primary.main,
             color: theme.palette.primary.contrastText
           },
           }} onClick={() => onFollowUpClicked?.(text)}>
-        {text}
+        <Typography variant="body1" textAlign={'left'}>{text}</Typography>
       </Button>
    
   );
@@ -30,3 +36,4 @@ ChatFollowUp.defaultProps = {
 };
 
 export default ChatFollowUp;
+

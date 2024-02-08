@@ -2,8 +2,9 @@ $ErrorActionPreference = "Stop"
 $AppImage = "app-backend-dev"
 $ClientImage = "client-frontend-dev"
 # Docker registry
-$Registry = "cedemo.azurecr.io"
+$Registry = "acrgnoba4quzzn5u"
 $tag = "latest"
+#az acr build --registry acrgnoba4quzzn5u --image client-frontend-dev --tag latest .
 
 function PromptForPush($containerPath, $defaultImageName) {
     $pushDecision = $false
@@ -12,8 +13,8 @@ function PromptForPush($containerPath, $defaultImageName) {
     $pathinput = Read-Host "Do you want to npush the image for $containerPath? (y/n)"
     if ($pathinput -eq "y") {
         az login
-        az acr login -n cedemo
-        az acr update -n cedemo --admin-enabled true
+        az acr login -n $Registry
+        az acr update -n $Registry --admin-enabled true
         $pushDecision = $true
         $imageName = Read-Host "Enter the image name for $containerPath (default: $defaultImageName)"
         if (-not $imageName) {
@@ -23,7 +24,6 @@ function PromptForPush($containerPath, $defaultImageName) {
 
     return @{
         ShouldPush = $pushDecision
-        
         ImageName  = $imageName
     }
 }
@@ -77,8 +77,8 @@ function BuildAndRunContainer($path, $imageName, $port, $push) {
     Pop-Location
 }
 
-$response = PromptForPush "./app/backend" $AppImage
-BuildAndRunContainer "./app/backend" $response.ImageName 80 $response.ShouldPush
+$response = PromptForPush "./app" $AppImage
+BuildAndRunContainer "./app" $response.ImageName 8000 $response.ShouldPush
 
-$response = PromptForPush "./client/frontend" $ClientImage
-BuildAndRunContainer "./client/frontend" $response.ImageName 5000 $response.ShouldPush
+$response = PromptForPush "./client/" $ClientImage
+BuildAndRunContainer "./client" $response.ImageName 5000 $response.ShouldPush

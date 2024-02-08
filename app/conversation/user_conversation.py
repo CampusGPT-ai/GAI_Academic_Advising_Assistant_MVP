@@ -127,7 +127,7 @@ class UserConversation:
                 if output and output.choices[0].delta.content:
                     output_text = output.choices[0].delta.content
                     output_text = output_text.replace(r'"',"").replace(r"```","").replace("json","")
-                    output_text = output_text.replace("\n","").replace("{","").replace("}","")
+                    output_text = output_text.replace("\n"," ").replace("{","").replace("}","")
                     if output_text == '' or output_text == ' ':
                         continue
                     buffer += output_text
@@ -150,8 +150,8 @@ class UserConversation:
                     # try get topic from response:
                     new_topic = topics[0]
                     if topic_index > len(r'topic: '):
-                        new_topic = buffer[topic_index:response_index]
-                        new_topic = new_topic.replace(r', ','')
+                        new_topic = buffer[topic_index:response_index-2]
+                        new_topic = new_topic.replace(', ','')
                     # return conversation reference 
                     if self.conversation: 
                         c_dict = {
@@ -178,8 +178,8 @@ class UserConversation:
             raise e
         finally:
             try: 
-                new_topic = buffer[topic_index:response_index]
-                new_topic = new_topic.replace(r', ','')
+                new_topic = buffer[topic_index:response_index-2]
+                new_topic = new_topic.replace(', ','')
                 logger.info(f'saving response with response text: {"".join(response_text)}')
                 raw_chat = self.save_raw_chat(response_text, user_message)
                 chat_message = self.get_augmented_chat(followups,citations,raw_chat)

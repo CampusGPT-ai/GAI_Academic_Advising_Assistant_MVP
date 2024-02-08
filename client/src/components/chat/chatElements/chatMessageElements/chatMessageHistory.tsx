@@ -14,9 +14,9 @@ interface ChatHistoryProps {
 }
 
 const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollowupClicked }) => {
+  console.log(`chat message history set to: ${JSON.stringify(messages)}`)
   return (
     <div>
-      main loop from messages has {messages.length} message items. 
       {messages.map((m, index) => {
         return (
           <React.Fragment key={index}>
@@ -33,7 +33,7 @@ const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollo
             {m.role === "assistant" && (
               <>
                 <ChatBotChat message={m.message}
-                  follow_up_questions={m.follow_up_questions}
+                  follow_up_questions={m.followups}
                   citations={m.citations}
                   onFollowupClicked={onFollowupClicked} />
                 <Box sx={{ height: "50px" }} />

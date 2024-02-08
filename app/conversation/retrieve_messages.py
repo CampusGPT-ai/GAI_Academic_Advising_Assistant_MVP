@@ -58,7 +58,7 @@ def get_message_history(conversation_id):
                         new_message["citations"]=citation_list
                         new_message["followups"]=m_dict["follow_up_questions"]
                     message_list.append(new_message)
-        sorted_messages = sorted(message_list, key=lambda x: (x['created_at']), reverse=True)
+        sorted_messages = sorted(message_list, key=lambda x: (x['created_at']), reverse=False)
 
         json_data = json.dumps(sorted_messages, cls=CustomJSONEncoder)
 

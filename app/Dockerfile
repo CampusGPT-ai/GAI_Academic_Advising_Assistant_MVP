@@ -1,28 +1,49 @@
 # Use an official Python runtime as a parent image
-FROM python:3.11-slim-bookworm
+FROM python:3.11-slim-bookworm as builder
 
-# Set the working directory in the container
-WORKDIR /
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends gcc
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    g++ \
+    libpq-dev \
+    unixodbc-dev \
+    curl \
+    apt-transport-https \
+    ca-certificates \
+    gnupg \
+    build-essential \
+    libssl-dev \
+    libasound2 \
+    wget \
+    nginx
 
-RUN pip install poetry
-# Copy the project files into the container
-COPY pyproject.toml poetry.lock ./
+# Install Poetry
+RUN pip install --trusted-host pypi.python.org poetry
 
-# Install project dependencies (excluding development dependencies)
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-root
+# Copy project files (including pyproject.toml, poetry.lock)
+COPY pyproject.toml poetry.lock* ./
 
-# Copy the current directory contents into the container at /usr/src/app
+ENV POETRY_HTTP_TIMEOUT=3000  
+
+
+# Install dependencies using Poetry
+RUN POETRY_VIRTUALENVS_CREATE=false poetry install --no-root
+
+FROM python:3.11-slim-bookworm
+# Set the working directory in the run stage
+WORKDIR /app
+
+# Copy over the installed Python dependencies from the builder stage
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy only the necessary files to run the application
 COPY . .
 
-# Inform Docker that the container is listening on the specified port at runtime.
-EXPOSE 80
+# Expose the port your application listens on
+EXPOSE 8000
 
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "main:app"]
+# Define the command to run your app
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]

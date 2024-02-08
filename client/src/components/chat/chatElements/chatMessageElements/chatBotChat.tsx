@@ -3,7 +3,7 @@ import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
 import propTypes from "prop-types";
 import React, { FC } from "react";
 import messageSample from "../../../../model/messages/messageSample.json";
-import { MessageContent, Followup, Citation} from "../../../../model/messages/messages";
+import { MessageContent, Citation} from "../../../../model/messages/messages";
 import ChatBotChatResponse from "./chatResponse/chatBotChatResponse";
 
 //for default props
@@ -14,8 +14,8 @@ const sampleMessages = [] as MessageContent[];
 interface ChatBotChatProps {
   isLoading?: boolean;
   isError?: boolean;
-  message: string;
-  follow_up_questions?: Followup[];
+  message?: string;
+  follow_up_questions?: string[];
   citations?: Citation[];
   onRetry?: () => void;
   onFollowupClicked: (message: string) => void;
@@ -44,7 +44,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
   currentAnswerRef
 }) => {
   const theme = useTheme();
-  //console.log(`checking message content on bot return: ${JSON.stringify(message.message)}`)
+  //console.log(`checking message content on bot return: ${JSON.stringify(follow_up_questions)}`)
   return (
       
       <Box sx={{
@@ -56,7 +56,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
         boxShadow: theme.shadows[2],
         backgroundColor: theme.palette.primary.contrastText,
       }}>
-        {message === '' && (
+        {(!message || message === '') && (
           <div>
             <CircularProgress
               size={20}
@@ -73,7 +73,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
   ) */
 }
 
-        {!isError && (
+        {!isError && message && (
           <ChatBotChatResponse message={message}
            follow_up_questions={follow_up_questions}
             citations={citations}

@@ -1,8 +1,8 @@
-import { Box, Typography, useTheme, Grid } from "@mui/material";
+import { Box, useTheme, Grid, CircularProgress } from "@mui/material";
 import React, { FC, useEffect, useState } from "react";
 import "../../assets/styles.css";
 import messageSample from "../../model/messages/messageSample.json";
-import ParentMessage, {Followup, Citation, MessageSimple} from "../../model/messages/messages";
+import ParentMessage, {Citation, MessageSimple} from "../../model/messages/messages";
 import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
 import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQuestion";
@@ -28,7 +28,7 @@ import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQue
 interface ChatActiveProps {
   isLoading: boolean; //can remove
   chatResponse?: string;
-  follow_up_questions?: Followup[];
+  follow_up_questions?: string[];
   citations?: Citation[];
   messageHistory?: MessageSimple[];  //optional history on selected conversation
   appStatus?: string;
@@ -115,12 +115,19 @@ const ChatActive: FC<ChatActiveProps> = ({
         <>
 
           <Grid container spacing={2} direction={'row'}>
-          {sampleQuestions?.map((question, index) => (
+          {sampleQuestions && sampleQuestions.map((question, index) => (
             <Grid item xs={12} sm={6} key={index} >
 
                 <ChatSampleQuestion onSampleQuestionsClicked={handleQuestionClick} text={question} isLoading={isLoading}/>
             </Grid>
             ))}
+            {!sampleQuestions && appStatus==="LOADING DATA" &&
+            <Box width={'100%'} display={"flex"} justifyContent={"center"}>
+              <CircularProgress
+              size={20}
+              thickness={5}
+              style={{ marginLeft: 10 }}
+            /> </Box>}
           </Grid>
           
     
@@ -132,22 +139,6 @@ const ChatActive: FC<ChatActiveProps> = ({
     </Box>
   );
   
-};
-
-
-//for default props in storybook
-// const jsonstring = JSON.stringify(messageSample);
-// const sampleMessages = JSON.parse(jsonstring) as ParentMessage[];
-const sampleQuestions = [
-  "How are you?",
-  "What's your name?",
-  "What's your favorite color?",
-];
-
-
-ChatActive.defaultProps = {
-  // messageHistory: sampleMessages,
-  sampleQuestions: sampleQuestions,
 };
 
 export default ChatActive;

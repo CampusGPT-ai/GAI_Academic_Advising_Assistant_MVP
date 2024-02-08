@@ -1,7 +1,7 @@
 import openai, os, json
 from typing import List
 from dotenv import load_dotenv
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
@@ -123,9 +123,13 @@ app.add_middleware(
 @app.get("/users/{session_guid}/questions")
 async def get_sample_questions(session_data: UserSession = Depends(get_session_from_session)):
     user = UserInfo(session_data)
-    retriever : SearchRetriever = SearchRetriever.with_default_settings()
-    data = retriever.generate_questions(user.get_user_info())
-    return JSONResponse(content={"data": data}, status_code=200)
+    try:
+        retriever : SearchRetriever = SearchRetriever.with_default_settings()
+        data = retriever.generate_questions(user.get_user_info())
+        return JSONResponse(content={"data": data}, status_code=200)
+    except Exception as e:
+        logger.error(f"failed to load sample questions with error {str(e)}")
+        return JSONResponse(content={"message": f"failed to load sample questions with error {str(e)}"}, status_code=404)
    
 # regular chat - main API.  creates new conversation is conversation doesn't exist.  
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat/{user_question}")
@@ -144,13 +148,14 @@ async def chat(
         else: 
             conversation = Conversation.objects(id=conversation_id).first()
         if conversation is None:
-            return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
+            raise Exception("unable to create conversation for user chat.")
         
         chain = UserConversation.with_default_settings(session_data, conversation, model_num='GPT4')
         generator = chain.send_message(user_question)
         return EventSourceResponse(generator, media_type="text/event-stream")
     except Exception as e:
-        return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
+        logger.error(f"Conversation not found with {str(e)}")
+        return JSONResponse(content={"message": f"Conversation not found with {str(e)}"}, status_code=404)
 
 # return list of user conversation ids
 @app.get("/users/{session_guid}/conversations")
@@ -161,8 +166,8 @@ async def get_conversations(session_data: UserSession = Depends(get_session_from
             logger.info(f"finding conversations for user: {session_data.user_id}")
             conversations : List[Conversation] = Conversation.objects(user_id=session_data.user_id)
         if not conversations:
-            logger.error("conversation not found in db")
-            return JSONResponse(content={"message": "Conversation not found"}, status_code=404)
+            logger.info("conversation not found in db")
+            return Response(status_code=204)
         else:
             conversation_topics = []
             if conversations:

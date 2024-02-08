@@ -30,6 +30,8 @@ pip-system-certs = "^4.0"
 langchain-openai = "^0.0.5"
 langchain-core = "^0.1.18"
 langchain-community = "^0.0.17"
+gunicorn = "^21.2.0"
+uvicorn = "^0.27.0.post1"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -4,6 +4,17 @@ import fetchConversations from "../api/fetchConversations";
 import fetchSampleQuestions from '../api/fetchQuestions';
 import sendTokenToBackend from '../api/validateToken';
 import AppStatus from "../model/conversation/statusMessages";
+import { Apps } from '@mui/icons-material';
+
+interface detectHistoryRefresh {
+  isNewConversation: boolean,
+  isMessageLoaded: boolean,
+}
+
+interface conversationHistoryStatus {
+  userHasHistory: boolean,
+  isHistoryUpdated: boolean,
+}
 
 interface ConversationData {
   conversations?: Conversation[];
@@ -11,6 +22,8 @@ interface ConversationData {
   userSession?: string;
   initDataError?: string;
   dataStatus: AppStatus;
+  conversationHistoryFlag: conversationHistoryStatus; 
+
 }
 
 interface AccountData {
@@ -18,53 +31,69 @@ interface AccountData {
     instance: any;
     isAuthenticated: any;
     inProgress: any;
+    refreshFlag: detectHistoryRefresh;
     
 }
 
-function useAccountData({accounts, instance, isAuthenticated, inProgress }: AccountData): ConversationData {
+function useAccountData({accounts, instance, isAuthenticated, inProgress, refreshFlag }: AccountData): ConversationData {
   const [userSession, setUserSession] = useState<string>();
+  const [conversationHistoryFlag, setConversationHistoryFlag] = useState<conversationHistoryStatus>({userHasHistory: true, 
+    isHistoryUpdated: false});
   const [sampleQuestions, setSampleQuestions] = useState<string[]>();
   const [conversations, setConversations] = useState<Conversation[]>();
   const [initDataError, setInitDataError] = useState<string>();
-  const appStatus = useRef<AppStatus>(AppStatus.Idle);
+  const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
 
   const fetchUser = async () => {
-    appStatus.current = AppStatus.LoggingIn
+    setAppStatus(AppStatus.LoggingIn)
       try {
         const userData = await sendTokenToBackend(accounts[0], instance);
         //console.log(`fetched user from backend ${userData}`)
         setUserSession(userData);
+        setAppStatus(AppStatus.Idle)
       } catch (error) {
+        setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching user token: ${error}`);
       }
   };
 
   const getSampleQuestions = async () => {
-    appStatus.current = AppStatus.InitializingData
+    setAppStatus(AppStatus.InitializingData)
       try {
         setSampleQuestions(
           await fetchSampleQuestions({user: userSession})
         );
       }
       catch (error) {
+        setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching sample questions: ${error}`);
       }
     
   };
 
   const getConversations = async () => {
-    appStatus.current = AppStatus.InitializingData
+    setAppStatus(AppStatus.InitializingData)
       try {
-        setConversations(
-          await fetchConversations({
-            user: userSession
-          })
-        );
+        const result = await fetchConversations({
+          user: userSession
+        })
+        // history flag works if history is updated
+        result.message==='info' && setConversationHistoryFlag({userHasHistory: false, isHistoryUpdated: false})
+        result.data && setConversations(result.data);
+        result.data && setConversationHistoryFlag({userHasHistory: true, isHistoryUpdated: true})
       } catch (error) {
+        setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching conversation history: ${error}`);
-      
     }
   };
+
+  useEffect(() => {
+    // if a new conversation has been added, refresh the history list
+    refreshFlag.isMessageLoaded && refreshFlag.isNewConversation && userSession &&
+    getConversations();
+    // otherwise, set the refresh flag to false (no new history item) and return the history flag update status to false (no new updates)
+    !refreshFlag.isMessageLoaded &&!refreshFlag.isNewConversation && setConversationHistoryFlag({userHasHistory: true, isHistoryUpdated: false})
+  },[refreshFlag])
 
   useEffect(() => {
     if (userSession != undefined) {
@@ -75,9 +104,9 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress }: Acco
 
   useEffect(() => {
     if (conversations && sampleQuestions) {
-    appStatus.current = AppStatus.Idle;
+      setAppStatus(AppStatus.Idle);
     }
-  })
+  }, [conversations, sampleQuestions])
 
   useEffect(() => {
     // retrieve token with user id from backend
@@ -87,7 +116,7 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress }: Acco
   }, [isAuthenticated, inProgress]
   )
 
-  return { userSession, sampleQuestions, conversations, initDataError, dataStatus: appStatus.current};
+  return { userSession, sampleQuestions, conversations, initDataError, dataStatus: appStatus, conversationHistoryFlag};
 }
 
  export default useAccountData;
