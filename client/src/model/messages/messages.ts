@@ -7,17 +7,13 @@ export type Timestamp = {
     citation_text: string;
     citation_path: string;
   };
-  
-  export type Followup = {
-    question: string;
-  };
 
   export type MessageSimple = {
     role: string;
     message: string;
     created_at: Timestamp;
     citations?: Citation[];
-    follow_up_questions?: Followup[];
+    followups?: string[];
   }
 
   export type MessageContent = {
@@ -35,7 +31,7 @@ export type Timestamp = {
   type ParentMessage = {
     message: Message;
     citations?: Citation[];
-    follow_up_questions?: Followup[];
+    follow_up_questions?: string[];
   };
   
 export default ParentMessage;

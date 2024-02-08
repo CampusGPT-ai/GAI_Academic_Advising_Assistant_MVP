@@ -15,7 +15,8 @@ const sampleMessages = JSON.parse(jsonString) as Conversation[];
 const drawerWidth = 240;
 
 interface Props {
-  conversationList: Conversation[];
+  conversationList?: Conversation[];
+  conversationFlag: boolean;
   handleSelectConversation: (conversation: Conversation) => void;
   resetConversation: () => void;
   account: any;
@@ -25,7 +26,8 @@ const DrawerContainer: FC<Props> = ({
     conversationList,
     handleSelectConversation,
     resetConversation,
-    account
+    account,
+    conversationFlag
 }) => {
     const theme = useTheme()
     const h3Theme = theme.typography.h3;
@@ -72,7 +74,7 @@ sx={{
   '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, backgroundColor: theme.palette.primary.light, },
 }}
 >
-<DrawerContent conversationList={conversationList} handleSelectConversation={handleSelectConversation} resetConversation={resetConversation} />
+<DrawerContent conversationFlag={conversationFlag} conversationList={conversationList} handleSelectConversation={handleSelectConversation} resetConversation={resetConversation} />
 </Drawer>
 <Drawer
 variant="permanent"
@@ -82,7 +84,7 @@ sx={{
 }}
 open
 >
-<DrawerContent conversationList={conversationList} handleSelectConversation={handleSelectConversation} resetConversation={resetConversation} />
+<DrawerContent conversationFlag={conversationFlag} conversationList={conversationList} handleSelectConversation={handleSelectConversation} resetConversation={resetConversation} /> 
 <Button variant="text" startIcon={<HelpOutlineOutlinedIcon  sx={{justifyContent: "flex-start"}}/>} >
   Need Help?
 </Button>
@@ -91,7 +93,7 @@ open
   <Box display="flex" flexDirection={"row"} justifyContent={"space-between"} alignItems={"center"} p={1}>
     <AccountCircleIcon />
     <Box flexGrow={1} p={1} sx={{ wordBreak: "break-all" }}>
-      {account && account.username}
+      {account && account.name}
     </Box>
     <SettingsOutlinedIcon />
   </Box>

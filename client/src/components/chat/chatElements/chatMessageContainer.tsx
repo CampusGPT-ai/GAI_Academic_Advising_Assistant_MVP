@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import React, { FC } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
-import ParentMessage, { Citation, Followup, MessageContent, Timestamp } from "../../../model/messages/messages";
+import ParentMessage, { Citation, MessageContent, Timestamp } from "../../../model/messages/messages";
 import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 import ChatUserChat from "./chatMessageElements/chatUserChat";
@@ -22,7 +22,7 @@ interface ChatMessagesProps {
 
   /** the latest bot response to stream*/
   chatResponse?: string;
-  follow_up_questions?: Followup[];
+  follow_up_questions?: string[];
   citations?: Citation[];
   /** A function to call when the component should retry loading. */
   onRetry?: () => void;
@@ -52,14 +52,14 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   currentAnswerRef
 }) => {
 
-  
+  console.log(`testing chat bot chat response ${chatResponse}`)
   return (
     <Box display="flex" flexDirection={'column'}>
       {messageHistory &&
       <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
       { appStatus==="GENERATING CHAT RESPONSE"  && <ChatUserChat text={userQuestion}></ChatUserChat>}
 
-      { chatResponse && appStatus==="GENERATING CHAT RESPONSE" && 
+      { appStatus==="GENERATING CHAT RESPONSE" && 
       <Box><Box sx={{ height: "50px" }} />
         <ChatBotChat
             message={chatResponse}

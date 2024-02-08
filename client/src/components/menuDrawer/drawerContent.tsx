@@ -1,13 +1,11 @@
 import React, { FC, useState } from 'react';
 import Divider from '@mui/material/Divider';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
 import List from '@mui/material/List';
-import { Typography, useTheme, Box } from '@mui/material';
+import { Typography, useTheme, Box , CircularProgress} from '@mui/material';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import MailIcon from '@mui/icons-material/Mail';
 import Toolbar from '@mui/material/Toolbar';
 import Conversation from '../../model/conversation/conversations';
 import conversationSample from '../../model/conversation/conversationSample.json';
@@ -20,7 +18,8 @@ const sampleMessages = JSON.parse(jsonString) as Conversation[];
 const drawerWidth = 240;
 
 interface Props {
-  conversationList: Conversation[];
+  conversationList?: Conversation[];
+  conversationFlag: boolean;
   handleSelectConversation: (conversation: Conversation) => void;
   resetConversation: () => void;
 }
@@ -29,7 +28,7 @@ const DrawerContent: FC<Props> = ({
   conversationList,
   handleSelectConversation,
   resetConversation,
-
+  conversationFlag,
 }) => {
 
 
@@ -62,7 +61,7 @@ const DrawerContent: FC<Props> = ({
           <ListItemText disableTypography primary=
             {<Typography variant="h6" style={{ color: '#000' }}>Chat History</Typography>} />
         </ListItem>
-        {conversationList.map((conversation, index) => (
+        { conversationList && conversationList.map((conversation, index) => (
           <ListItem key={index} disablePadding>
             <ListItemButton onClick={() => handleSelectConversation(conversation)}>
 
@@ -71,14 +70,15 @@ const DrawerContent: FC<Props> = ({
             </ListItemButton>
           </ListItem>
         ))}
+        {!conversationList && conversationFlag && <Box m={2}><CircularProgress
+              size={20}
+              thickness={5}
+              style={{ marginLeft: 10 }}
+            /> </Box>}
+        {!conversationFlag && <Box m={2}>You haven't started any conversations yet.  Ask a question to begin!</Box>}
       </List>
     </Box>
   );
 }
-
-DrawerContent.defaultProps = {
-  conversationList: sampleMessages,
-};
-
 
 export default DrawerContent;

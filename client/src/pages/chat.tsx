@@ -1,7 +1,7 @@
 import { Box, Grid } from "@mui/material";
 import React, { FC } from "react";
 import Conversation from "../model/conversation/conversations";
-import ParentMessage, {Followup, Citation, MessageSimple}  from "../model/messages/messages";
+import ParentMessage, { Citation, MessageSimple}  from "../model/messages/messages";
 import ChatActive from "../components/chat/chatContainer";
 
 /**
@@ -22,12 +22,11 @@ import ChatActive from "../components/chat/chatContainer";
 interface ChatProps {
   sampleQuestions?: string[];
   chatResponse?: string;
-  follow_up_questions?: Followup[];
+  follow_up_questions?: string[];
   citations?: Citation[];
   isLoading: boolean;
   appStatus?: string;
   sendChatClicked: (messageText: string) => void;
-
   messageHistory?: MessageSimple[];
   currentAnswerRef: React.MutableRefObject<any>;
   chatWidth: string;
@@ -42,12 +41,11 @@ const Chat: FC<ChatProps> = ({
   citations,
   sendChatClicked,
   messageHistory,
- 
   currentAnswerRef,
   chatWidth
 }) => {
-  console.log(`current app status is ${appStatus}`)
-  //console.log("loading chat page with ",JSON.stringify(ChatHistory))
+  //console.log(`current app status is ${appStatus}`)
+  console.log("loading chat page with ",JSON.stringify(messageHistory))
   
   return (
  
@@ -60,7 +58,6 @@ const Chat: FC<ChatProps> = ({
             messageHistory={messageHistory}
             sendChatClicked={sendChatClicked}
             appStatus={appStatus}
-
             sampleQuestions={sampleQuestions}
             currentAnswerRef={currentAnswerRef}
 
@@ -68,11 +65,6 @@ const Chat: FC<ChatProps> = ({
       </Box>
  
   );
-};
-
-Chat.defaultProps = {
-  isLoading: false,
-  sampleQuestions: ["question 1", "question 2", "question 3"],
 };
 
 export default Chat;

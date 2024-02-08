@@ -7,27 +7,34 @@ interface fetchConversationsParams {
 }
 
 interface ConversationsApiResponse {
-  data: Conversation[];
+  message: string;
+  data?: Conversation[];
 }
 
 const fetchConversations = async ({
   user,
-}: fetchConversationsParams): Promise<Conversation[]> => {
+}: fetchConversationsParams): Promise<ConversationsApiResponse> => {
   const apiUrl = `${BaseUrl()}/users/${user}/conversations`;
 
   console.log("pinging for conversations API: ",apiUrl)
 
   try {
-    const response : ConversationsApiResponse = await axios.get(apiUrl, {});
+    const response = await axios.get(apiUrl, {});
+
+    if (response.status === 204)
+    {
+      return {message: 'info'}
+    }
     
     if (response.data && Array.isArray(response.data)) {
       //console.log(`Got response from conversations API: ${JSON.stringify(response.data)}`)
-      return response.data.map(convo => ({
+      const result = response.data.map(convo => ({
         id: convo.id,
         topic: convo.topic,
         start_time: convo.start_time,
         end_time: convo.end_time ? convo.end_time : undefined,
-      }));
+      }))
+      return {message: 'message', data: result}
     } else {
       console.error('Unexpected response format:', response);
       throw new Error('Unexpected response format');
