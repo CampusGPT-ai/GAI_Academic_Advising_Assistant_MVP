@@ -1,32 +1,30 @@
 FROM node:16-alpine AS build
 
-WORKDIR /frontend
-
+WORKDIR /app
 
 COPY package*.json ./
-
 
 RUN npm install
 
 COPY . ./
-RUN chmod +x node_modules/.bin/react-scripts
+
+
 # Build the React application
 RUN npm run build
 
-# Install serve
-RUN npm install -g serve
+FROM nginx
 
-# Use Node.js to serve the React app
-FROM node:16-alpine
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy the build output
-COPY --from=build /frontend/build /frontend/build
-# Copy node_modules folder
-COPY --from=build /frontend/node_modules /frontend/node_modules
+COPY .env /usr/share/nginx
+COPY inject-env.sh /usr/share/nginx
+COPY entrypoint.sh /usr/share/nginx
+
+
+RUN chmod +x /usr/share/nginx/inject-env.sh /usr/share/nginx/entrypoint.sh
 
 # Expose port 5000 (or any other port you prefer)n
-EXPOSE 5000
+EXPOSE 80
 
-
-# Start the React app using serve
-CMD ["/frontend/node_modules/.bin/serve", "-s", "/frontend/build", "-l", "5000"]
+ENTRYPOINT ["/usr/share/nginx/entrypoint.sh"]
