@@ -9,7 +9,7 @@ import { msalConfig } from './authConfig';
 
 const msalInstance = new PublicClientApplication(msalConfig);
 
-
+console.log(`got msal config for url: ${msalConfig.auth.redirectUri}`)
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
