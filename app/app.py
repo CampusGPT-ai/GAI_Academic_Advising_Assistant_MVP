@@ -2,6 +2,7 @@ import openai, os, json
 from typing import List
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse, Response
+from fastapi.encoders import jsonable_encoder
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
@@ -18,18 +19,13 @@ from settings.settings import Settings
 from util.logger_format import CustomFormatter
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
+from app_auth import authorize_user
 from app_auth.authorize_user import get_session_from_session
 
 from user.get_user_info import UserInfo
 import logging, sys
-from app_auth import authorize_user
 from conversation.retrieve_docs import SearchRetriever
 
-
-credential = DefaultAzureCredential()
-TOKEN = credential.get_token("https://cognitiveservices.azure.com/.default").token
-openai.api_key = TOKEN
-openai.api_type = os.getenv("OPENAI_API_TYPE")
 
 
 load_dotenv()
@@ -84,18 +80,8 @@ async def lifespan(app: FastAPI):
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-async def catch_exceptions_middleware(request: Request, call_next):
-    try:
-        return await call_next(request)
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"detail": f"Unhandled exception: {str(e)}"},
-        )
-        
 
 app = FastAPI(lifespan=lifespan)
-app.middleware('http')(catch_exceptions_middleware)
 app.include_router(authorize_user.router)
 
 
@@ -183,7 +169,7 @@ async def get_conversations(session_data: UserSession = Depends(get_session_from
             else:
                 raise
             logger.info(f"got conversations from documents {conversation_topics}")
-            response = JSONResponse(content=conversation_topics,status_code=200)
+            response = JSONResponse(jsonable_encoder(conversation_topics), status_code=200)
             logger.info(f"response serialized to json: ${response}")
             return response
     except Exception as e:
@@ -202,4 +188,3 @@ async def get_conversations(conversation_id, session_data: UserSession = Depends
     except Exception as e:
         logger.error(f"failed to find conversation with error {str(e)}")
         return JSONResponse(content={"message": f"failed to get messages with error {str(e)}"}, status_code=404) 
-    

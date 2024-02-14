@@ -156,3 +156,4 @@ topic_model.model.expElogbeta.npy
 topic_model.model.id2word
 topic_model.model.id2word
 topic_model.model.state
+.coverage
