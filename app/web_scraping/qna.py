@@ -84,20 +84,21 @@ r"""the contents below are scraped from a webpage.  Read the contents from the p
 r"""and come up with some questions, answers and derived follow up questions, that might represent an FAQ on the content. """
 r""" Use keywords and topics in the question and response text as much as possible, as this will improve search results downstream."""
 r""" Do not answer the derived follow-up questions, just brainstorm some potential further avenues for exploration."""
-r"""Your response MUST BE valid json and should look similar to the structure below, which is included for illustration purposes. """
+r"""Your response MUST BE valid json and should look similar to the structure below. """
+r"""The example below is only for illustration purposes, do NOT use this exact text in your response. """
 r"""{ """
 r"""    "Topics": [ """
 r"""        "Student Learning and Academic Success","""
 r"""        "Academic Services","""
-r"""        "PeerKnight Coaching Program","""
+r"""        "Peer Coaching Program","""
 r"""        "Student Resources","""
 r"""    ], """
 r"""    "Questions": {"""
 r"""        "What is the Division of Student Learning and Academic Success?": "The Division of Student Learning and Academic Success helps undergraduates unleash their full potential and engage in educational and co-curricular opportunities.","""
-r"""        "What are the academic planning tools offered?": "Academic planning tools include myKnight Audit, myKnight STAR, mySchedule Builder, and Pegasus Path." """
+r"""        "What are the academic planning tools offered?": "Academic planning tools include..." """
 r"""    }, """
 r"""    "Follow-up Questions": [""" 
-r"""        "What are the obligations of PeerKnight Coaching Program participants?","""
+r"""        "What are the obligations of peer tutors?","""
 r"""        "What kind of assistance does the university provide in terms of study skills?","""
 r"""        "How do the mentioned academic planning tools work?" """
 r"""    ] """
@@ -131,7 +132,8 @@ f"""{context_str}"""
                 print(f"adding {filename} to a thread (Attempt {attempt + 1})")
                 result = self.generate_completion(content)
                 print(f"Completed QnA for {filename}")
-                qna = json.loads(result.content)
+                result_content = result.content.replace(r"```","").replace("json","")
+                qna = json.loads(result_content)
                 merged_data = {**docs, **qna}
                 self.save_json(merged_data, filename, 'index-processed')
                 break  # Break out of the loop if successful
@@ -153,15 +155,14 @@ f"""{context_str}"""
 
     async def upload_files(self):
         self.threads = []
-        max_threads = 15  # be careful of rate limiting and CPU usage
-        await self.get_docs_to_process("index-upload")
-        
-        #start consumer thread production
+        max_threads = 15 # be careful of rate limiting and CPU usage
+                #start consumer thread production
         for _ in range(max_threads):
             thread = threading.Thread(target=self.run_qna)
             thread.start()
             self.threads.append(thread)
 
+        await self.get_docs_to_process("index-upload")
         # start producing docs in the queue
         await self.read_page_content_and_enqueue("index-upload")
 
