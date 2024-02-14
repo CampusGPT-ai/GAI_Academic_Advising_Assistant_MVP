@@ -132,9 +132,14 @@ class FileLogger():
             self.docs.put((None,None))
 
     def save_json(self, data, filename, container_name):
-        blob_client = self.get_blob_client(container_name, filename)
+        blob_client = self.get_blob_client(container_name, filename, 'sp=rw&st=2024-02-14T00:35:29Z&se=2024-02-15T08:35:29Z&spr=https&sv=2022-11-02&sr=c&sig=Ak2IqCZFpJcR1R4J2ho3oLdjpSr3wNk3vjaFnYRzntg%3D')
         json_data = json.dumps(data, ensure_ascii=False, indent=4)
-        blob_client.upload_blob(json_data, overwrite=True)
+        try:
+            blob_client.upload_blob(json_data, overwrite=True)
+        except Exception as e:
+            print(f"upload to blob storage failed with {str(e)}")
+            raise e
+
 
 
 if __name__ == "__main__":
