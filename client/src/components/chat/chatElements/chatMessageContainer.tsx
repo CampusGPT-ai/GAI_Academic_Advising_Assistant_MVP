@@ -7,6 +7,7 @@ import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 import ChatUserChat from "./chatMessageElements/chatUserChat";
 import { MessageSimple } from "../../../model/messages/messages";
+import AppStatus from "../../../model/conversation/statusMessages";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 
@@ -18,7 +19,7 @@ interface ChatMessagesProps {
   /** Whether the component is currently loading. */
   isLoading?: boolean;
   userQuestion?: string;
-  appStatus?: string;
+  appStatus: AppStatus;
 
   /** the latest bot response to stream*/
   chatResponse?: string;
@@ -52,14 +53,15 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   currentAnswerRef
 }) => {
 
-  console.log(`testing chat bot chat response ${chatResponse}`)
+  //console.log(`testing chat bot chat response ${chatResponse}`)
   return (
     <Box display="flex" flexDirection={'column'}>
       {messageHistory &&
       <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
-      { appStatus==="GENERATING CHAT RESPONSE"  && <ChatUserChat text={userQuestion}></ChatUserChat>}
+      {/**if the response is still generating, show the active question and response.  After response is done generating, it should be refreshed in the history */}
+      { appStatus===AppStatus.GeneratingChatResponse && <ChatUserChat text={userQuestion}></ChatUserChat>}
 
-      { appStatus==="GENERATING CHAT RESPONSE" && 
+      { appStatus===AppStatus.GeneratingChatResponse && 
       <Box><Box sx={{ height: "50px" }} />
         <ChatBotChat
             message={chatResponse}

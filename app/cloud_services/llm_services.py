@@ -162,6 +162,7 @@ class AzureLLMClients(AILLMClients):
 )
         self.model = model
         self.deployment = deployment
+        self.embedding_deployment = embedding_deployment
 
     def stream(self, messages: List[Message]):
         message_list =  [model.model_dump() for model in  messages]
@@ -221,7 +222,7 @@ class AzureLLMClients(AILLMClients):
         tokens = get_tokens(clean_text)
         if tokens < 8192:
             try:
-                result = self.client.embeddings.create(input=text, model="embeddings")
+                result = self.client.embeddings.create(input=text, model=self.embedding_deployment)
             except Exception as e:
                 raise e
         else: 
@@ -245,7 +246,7 @@ class AzureLLMClients(AILLMClients):
             logging.info(f"text greater than max tokens detected {len(cleaned_inputs)-len(filtered_inputs)} items filtered out of embedding")
         result = []    
         try:
-            result = self.client.embeddings.create(input=filtered_inputs, model="text-embedding-ada-002")
+            result = self.client.embeddings.create(input=filtered_inputs, model=self.embedding_deployment)
         except Exception as e:
             raise e
         
