@@ -132,7 +132,7 @@ class FileLogger():
             self.docs.put((None,None))
 
     def save_json(self, data, filename, container_name):
-        blob_client = self.get_blob_client(container_name, filename, 'sp=rw&st=2024-02-14T00:35:29Z&se=2024-02-15T08:35:29Z&spr=https&sv=2022-11-02&sr=c&sig=Ak2IqCZFpJcR1R4J2ho3oLdjpSr3wNk3vjaFnYRzntg%3D')
+        blob_client = self.get_blob_client(container_name, filename, os.getenv("SAS_TOKEN_UPLOAD"))
         json_data = json.dumps(data, ensure_ascii=False, indent=4)
         try:
             blob_client.upload_blob(json_data, overwrite=True)
