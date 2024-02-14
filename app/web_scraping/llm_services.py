@@ -220,7 +220,7 @@ class AzureLLMClients(AILLMClients):
         tokens = get_tokens(clean_text)
         if tokens < 8192:
             try:
-                result = self.client.embeddings.create(input=text, model="embeddings")
+                result = self.client.embeddings.create(input=text, model="embedding")
             except Exception as e:
                 raise e
         else: 
