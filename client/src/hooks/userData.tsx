@@ -68,6 +68,10 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
         setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching sample questions: ${error}`);
       }
+      finally {
+        setAppStatus(AppStatus.Idle);
+      }
+
     
   };
 
@@ -84,6 +88,9 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
       } catch (error) {
         setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching conversation history: ${error}`);
+    }
+    finally {
+      setAppStatus(AppStatus.Idle);
     }
   };
 
@@ -104,6 +111,7 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
 
   useEffect(() => {
     if (conversations && sampleQuestions) {
+      console.log(`app status changing in data hook: ${appStatus}`)
       setAppStatus(AppStatus.Idle);
     }
   }, [conversations, sampleQuestions])

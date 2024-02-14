@@ -30,7 +30,6 @@ const MainPage: FC = () => {
 
   const { instance, accounts, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
-  const [isLoading, setLoading] = useState(false);
   const [messageHistory, setMessageHistory] = useState<MessageSimple[]>();
   const [isError, setIsError] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
@@ -50,6 +49,7 @@ const MainPage: FC = () => {
    * Fetches and sets the selected conversation.
    */
   const getSelectedConversationMessages = async () => {
+    setAppStatus(AppStatus.GettingMessageHistory)
     try {
       if (selectedConversation && userSession) {
         console.log("fetching message history from api")
@@ -64,6 +64,10 @@ const MainPage: FC = () => {
     } catch (error) {
       setIsError(true)
       console.error(`An error occurred while fetching conversations ${error}`);
+
+    }
+    finally {
+      setAppStatus(AppStatus.Idle)
     }
   };
 
@@ -146,6 +150,13 @@ const MainPage: FC = () => {
         }
         conversationRef.current === selectedConversation
     }
+    else {
+      if (!isStreaming && appStatus === AppStatus.GeneratingChatResponse)
+      {
+          setAppStatus(AppStatus.Idle)
+        }
+      }
+    
 
     isStreaming && setAppStatus(AppStatus.GeneratingChatResponse)
 
@@ -247,7 +258,6 @@ const MainPage: FC = () => {
         >
           <Chat
             appStatus={appStatus}
-            isLoading={isLoading}
             sampleQuestions={sampleQuestions}
             sendChatClicked={handleUserQuestion}
             messageHistory={messageHistory}

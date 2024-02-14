@@ -54,7 +54,7 @@ class UserConversation:
     def parse_messages(message: Message) -> str:
         return message
     
-    def get_message_history(self, prompt: List, query_text: str) -> (str, Message):
+    def get_message_history(self, prompt: List, query_text: str) -> (str, Message): # type: ignore
         message_list = []
 
         try:
@@ -67,6 +67,7 @@ class UserConversation:
                 for r in raw_message_history:
                     message_dict = json.loads(r.message)
                     message_list.append(Message(**message_dict))
+                    logger.info(f"got message history item: {r.message}")
                 prompt.extend(message_list)
             except Exception as e:
                 logger.info(f"Unable to get message history with {str(e)}")
@@ -191,7 +192,7 @@ class UserConversation:
                 logger.error(f'caught exception on saving chat message in finally {e}')
                 raise e
 
-    def send_message(self, query_text: str) -> None:
+    def send_message(self, query_text: str) -> None: # type: ignore
         # Step 1: grab user info and existing conversation from source TODO: not implemented
         user_info = UserInfo(self.user_session).get_user_info()
                

@@ -6,6 +6,7 @@ import ParentMessage, {Citation, MessageSimple} from "../../model/messages/messa
 import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
 import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQuestion";
+import AppStatus from "../../model/conversation/statusMessages";
 
 /**
  * this component is the active chat component that is displayed when the user is in a chat.
@@ -26,12 +27,11 @@ import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQue
  * @property {function} sendChatClicked - A function to handle sending a chat message.
  */
 interface ChatActiveProps {
-  isLoading: boolean; //can remove
   chatResponse?: string;
   follow_up_questions?: string[];
   citations?: Citation[];
   messageHistory?: MessageSimple[];  //optional history on selected conversation
-  appStatus?: string;
+  appStatus: AppStatus;
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
@@ -41,7 +41,6 @@ const ChatActive: FC<ChatActiveProps> = ({
   chatResponse,
   follow_up_questions,
   citations,
-  isLoading,
   appStatus,
   sampleQuestions,
   messageHistory,
@@ -96,7 +95,7 @@ const ChatActive: FC<ChatActiveProps> = ({
     borderRadius: 1, 
     justifyContent: "space-between"
     }}>
-      {((messageHistory && messageHistory.length>0) || appStatus === "GENERATING CHAT RESPONSE" ) ? (
+      {((messageHistory && messageHistory.length>0) || appStatus === AppStatus.GeneratingChatResponse ) ? (
         <>
           <ChatMessages
             userQuestion={userQuestion}
@@ -104,7 +103,6 @@ const ChatActive: FC<ChatActiveProps> = ({
             follow_up_questions={follow_up_questions}
             citations={citations}
             messageHistory={messageHistory}
-            isLoading={isLoading}
             appStatus={appStatus}
             onFollowupClicked={handleQuestionClick}
             onRetry={handleRetry}
@@ -118,10 +116,10 @@ const ChatActive: FC<ChatActiveProps> = ({
           {sampleQuestions && sampleQuestions.map((question, index) => (
             <Grid item xs={12} sm={6} key={index} >
 
-                <ChatSampleQuestion onSampleQuestionsClicked={handleQuestionClick} text={question} isLoading={isLoading}/>
+                <ChatSampleQuestion onSampleQuestionsClicked={handleQuestionClick} text={question} appStatus={appStatus}/>
             </Grid>
             ))}
-            {!sampleQuestions && appStatus==="LOADING DATA" &&
+            {!sampleQuestions && appStatus===AppStatus.InitializingData &&
             <Box width={'100%'} display={"flex"} justifyContent={"center"}>
               <CircularProgress
               size={20}
@@ -135,7 +133,7 @@ const ChatActive: FC<ChatActiveProps> = ({
       )}
       <ChatInput 
       sendChat={handleSendClick}
-      isLoading={isLoading}></ChatInput>
+      appStatus={appStatus}></ChatInput>
     </Box>
   );
   
