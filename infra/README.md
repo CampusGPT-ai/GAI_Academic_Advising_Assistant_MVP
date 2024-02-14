@@ -3,8 +3,13 @@
 ## will refine this documentation as the process stabilizes
 
 ### pre-flight set up
+0. Prerequisites for this installation path
+- Azure Subscription set up
+- AAD/Entra in place for student identity management
+- Access to OpenAI requested for azure subscription
+- accurate/useful website data for scraping
 
-1. Ensure subscription is registered for the following resource providers: 
+2. Ensure subscription is registered for the following resource providers: 
 - Microsoft.CognitiveServices
 - Microsoft.Search
 - Microsoft.DocumentDB
@@ -20,6 +25,7 @@
 
 ### app/server build and test
 3. run setup_env_[linux or windows].ps1/sh to propogate environment variables for local testing
+4. check environment variables and ensure they are correct for your development environment (localhost, ports, etc)
 5. run curl commands in postman or cmd, check api results
 6. build docker container (build.ps1)
 
@@ -37,5 +43,8 @@
 ## troubleshoot
 ### Port configuration
 you can change the port that the react app runs on for local testing by setting react app port in the .env REACT_APP_PORT=3000
+### Environment Variables
+Ensure you are using the appropriate values for environment variables for local development vs. dev/prod environments in azure (e.g. localhost vs. appname)
+
 
 
