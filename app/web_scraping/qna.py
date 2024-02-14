@@ -2,10 +2,11 @@ import dotenv
 dotenv.load_dotenv()
 
 import threading
-import cloud_services.llm_services as llm
+from llm_services import AzureLLMClients, get_llm_client
 import os, openai
 from typing import List
-from cloud_services.openai_response_objects import Message, ChatCompletion
+from openai_response_objects import Message, ChatCompletion
+
 # setup openai connection
 import logging, sys, json
 from file_tracker import FileLogger
@@ -23,7 +24,7 @@ logging.basicConfig(
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
-OPENAI_ENDPOINT= os.getenv("OPENAI_ENDPOINT")
+OPENAI_ENDPOINT= os.getenv("AZURE_ENDPOINT")
 OPENAI_DEPLOYMENT = os.getenv("DEPLOYMENT_NAME")
 OPENAI_MODEL = os.getenv("MODEL_NAME")
 EMBEDDING = os.getenv("EMBEDDING")
@@ -44,53 +45,36 @@ DOCUMENT_DIRECTORY = 'C:\\repos\\isupportu-\\QnA'
 VISITED_LOG = 'C:\\repos\\isupportu-\\QnA\\logs\\visited.txt'
 REJECTED_LOG = 'C:\\repos\\isupportu-\\QnA\\logs\\rejected.txt'
 
+AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
+AZURE_STORAGE_ACCOUNT_CRED = os.getenv("AZURE_STORAGE_ACCOUNT_CRED")
+AZURE_STORAGE_CONTAINER=os.getenv("AZURE_STORAGE_CONTAINER")
+
+account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net"
 
 class SyntheticQnA(FileLogger):
-    def __init__(self,document_directory, visited_log, rejected_log, unprocessed_directory):
-        super().__init__(document_directory, visited_log, rejected_log, unprocessed_directory)
-        self.azure_llm = llm.get_llm_client(api_type='azure',
+    def __init__(self, visited_log, rejected_log, credentials, account_url):
+        super().__init__( visited_log, rejected_log, credentials, account_url)
+        self.azure_llm = get_llm_client(api_type='azure',
                                 api_version=OPENAI_VERSION,
                                 endpoint=OPENAI_ENDPOINT,
                                 model=OPENAI_MODEL,
                                 deployment=OPENAI_DEPLOYMENT,
                                 embedding_deployment=EMBEDDING_DEPLOYMENT)
         self.lock = threading.Lock()
-        
-        self.prefix_whitelist = [
-            "www",
-            "www.housing",
-            "scai.sdes",
-            "registrar",
-            "www.fp",
-            "guides",
-            "www.ehs",
-            "cdl",
-            "digitallearning",
-            "graduate",
-            "undergrad",
-            "varc.sdes",
-            "rwc.sdes",
-            "academicsuccess",
-            "career"
-        ]
+        self.threads = []
+        self.prefix_whitelist = []
 
     def query_ai(self, messages: List[Message]): 
         return self.azure_llm.chat(messages)
     
     def refresh_client(self):
         with self.lock:
-            self.azure_llm = llm.get_llm_client(api_type='azure',
+            self.azure_llm = get_llm_client(api_type='azure',
                             api_version=OPENAI_VERSION,
                             endpoint=OPENAI_ENDPOINT,
                             model=OPENAI_MODEL,
                             deployment=OPENAI_DEPLOYMENT,
                             embedding_deployment=EMBEDDING_DEPLOYMENT)
-    
-    def reset_processed(self):
-        self.file_list = [file for file in os.listdir(self.directory) if file.endswith('.json')]
-        self.visited = set()
-        for file in self.file_list:
-            self.visited.add(file)
     
     def generate_completion(self, context_str: list) -> str:
         
@@ -149,7 +133,7 @@ f"""{context_str}"""
                 print(f"Completed QnA for {filename}")
                 qna = json.loads(result.content)
                 merged_data = {**docs, **qna}
-                self.save_json(merged_data, filename)
+                self.save_json(merged_data, filename, 'index-processed')
                 break  # Break out of the loop if successful
             except Exception as e:
                 print(f"Error querying GPT for {filename}: {e}")
@@ -164,58 +148,66 @@ f"""{context_str}"""
                     next
                 else:
                     self.rejected.add(filename)
-                    self.save_visited_urls()
+                    self.visited.add(filename)
                     break  # Break on other types of errors
 
-            
-    def run_qna(self):
-        self.get_docs_to_process()
-        self.read_page_content_and_enqueue()
-        self.reset_processed()
-        
-        threads = []
+    async def upload_files(self):
+        self.threads = []
         max_threads = 15  # be careful of rate limiting and CPU usage
+        await self.get_docs_to_process("index-upload")
         
-        
-        try:
-            while not self.docs.empty() or any(thread.is_alive() for thread in threads):
-                # process completed threads:
-                for thread in threads:
-                    if not thread.is_alive():
-                        thread.join()
-                
-                threads = [thread for thread in threads if thread.is_alive()]
-                
-                if len(threads) < max_threads :
-                    doc, filename = self.docs.get(block=False)
-                    filename_pre = self.extract_prefixes(filename)
-                    if (filename not in self.visited
-                    and filename not in self.rejected
-                    and filename not in self.file_list
-                    and filename_pre in self.prefix_whitelist
-                    ):
-                        self.visited.add(filename)
-                        self.save_visited_urls()
-                        content = doc.get('page_content')
-                        content = remove_duplicate_passages(content)
-                        
-                        thread = threading.Thread(target=self.threaded_generate_completion, args=(content, filename, doc))
-                        thread.start()
-                        threads.append(thread)
+        #start consumer thread production
+        for _ in range(max_threads):
+            thread = threading.Thread(target=self.run_qna)
+            thread.start()
+            self.threads.append(thread)
 
-        except KeyboardInterrupt:  
-            print("program interrupted, saving urls")  
-            self.save_visited_urls()
-        except Exception as e: 
-            self.save_visited_urls()
-        
-        self.save_visited_urls()
+        # start producing docs in the queue
+        await self.read_page_content_and_enqueue("index-upload")
+
+        for _ in self.threads: 
+            self.docs.put((None,None))
+
+        for thread in self.threads:
+            thread.join()
+
+
+    def run_qna(self):
+        while True:
+            doc, filename = self.docs.get()
+
+            if doc is None and filename is None:
+                break
+
+            max_retries = 3  # Maximum number of retries
+            retry_delay = 10  # Delay in seconds
+            for attempt in range(max_retries):
+                try:
+                    # process completed threads:
+
+                    self.visited.add(filename)
+                    # self.save_visited_urls()
+                    content = doc.get('page_content')
+                    content = remove_duplicate_passages(content)
+                    self.threaded_generate_completion(content,filename,doc)
+
+                except KeyboardInterrupt:  
+                    print("program interrupted, saving urls")  
+                    #self.save_visited_urls()
+                except Exception as e: 
+                    logging.info(f"exception from qna {str(e)}")
+                    #self.save_visited_urls( )
+                
+                #self.save_visited_urls()
                 
 
         
     
 if __name__ == "__main__":
-    prompt = SyntheticQnA(DOCUMENT_DIRECTORY, VISITED_LOG, REJECTED_LOG, UNPROCESSED_DIRECTORY)
-    prompt.run_qna()
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loader = SyntheticQnA("visited.txt","rejected.txt", credentials=AZURE_STORAGE_ACCOUNT_CRED, account_url=account_url)
+    loop.run_until_complete(loader.upload_files())
+    loop.close
     
     
