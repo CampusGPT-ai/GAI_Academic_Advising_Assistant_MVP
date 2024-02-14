@@ -5,7 +5,7 @@ from settings.settings import Settings
 from util.logger_format import CustomFormatter
 from data.models import UserSession, RawChatMessage, Conversation, MessageContent, ChatMessage
 from cloud_services.openai_response_objects import StreamingChatCompletion, Message
-from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt
+from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt, get_gpt_followup_prompt
 from conversation.retrieve_docs import SearchRetriever
 from user.get_user_info import UserInfo
 from cloud_services.openai_response_objects import Message
@@ -37,9 +37,13 @@ class UserConversation:
         self.conversation: Conversation = conversation
 
     @staticmethod
-    def generate_gpt_prompt(user_info, rag, topics) -> Message:
+    # adding a step here to modify the prompt if there is no context provided.  Prompt should provide follow up question
+    def generate_gpt_prompt(user_info, rag, topics, query_text) -> Message:
         # Start with the system message
-        system_instructions = get_gpt_system_prompt(user_info, rag, topics)
+        if rag and rag != '':
+            system_instructions = get_gpt_system_prompt(user_info, rag, topics)
+        else:
+            system_instructions = get_gpt_followup_prompt(user_info, query_text)
         return Message(role="system",content=system_instructions)
 
     @staticmethod
@@ -167,7 +171,8 @@ class UserConversation:
 
                     yield {"event": "conversation", "data": json.dumps({'message': c_dict})}
                     yield {"event": "topic", "data": json.dumps({'topic': new_topic})}
-                    yield {"event": "followups","data": json.dumps({'followups': followups})}
+                    if followups:
+                        yield {"event": "followups","data": json.dumps({'followups': followups})}
                     for c in citations:
                         yield {"event": "citations", "data": json.dumps({'citations': c})}
 
@@ -204,7 +209,7 @@ class UserConversation:
         content, followups = retriever.generate_content_and_questions(query_text, user_info)
 
         # step 3: create GPT prompt
-        full_prompt = [self.generate_gpt_prompt(user_info, content['content'], content['keywords'])]
+        full_prompt = [self.generate_gpt_prompt(user_info, content['content'], content['keywords'], query_text)]
 
         # step 4: add message history
         full_prompt, user_message = self.get_message_history(full_prompt, query_text)
