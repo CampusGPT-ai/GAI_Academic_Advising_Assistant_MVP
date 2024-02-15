@@ -100,9 +100,13 @@ async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
 
             # ensure session is unique 
             try:
-                get_session_from_session(session_guid)
-                logger.info("No existing session found....saving")
+                existing_session = get_session_from_session(session_guid)
+                if existing_session:
+                    user_session=existing_session
+                    raise Exception('session ID already exists!!')
             except:
+                logger.info("saving session")
+            finally:
                 user_session.save()
                 
             logger.info(f"Session created with ID: {session_guid} for user: {user_info}")

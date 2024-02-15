@@ -183,7 +183,7 @@ async def get_conversations(session_data: UserSession = Depends(get_session_from
 async def get_conversations(conversation_id, session_data: UserSession = Depends(get_session_from_session)):
     try:
         conversation_dict = get_message_history(conversation_id)
-        logger.info(f"Getting conversation for {session_data.user_id}, {conversation_id}: {conversation_dict}")
+        logger.debug(f"Getting conversation for {session_data.user_id}, {conversation_id}: {conversation_dict}")
         return JSONResponse(content = conversation_dict, status_code = 200)
     except Exception as e:
         logger.error(f"failed to find conversation with error {str(e)}")

@@ -5,12 +5,11 @@ import { useTheme } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import React, { ChangeEvent, FC, KeyboardEvent, useState } from "react";
-import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
-import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
-import DifferenceOutlinedIcon from '@mui/icons-material/DifferenceOutlined';
+import AppStatus from "../../../model/conversation/statusMessages";
+
 interface ChatInputProps {
   sendChat: (text: string) => void;
-  isLoading: boolean;
+  appStatus: AppStatus;
 }
 
 /**
@@ -20,7 +19,7 @@ interface ChatInputProps {
  * @param {boolean} props.isLoading - A flag indicating if the component is in a loading state.
  * @returns {JSX.Element} - The rendered component.
  */
-const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading, }) => {
+const ChatInput: FC<ChatInputProps> = ({ sendChat, appStatus }) => {
   const [message, setMessage] = useState("");
   const theme = useTheme();
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -40,6 +39,8 @@ const ChatInput: FC<ChatInputProps> = ({ sendChat, isLoading, }) => {
       handleSendClick();
     }
   };
+
+  const isLoading = appStatus!==AppStatus.Idle;
 
   return (
     <Box  sx={{ mt: 4 }} width="90%">
