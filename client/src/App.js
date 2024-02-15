@@ -10,6 +10,7 @@ import '@fontsource/roboto/700.css';
 import MainPage from './pages/home.tsx';
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 //<Navigate to="/index/chat" />
 //<Route path="/index/*" element={<MainPage />} />
 // add back <protected route>

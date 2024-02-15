@@ -92,6 +92,7 @@ class UserConversation:
                 for r in raw_message_history:
                     message_dict = json.loads(r.message)
                     message_list.append(Message(**message_dict))
+                    logger.info(f"got message history item: {r.message}")
                 prompt.extend(message_list)
             except Exception as e:
                 logger.info(f"Unable to get message history with {str(e)}")
