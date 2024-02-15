@@ -21,7 +21,6 @@ interface ConversationData {
   sampleQuestions?: string[];
   userSession?: string;
   initDataError?: string;
-  dataStatus: AppStatus;
   conversationHistoryFlag: conversationHistoryStatus; 
 
 }
@@ -32,17 +31,17 @@ interface AccountData {
     isAuthenticated: any;
     inProgress: any;
     refreshFlag: detectHistoryRefresh;
+    setAppStatus: (status: AppStatus) => void;
     
 }
 
-function useAccountData({accounts, instance, isAuthenticated, inProgress, refreshFlag }: AccountData): ConversationData {
+function useAccountData({accounts, instance, isAuthenticated, inProgress, refreshFlag, setAppStatus }: AccountData): ConversationData {
   const [userSession, setUserSession] = useState<string>();
   const [conversationHistoryFlag, setConversationHistoryFlag] = useState<conversationHistoryStatus>({userHasHistory: true, 
     isHistoryUpdated: false});
   const [sampleQuestions, setSampleQuestions] = useState<string[]>();
   const [conversations, setConversations] = useState<Conversation[]>();
   const [initDataError, setInitDataError] = useState<string>();
-  const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
 
   const fetchUser = async () => {
     setAppStatus(AppStatus.LoggingIn)
@@ -111,7 +110,6 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
 
   useEffect(() => {
     if (conversations && sampleQuestions) {
-      console.log(`app status changing in data hook: ${appStatus}`)
       setAppStatus(AppStatus.Idle);
     }
   }, [conversations, sampleQuestions])
@@ -124,7 +122,7 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
   }, [isAuthenticated, inProgress]
   )
 
-  return { userSession, sampleQuestions, conversations, initDataError, dataStatus: appStatus, conversationHistoryFlag};
+  return { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag};
 }
 
  export default useAccountData;

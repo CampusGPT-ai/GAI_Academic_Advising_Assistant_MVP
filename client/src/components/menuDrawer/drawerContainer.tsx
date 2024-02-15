@@ -92,7 +92,7 @@ open
 <Box width={"80%"} mb={0} flexGrow={1}>
   <Box display="flex" flexDirection={"row"} justifyContent={"space-between"} alignItems={"center"} p={1}>
     <AccountCircleIcon />
-    <Box flexGrow={1} p={1} sx={{ wordBreak: "break-all" }}>
+    <Box flexGrow={1} p={1} sx={{ wordBreak: "normal" }}>
       {account && account.name}
     </Box>
     <SettingsOutlinedIcon />
