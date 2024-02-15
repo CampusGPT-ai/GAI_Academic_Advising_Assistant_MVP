@@ -1,0 +1,28 @@
+name: App Tests
+
+on: [workflow_dispatch, pull_request]
+
+jobs:
+  build:
+    name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install poetry
+        working-directory: app
+        run: pip install poetry
+
+      - name: Install dev dependencies
+        working-directory: app
+        run: poetry install --only dev
+
+      - name: Run unit-tests
+        working-directory: app
+        run: poetry run nox -s tests
