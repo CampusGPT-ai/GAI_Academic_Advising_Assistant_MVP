@@ -12,6 +12,8 @@ const ChatCitation: FC<ChatCitationProps> = ({
     path,
     onCitationClicked
 }) => {
+    let buttonLabel = text && text.length > 3 ? text : path; 
+    //console.log(`citation text: ${text}, citation path: ${path}, button label ${buttonLabel}`)
     return (
         <div>
             <Button variant="text" onClick={() => onCitationClicked?.(path)}  sx={{
@@ -21,7 +23,7 @@ const ChatCitation: FC<ChatCitationProps> = ({
     maxWidth: '100%', // Max width is 100% of the parent container
     overflow: 'hidden', // Hide overflow
     textOverflow: 'ellipsis' // Add ellipsis for overflowing text
-  }} >{text}</Button>
+  }} >{buttonLabel}</Button>
         </div>
     );
 }
