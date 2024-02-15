@@ -1,5 +1,8 @@
 # TODO: USER PROFILE
 import openai, os, logging, sys, json, re
+
+print(sys.path)
+
 from typing import List
 from settings.settings import Settings
 from util.logger_format import CustomFormatter
@@ -56,7 +59,27 @@ class UserConversation:
     def parse_messages(message: Message) -> str:
         return message
     
-    def get_message_history(self, prompt: List, query_text: str) -> (str, Message):
+    def get_conversation_history(self, prompt: List, query_text:str, conversation: Conversation):
+        messages = []
+
+        from conversation.retrieve_messages import get_message_history
+        message_list = get_message_history(str(conversation.id), return_type='list')
+        
+        if message_list:
+            try:
+                for r in message_list:
+                    messages.append(Message(role=r["role"], content=r["message"]))
+                prompt.extend(messages)
+            except Exception as e:
+                logger.info(f"Unable to get message history with {str(e)}")
+
+        user_message = Message(role="user", content=query_text)
+        prompt.append(user_message)
+
+        return prompt, user_message
+    
+    # TODO: remove - using conversation history instead
+    def get_message_history(self, prompt: List, query_text: str):
         message_list = []
 
         try:
@@ -195,7 +218,7 @@ class UserConversation:
                 logger.error(f'caught exception on saving chat message in finally {e}')
                 raise e
 
-    def send_message(self, query_text: str) -> None:
+    def send_message(self, query_text: str, conversation: Conversation) -> None:
         # Step 1: grab user info and existing conversation from source TODO: not implemented
         user_info = UserInfo(self.user_session).get_user_info()
                
@@ -207,7 +230,8 @@ class UserConversation:
         full_prompt = [self.generate_gpt_prompt(user_info, content['content'], content['keywords'])]
 
         # step 4: add message history
-        full_prompt, user_message = self.get_message_history(full_prompt, query_text)
+        #full_prompt, user_message = self.get_message_history(full_prompt, query_text)
+        full_prompt, user_message = self.get_conversation_history(full_prompt, query_text, conversation)
 
         # step 5: get citations
         citations = []
@@ -277,11 +301,11 @@ if __name__=="__main__":
     with relative_path.open(mode='r') as file:
         mock_user_session : UserSession = UserSession(**json.load(file))
     
-    mock_conversation = Conversation(user_id=mock_user_session.user_id)
+    mock_conversation = Conversation(id="65cd0b42372b404efb9805f6")
 
     convo = UserConversation.with_default_settings(mock_user_session, mock_conversation, model_num='GPT4')
     
-    result = convo.send_message("what classes do I need to graduate?")
+    result = convo.send_message("what classes do I need to graduate?", mock_conversation)
     while True:
         print(next(result))
 

@@ -13,11 +13,11 @@ settings = Settings()
 from mongoengine import *
 from util.json_helper import CustomJSONEncoder
 
-def get_message_history(conversation_id):
+def get_message_history(conversation_id, return_type = "json"):
     try:
         conversation = Conversation.objects(id=conversation_id).select_related(max_depth=5)
         if not conversation:
-            raise Exception("failed to find conversation")
+            raise Exception(f"failed to find conversation for {conversation_id}")
         
         message_list = []
 
@@ -62,7 +62,10 @@ def get_message_history(conversation_id):
 
         json_data = json.dumps(sorted_messages, cls=CustomJSONEncoder)
 
-        return json_data
+        if return_type == 'json':
+            return json_data
+        else:
+            return sorted_messages
 
 
     except Exception as e:

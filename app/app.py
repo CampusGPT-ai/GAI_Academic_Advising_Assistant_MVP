@@ -137,7 +137,7 @@ async def chat(
             raise Exception("unable to create conversation for user chat.")
         
         chain = UserConversation.with_default_settings(session_data, conversation, model_num='GPT4')
-        generator = chain.send_message(user_question)
+        generator = chain.send_message(user_question, conversation)
         return EventSourceResponse(generator, media_type="text/event-stream")
     except Exception as e:
         logger.error(f"Conversation not found with {str(e)}")
