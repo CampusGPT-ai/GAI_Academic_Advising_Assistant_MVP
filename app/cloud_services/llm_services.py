@@ -277,16 +277,6 @@ if __name__ == "__main__":
                                                         embedding_deployment=EMBEDDING_DEPLOYMENT)
 
     
-    langchain_client: LangChainLLMClients = get_llm_client(api_type='langchain',
-                                                               deployment=OPENAI_DEPLOYMENT,
-                                                               api_version=OPENAI_VERSION,
-                                                               endpoint=OPENAI_ENDPOINT)
-    
-    openai_client: OpenAILLMClients = get_llm_client(api_type='openai', 
-                                                     model="gpt-4-1106-preview",
-                                                     api_key=TOKEN,
-                                                     embedding_model=EMBEDDING_MODEL)
-    
     QUERY_TEXT = "what dining services are available on UCF campus"
     SYSTEM_TEXT = "You are an academic advising assistant.  Answer your students questions"
     
