@@ -11,12 +11,7 @@ from langchain_openai import AzureOpenAIEmbeddings
 from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
-credential = DefaultAzureCredential()
-TOKEN = credential.get_token("https://cognitiveservices.azure.com/.default").token
-openai.api_key = TOKEN
-os.environ["OPENAI_API_KEY"]=TOKEN
-openai.api_type = 'azure_ad'
-        
+ 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -80,51 +75,6 @@ class AILLMClients(ABC):
     def embed_to_array(self):
         pass
     
-"""
-A class representing LangChain Language Model clients.
-
-Args:
-    deployment (str): The deployment environment.
-    version (str): The version of the language model.
-    endpoint (str): The endpoint URL.
-
-Attributes:
-    client (AzureChatOpenAI): The Azure Chat OpenAI client.
-    embeddings (AzureOpenAIEmbeddings): The Azure OpenAI Embeddings client.
-
-Methods:
-    chat(messages: List[Message]) -> Any:
-        Sends a chat request to the language model and returns the response.
-
-    embed(text: str) -> List[float]:
-        Embeds the given text using the embedding model.
-
-    """    
-class LangChainLLMClients(AILLMClients):
-
-    def __init__(self,
-                 deployment: str,
-                 version: str,
-                 endpoint: str):
-
-        self.client = AzureChatOpenAI(openai_api_version=version,
-                                      azure_deployment=deployment,
-                                      azure_endpoint=endpoint)
-        self.embeddings = AzureOpenAIEmbeddings(azure_deployment='embedding', 
-                                                openai_api_version=version,
-                                                azure_endpoint=endpoint)
-        
-    def chat(self, messages):
-        result = self.client.invoke(messages)
-        return openai_response_objects.parse_completion_object(False, result)
-    
-    def embed(self, text) -> Embedding:
-        result = self.embeddings.embed_query(text)
-        return openai_response_objects.parse_embedding({"embedding": result})
-    
-    def embed_to_array(self, text):
-        embedding = self.embed(text)
-        return embedding.embedding
     
 class AzureLLMClients(AILLMClients):
     """
@@ -265,59 +215,6 @@ class AzureLLMClients(AILLMClients):
         embedding = self.embed(text)
         return embedding.embedding
 
-
-
-class OpenAILLMClients(AILLMClients):
-    """
-A class representing OpenAI language model clients.
-
-Args:
-    model (str): The name of the language model.
-    embedding_model (str): The name of the embedding model.
-    api_key (str): The API key for accessing OpenAI services.
-
-Attributes:
-    client: The OpenAI client object.
-    model (str): The name of the language model.
-    embeddings (str): The name of the embedding model.
-"""
-    
-    def __init__(self, model, api_key, embedding_model):
-        self.client = OpenAI()
-        self.api_key = api_key
-        self.model = model
-        self.embeddings = embedding_model
-        
-    # Creates a model response for the given chat conversation.    
-    def chat(self, is_streaming: bool,  messages: List[Message]) -> ChatCompletion:
-        message_list =  [model.model_dump() for model in  messages]
-        try:
-            result = self.client.chat.completions.create(
-                model = self.model,
-                messages = message_list
-            )
-        except Exception as e:
-            raise e
-        return openai_response_objects.parse_completion_object(is_streaming,result)
-
-    def embed(self, text) -> openai_response_objects.Embedding:
-        clean_text = normalize_text(text)
-        try:
-            result = self.client.embeddings.create(
-                model=self.embeddings,
-                input=clean_text,
-                encoding_format='float'
-            )
-            return (
-                openai_response_objects.parse_embedding(result)
-                    )
-        except Exception as e: 
-            raise e
-        
-    def embed_to_array(self, text):
-        embedding = self.embed(text)
-        return embedding.embedding
-    
   
 def get_llm_client(api_type: str,
                    model: str = None,
@@ -354,18 +251,6 @@ Returns:
                 embedding_deployment=embedding_deployment
         )
 
-    elif api_type == "langchain": 
-        return LangChainLLMClients(deployment=deployment,
-                                   version=api_version,
-                                   endpoint=endpoint)
-
-    else: 
-        return OpenAILLMClients(
-            model=model,
-            api_key=api_key,
-            embedding_model=embedding_model
-        )
-
 
 if __name__ == "__main__":
     import dotenv, os
@@ -391,16 +276,6 @@ if __name__ == "__main__":
                                                         deployment=OPENAI_DEPLOYMENT,
                                                         embedding_deployment=EMBEDDING_DEPLOYMENT)
 
-    
-    langchain_client: LangChainLLMClients = get_llm_client(api_type='langchain',
-                                                               deployment=OPENAI_DEPLOYMENT,
-                                                               api_version=OPENAI_VERSION,
-                                                               endpoint=OPENAI_ENDPOINT)
-    
-    openai_client: OpenAILLMClients = get_llm_client(api_type='openai', 
-                                                     model="gpt-4-1106-preview",
-                                                     api_key=TOKEN,
-                                                     embedding_model=EMBEDDING_MODEL)
     
     QUERY_TEXT = "what dining services are available on UCF campus"
     SYSTEM_TEXT = "You are an academic advising assistant.  Answer your students questions"

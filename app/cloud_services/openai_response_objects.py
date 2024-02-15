@@ -51,7 +51,7 @@ class AIMessage(BaseMessage):
 class Choice(BaseModel):
     finish_reason: Optional[str] = None
     index: int
-    logprobs: Optional[str]
+    logprobs: Optional[str] = None
     message: Union[ChatCompletionMessage, AIMessage]
 
 class ChoiceDelta(BaseModel):
