@@ -1,4 +1,5 @@
 
+import logging
 import dotenv, os, copy
 dotenv.load_dotenv()
 from azure.core.credentials import AzureKeyCredential
@@ -9,6 +10,8 @@ from azure.search.documents.models import VectorizedQuery
 from langchain_community.vectorstores.azuresearch import AzureSearch
 from cloud_services.llm_services import get_llm_client, AzureLLMClients
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 class VectorSearchService(ABC):
     @abstractmethod

@@ -12,13 +12,7 @@ from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
  
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(stream=sys.stdout)  # Ensures logs go to stdout
-    ]
-)
+logger = logging.getLogger(__name__)
 
 def normalize_text(s, sep_token = " \n "):
     s = re.sub(r'\s+',  ' ', s).strip()
@@ -193,7 +187,7 @@ class AzureLLMClients(AILLMClients):
         cleaned_inputs = [(text, get_tokens(normalize_text(text))) for text in inputs]
         filtered_inputs = [text for text, token_count in cleaned_inputs if token_count <= 8192]
         if len(cleaned_inputs)-len(filtered_inputs) > 0:
-            logging.info(f"text greater than max tokens detected {len(cleaned_inputs)-len(filtered_inputs)} items filtered out of embedding")
+            logger.info(f"text greater than max tokens detected {len(cleaned_inputs)-len(filtered_inputs)} items filtered out of embedding")
         result = []    
         try:
             result = self.client.embeddings.create(input=filtered_inputs, model=self.embedding_deployment)
@@ -240,7 +234,7 @@ Args:
 Returns:
     AILLMClients: An instance of the appropriate LLM client based on the specified API type.
 """  
-    logging.info(f"getting open ai clients for {api_type}, {model}")
+    logger.info(f"getting open ai clients for {api_type}, {model}")
     
     if api_type == "azure":
         return AzureLLMClients(
@@ -301,7 +295,7 @@ if __name__ == "__main__":
         if output:
             output_text = output.choices[0].delta.content
             if output_text != None:
-                print(output_text)
+                logger.info(output_text)
             if output.choices[0].finish_reason == 'stop':
                 finished = True
         

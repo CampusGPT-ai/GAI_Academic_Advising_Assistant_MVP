@@ -2,9 +2,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import logging, os
 from dotenv import load_dotenv
 load_dotenv()
-logging.info("logging environment variables --------------------------")
+
+logger = logging.getLogger(__name__)
+
+logger.debug("logging environment variables --------------------------")
+
 for name, value in os.environ.items():
-     logging.info("{0}: {1}".format(name, value))
+     logger.debug("{0}: {1}".format(name, value))
+
 class Settings(BaseSettings):
 
           
