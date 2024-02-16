@@ -5,7 +5,6 @@ print(sys.path)
 
 from typing import List
 from settings.settings import Settings
-from util.logger_format import CustomFormatter
 from data.models import UserSession, RawChatMessage, Conversation, MessageContent, ChatMessage
 from cloud_services.openai_response_objects import StreamingChatCompletion, Message
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt
@@ -14,13 +13,7 @@ from user.get_user_info import UserInfo
 from cloud_services.openai_response_objects import Message
 from pathlib import Path
 
-ch = logging.StreamHandler(stream=sys.stdout)
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(CustomFormatter())
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.handlers.clear()  
-logger.addHandler(ch)  
+logger = logging.getLogger(__name__)
 
 
 class UserConversation:
@@ -295,7 +288,7 @@ if __name__=="__main__":
 
 
     from pathlib import Path
-    print("Current Working Directory:", os.getcwd())
+    logger.debug(f"Current Working Directory: {os.getcwd()}")
     relative_path = Path('./app/data/mock_user_session.json')
 
 
@@ -308,5 +301,5 @@ if __name__=="__main__":
     
     result = convo.send_message("what classes do I need to graduate?", mock_conversation)
     while True:
-        print(next(result))
+        logger.info(next(result))
 

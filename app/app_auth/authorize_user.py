@@ -48,7 +48,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
         options={"verify_signature": True, "verify_aud": True, "verify_iss": True}
         )
         
-        # print("got token payload", payload)
+        # logger.debug("got token payload", payload)
 
         username: str = payload.get("sub")
         if username is None:
@@ -121,6 +121,7 @@ async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
 
 def get_session_from_session(session_guid: str):
     current_time = datetime.now()
+    logger.debug(f"Querying user session data for {session_guid}")
     session_data = UserSession.objects(session_id=session_guid, session_end__gt=current_time).first()
 
 

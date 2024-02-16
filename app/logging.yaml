@@ -1,0 +1,88 @@
+version: 1
+disable_existing_loggers: False 
+incremental: False
+formatters:
+  access:
+    (): pythonjsonlogger.jsonlogger.JsonFormatter
+    datefmt: '%Y-%m-%d %H:%M:%S'
+    fmt: '%(levelname)s %(asctime)s - %(client_addr)s - "%(request_line)s" %(status_code)s %(request_id)s'
+  default:
+    (): pythonjsonlogger.jsonlogger.JsonFormatter
+    datefmt: '%Y-%m-%d %H:%M:%S'
+    fmt: '%(levelname)s %(asctime)s %(name)s - %(message)s'
+handlers:
+  access:
+    class: logging.StreamHandler
+    formatter: access
+    stream: ext://sys.stdout
+  default:
+    class: logging.StreamHandler
+    formatter: default
+    stream: ext://sys.stderr
+loggers:
+  '': 
+    handlers:
+      - default
+    level: WARNING
+    propagate: False
+  app:
+    handlers:
+      - default
+    level: DEBUG
+    propagate: True 
+  app_auth:
+    handlers:
+      - default
+    level: DEBUG
+    propagate: False
+  cloud_services:
+    handlers:
+      - default
+    level: DEBUG
+    propagate: False
+  conversation:
+    handlers:
+      - default
+    level: DEBUG
+    propagate: False
+  azure.search:
+    handlers:
+      - default
+    level: INFO
+    propagate: False
+  openai:
+    handlers:
+      - default
+    level: INFO
+    propagate: False
+  settings:
+    handlers:
+      - default
+    level: DEBUG
+    propagate: False
+  gunicorn:
+    handlers:
+      - default
+    level: DEBUG
+    propagate: True
+  gunicorn.access:
+    handlers:
+    - access
+    level: INFO
+    propagate: False
+  gunicorn.error:
+    level: INFO
+    propagate: False
+  uvicorn:
+    handlers:
+      - default
+    level: DEBUG
+    propagate: True
+  uvicorn.access:
+    handlers:
+    - access
+    level: INFO
+    propagate: False
+  uvicorn.error:
+    level: INFO
+    propagate: False

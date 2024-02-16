@@ -16,7 +16,6 @@ from azure.identity import DefaultAzureCredential
 from data.models import Conversation, UserSession
 from settings.settings import Settings
 
-from util.logger_format import CustomFormatter
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
 from app_auth import authorize_user
@@ -27,15 +26,9 @@ import logging, sys
 from conversation.retrieve_docs import SearchRetriever
 
 
-
 load_dotenv()
-ch = logging.StreamHandler(stream=sys.stdout)
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(CustomFormatter())
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.handlers.clear()  
-logger.addHandler(ch)  
+
+logger = logging.getLogger(__name__)
 
 
 
