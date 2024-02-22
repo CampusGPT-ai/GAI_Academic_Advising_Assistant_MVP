@@ -1,11 +1,12 @@
 version: 1
-disable_existing_loggers: False 
+disable_existing_loggers: False
 incremental: False
 formatters:
   access:
     (): pythonjsonlogger.jsonlogger.JsonFormatter
     datefmt: '%Y-%m-%d %H:%M:%S'
-    fmt: '%(levelname)s %(asctime)s - %(client_addr)s - "%(request_line)s" %(status_code)s %(request_id)s'
+    #fmt: '%(levelname)s %(asctime)s - %(client_addr)s - "%(request_line)s" %(status_code)s'
+    fmt: '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
   default:
     (): pythonjsonlogger.jsonlogger.JsonFormatter
     datefmt: '%Y-%m-%d %H:%M:%S'
@@ -14,13 +15,18 @@ handlers:
   access:
     class: logging.StreamHandler
     formatter: access
+    filters: ['context_filter']
     stream: ext://sys.stdout
   default:
     class: logging.StreamHandler
     formatter: default
+    filters: ['context_filter']
     stream: ext://sys.stderr
+filters:
+  'context_filter':
+    (): app.ContextFilter
 loggers:
-  '': 
+  '':
     handlers:
       - default
     level: WARNING
@@ -29,7 +35,7 @@ loggers:
     handlers:
       - default
     level: DEBUG
-    propagate: True 
+    propagate: True
   app_auth:
     handlers:
       - default
@@ -45,15 +51,20 @@ loggers:
       - default
     level: DEBUG
     propagate: False
+  azure:
+    handlers:
+      - default
+    level: ERROR
+    propagate: False
   azure.search:
     handlers:
       - default
-    level: INFO
+    level: DEBUG
     propagate: False
   openai:
     handlers:
       - default
-    level: INFO
+    level: DEBUG
     propagate: False
   settings:
     handlers:
