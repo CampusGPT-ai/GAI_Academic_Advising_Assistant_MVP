@@ -1,13 +1,8 @@
 from data.models import Conversation, UserSession
 import logging, sys, os, json
-from util.logger_format import CustomFormatter
-ch = logging.StreamHandler(stream=sys.stdout)
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(CustomFormatter())
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.handlers.clear()  
-logger.addHandler(ch)  
+
+logger = logging.getLogger(__name__)
+
 from settings.settings import Settings
 settings = Settings()
 from mongoengine import *
@@ -81,7 +76,7 @@ if __name__=="__main__":
     conversation = Conversation.objects()
     
     from pathlib import Path
-    print("Current Working Directory:", os.getcwd())
+    logger.debug("Current Working Directory:", os.getcwd())
     relative_path = Path('./app/data/mock_user_session.json')
 
 

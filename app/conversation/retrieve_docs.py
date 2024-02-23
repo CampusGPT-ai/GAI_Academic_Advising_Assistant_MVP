@@ -1,6 +1,7 @@
 from cloud_services.llm_services import get_llm_client, AzureLLMClients
 from cloud_services.azure_cog_service import AzureSearchService
 import os
+import logging
 from dotenv import load_dotenv
 import re, json
 from conversation.prompt_templates.search_string_prompt import get_search_prompt, get_keyword_prompt
@@ -10,6 +11,7 @@ from settings.settings import Settings
 settings = Settings()
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 class SearchRetriever:
     def __init__(self, llm_client, search_client):
@@ -116,5 +118,5 @@ if __name__ == "__main__":
         data = json.load(f)
 
     user_info = json.dumps(data)
-    print(retriever.generate_content_and_questions("what classes do I need to graduate?", user_info))
-    print(retriever.generate_questions(user_info))
+    logger.info(retriever.generate_content_and_questions("what classes do I need to graduate?", user_info))
+    logger.info(retriever.generate_questions(user_info))
