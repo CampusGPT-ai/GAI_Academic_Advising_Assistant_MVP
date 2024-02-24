@@ -22,7 +22,7 @@ const config = {
       autodocs: "tag",
     },
     
-    staticDirs: ["..\\public"],
+    staticDirs: ["../public"],
   
     // Extend Webpack configuration to work better with TypeScript
     webpackFinal: async (config) => {
