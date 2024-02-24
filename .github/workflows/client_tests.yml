@@ -1,0 +1,44 @@
+name: Client Tests
+
+on: [workflow_dispatch, pull_request]
+
+jobs:
+  build:
+    name: Running client tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install dev deps
+        working-directory: client
+        run: npm install --dev
+
+      - name: Install playwright
+        working-directory: client
+        run: npx playwright install --with-deps
+
+      #- name: Run linting
+      #  working-directory: client
+      #  run: npx eslint src
+
+      - name: Run tests
+        working-directory: client
+        run: CI=True npm test
+
+      - name: Run storybook
+        uses: JarvusInnovations/background-action@v1
+        with:
+          run: npm run storybook
+          wait-on: |
+            http://localhost:6006
+          tail: true
+          log-output-resume: stderr
+          wait-for: 5m
+          log-output: stderr,stdout # same as true
+          log-output-if: failure
+          working-directory: client
+
+      - name: Run storybook tests
+        working-directory: client
+        run: npm run test-storybook
