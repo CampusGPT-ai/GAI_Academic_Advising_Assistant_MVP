@@ -125,6 +125,7 @@ const ChatActive: FC<ChatActiveProps> = ({
               size={20}
               thickness={5}
               style={{ marginLeft: 10 }}
+              aria-label="loading sample questions"
             /> </Box>}
           </Grid>
           

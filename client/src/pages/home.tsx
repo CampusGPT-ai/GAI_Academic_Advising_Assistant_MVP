@@ -242,7 +242,6 @@ const MainPage: FC = () => {
         marginRight: "0"
       }}>
         <Box
-          component="main"
           display="flex"
           flexGrow={1}
           sx={{
