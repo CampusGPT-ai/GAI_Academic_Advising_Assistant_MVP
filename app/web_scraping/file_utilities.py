@@ -27,15 +27,16 @@ def delete_files_without_content(directory):
             print(f"Permission denied: Could not delete {file_path.name}. File might be in use.")
 
 def extract_prefixes(filename):
-    parts = filename.split('.ucf.edu')[0]
-    return parts.split('.')
+    parts = filename.replace('_2F', '/').split('/')
+    parts = parts[:-2]
+    return parts
 
 def count_prefixes(directory):
     prefix_counter = Counter()
     for filename in os.listdir(directory):
         if filename.endswith('.json'):
             prefixes = extract_prefixes(filename)
-            prefix_key = '.'.join(prefixes)
+            prefix_key = '/'.join(prefixes)
             prefix_counter[prefix_key] += 1
     return prefix_counter
 
@@ -116,3 +117,6 @@ def remove_duplicate_passages(text):
 
     return ' '.join(words)
 
+if __name__ == "__main__":
+    out = count_prefixes('/Users/marynelson/docs')
+    print(out)

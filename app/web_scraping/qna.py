@@ -24,9 +24,9 @@ logging.basicConfig(
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
-OPENAI_ENDPOINT= os.getenv("AZURE_ENDPOINT")
-OPENAI_DEPLOYMENT = os.getenv("DEPLOYMENT_NAME")
-OPENAI_MODEL = os.getenv("MODEL_NAME")
+OPENAI_ENDPOINT= os.getenv("AZURE_OPENAI_ENDPOINT")
+OPENAI_DEPLOYMENT = os.getenv("GPT35_DEPLOYMENT_NAME")
+OPENAI_MODEL = os.getenv("GPT35_MODEL_NAME")
 EMBEDDING = os.getenv("EMBEDDING")
 SEARCH_ENDPOINT = os.getenv("SEARCH_ENDPOINT")
 SEARCH_API_KEY= os.getenv("SEARCH_API_KEY")
@@ -135,7 +135,7 @@ f"""{context_str}"""
                 result_content = result.content.replace(r"```","").replace("json","")
                 qna = json.loads(result_content)
                 merged_data = {**docs, **qna}
-                self.save_json(merged_data, filename, 'index-processed')
+                self.save_json(merged_data, filename, 'index-processed-v2')
                 break  # Break out of the loop if successful
             except Exception as e:
                 print(f"Error querying GPT for {filename}: {e}")
@@ -162,9 +162,9 @@ f"""{context_str}"""
             thread.start()
             self.threads.append(thread)
 
-        await self.get_docs_to_process("index-upload")
+        await self.get_docs_to_process("index-upload-v2")
         # start producing docs in the queue
-        await self.read_page_content_and_enqueue("index-upload")
+        await self.read_page_content_and_enqueue("index-upload-v2")
 
         for _ in self.threads: 
             self.docs.put((None,None))
