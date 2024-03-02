@@ -9,9 +9,9 @@ from datetime import datetime
 from queue import Queue
 from unidecode import unidecode
 
-DOCUMENT_DIRECTORY = 'C:\\repos\\isupportu-\\docs2'
-VISITED_LOG = 'C:\\repos\\isupportu-\\docs2\\logs\\visited.txt'
-REJECTED_LOG = 'C:\\repos\\isupportu-\\docs2\\logs\\rejected.txt'
+DOCUMENT_DIRECTORY = '/Users/marynelson/docs'
+VISITED_LOG = '/Users/marynelson/docs/logs/visited.txt'
+REJECTED_LOG = '/Users/marynelson/docs/logs/rejected.txt'
 
 class Crawler():
     def __init__(
@@ -20,6 +20,7 @@ class Crawler():
         directory: str,
         visited_log: str
     ):
+        self.url_uri = starting_url.split('//')[1].split('/')[0].replace('www.','')
         self.directory = directory
         self.links = Queue()
         self.links.put(starting_url)
@@ -87,13 +88,9 @@ class Crawler():
                 await browser.close()
                 return content, metadata
         except TimeoutError:
-            self.rejected.add(url)
             print("Timeout occurred while loading the page.")
-            return None
         except Exception as e:
-            self.rejected.add(url)
             print(f"An error occurred: {e}")
-            return None
 
     def fetch_content_requests(self, url):
         """
@@ -171,6 +168,10 @@ class Crawler():
                 return [], "", {}
 
         soup = BeautifulSoup(content, "html.parser")
+
+        # Remove all script tags
+        content = soup.text
+
         links = [urljoin(url, a.get('href'))
                 for a in soup.find_all('a', href=True)]
         
@@ -193,10 +194,14 @@ class Crawler():
                 current_url = self.links.get()
                 filename = f"{self.url_to_filename(current_url)}.json"
                 
-                if current_url in self.visited or filename in already_scraped:
+                if current_url in self.visited or filename in already_scraped or '#' in filename:
                     print("skipping file for ", filename)
                     if self.links.qsize()!=0: 
                         continue
+
+                # enforce same domain           
+                if same_domain and self.url_uri not in current_url:
+                    continue
                 
                 self.visited.add(current_url)
                 
@@ -281,7 +286,7 @@ class Crawler():
 
 # Example usage:
 if __name__ == '__main__':
-    url = '''https://www.ucf.edu/degree/physics-bs/#content'''
+    url = '''https://sciences.ucf.edu/'''
     crawler = Crawler(starting_url=url, directory=DOCUMENT_DIRECTORY, visited_log=VISITED_LOG)
     asyncio.run(crawler.crawl())
    

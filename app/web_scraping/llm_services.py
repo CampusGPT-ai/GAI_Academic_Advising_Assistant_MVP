@@ -3,8 +3,8 @@ from openai import AzureOpenAI, OpenAI
 import openai
 from azure.identity import DefaultAzureCredential
 import logging, sys, os
-import openai_response_objects as openai_response_objects
-from openai_response_objects import Message, Embedding, ChatCompletion, StreamingChatCompletion
+import cloud_services.openai_response_objects as openai_response_objects
+from cloud_services.openai_response_objects import Message, Embedding, ChatCompletion, StreamingChatCompletion
 import tiktoken, re
 from typing import List 
 from langchain_openai import AzureOpenAIEmbeddings
@@ -13,7 +13,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 credential = DefaultAzureCredential()
 TOKEN = credential.get_token("https://cognitiveservices.azure.com/.default").token
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = TOKEN
+os.environ["OPENAI_API_KEY"]=TOKEN
 openai.api_type = 'azure_ad'
         
 logging.basicConfig(
@@ -156,7 +157,7 @@ class AzureLLMClients(AILLMClients):
                 ):
         self.client  = AzureOpenAI(
                 azure_endpoint = azure_endpoint, 
-                api_key=os.getenv("OPENAI_API_KEY"),  
+                api_key=os.getenv("AZURE_OPENAI_KEY"),  
                 api_version=api_version
 )
         self.model = model
@@ -220,7 +221,7 @@ class AzureLLMClients(AILLMClients):
         tokens = get_tokens(clean_text)
         if tokens < 8192:
             try:
-                result = self.client.embeddings.create(input=text, model="embedding")
+                result = self.client.embeddings.create(input=text, model="embeddings")
             except Exception as e:
                 raise e
         else: 
@@ -369,10 +370,10 @@ if __name__ == "__main__":
     import dotenv, os
     dotenv.load_dotenv()
 
-    AZURE_OPENAI_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+    OPENAI_API_KEY = os.getenv
     OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
-    OPENAI_ENDPOINT= os.getenv("AZURE_ENDPOINT")
+    OPENAI_ENDPOINT= os.getenv("AZURE_OPENAI_ENDPOINT")
     OPENAI_DEPLOYMENT = os.getenv("DEPLOYMENT_NAME")
     OPENAI_MODEL = os.getenv("MODEL_NAME")
     EMBEDDING_DEPLOYMENT = os.getenv("EMBEDDING")
