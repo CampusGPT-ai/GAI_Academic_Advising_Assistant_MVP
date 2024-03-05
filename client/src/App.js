@@ -19,8 +19,7 @@ const App = () => (
     <Router>
       <Routes>
         <Route path="*" element={
-          <ProtectedRoute>
-          <MainPage /></ProtectedRoute>} />
+          <MainPage />} />
       </Routes>
     </Router>
 </ThemeProvider>

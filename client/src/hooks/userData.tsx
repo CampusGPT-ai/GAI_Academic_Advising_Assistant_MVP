@@ -116,7 +116,8 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
 
   useEffect(() => {
     // retrieve token with user id from backend
-    if (isAuthenticated && inProgress === 'none') {
+    //if (isAuthenticated && inProgress === 'none') {
+    if (inProgress === 'none') {
     fetchUser();
     }
   }, [isAuthenticated, inProgress]

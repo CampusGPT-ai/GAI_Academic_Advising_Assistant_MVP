@@ -14,14 +14,17 @@ const sendTokenToBackend = async(account: AccountInfo, instance: IPublicClientAp
 
         // Acquire token silently or interactively based on your requirement
         try {
-            const response = await instance.acquireTokenSilent({
-                scopes: ['828d30c9-9619-4a12-8604-96d44653958f/.default'], // Use .default alone
-                account: account,
-            });
-            
+           const token = process.env.REACT_APP_LOCAL_DEV_TOKEN;
+            if (process.env.REACT_APP_DOMAIN !== 'development') {
+                const response = await instance.acquireTokenSilent({
+                    scopes: ['828d30c9-9619-4a12-8604-96d44653958f/.default'], // Use .default alone
+                    account: account,
+                });
 
-            const token: string = response.accessToken;
-            //console.log(`Got token from login: ${token}`);
+
+                const token: string = response.accessToken;
+            };
+            console.log(`Got token from login: ${token}`);
 
             // Send the token to your backend
             const backendResponse = await fetch(endpoint, {
