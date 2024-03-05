@@ -14,7 +14,6 @@ AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
 AZURE_STORAGE_ACCOUNT_CRED = os.getenv("AZURE_STORAGE_ACCOUNT_CRED")
 AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER")
 SAS_TOKEN=os.getenv("SAS_TOKEN_UPLOAD")
-SAS_TOKEN_PROCESSED=os.getenv("SAS_TOKEN_PROCESSED")
 account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net"
 
 # Define the expiry time for the SAS token (e.g., 1 hour from now)
@@ -110,7 +109,7 @@ class FileLogger():
                 account_url=account_url,
                 container_name=container_name,
                 blob_name=blob_name,
-                credential=SAS_TOKEN_PROCESSED  # Use the SAS token for the container
+                credential=SAS_TOKEN  # Use the SAS token for the container
             )
             try:
                 blob_content = blob_client.download_blob()

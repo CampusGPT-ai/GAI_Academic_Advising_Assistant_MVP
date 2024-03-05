@@ -14,18 +14,20 @@ import copy
 
 load_dotenv()
 
-CONTAINER_NAME = 'index-processed-v2'
+
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
-OPENAI_ENDPOINT= os.getenv("AZURE_OPENAI_ENDPOINT")
-OPENAI_DEPLOYMENT = os.getenv("GPT35_DEPLOYMENT_NAME")
-OPENAI_MODEL = os.getenv("GPT35_MODEL_NAME")
-EMBEDDING_DEPLOYMENT = os.getenv("EMBEDDING")
+OPENAI_ENDPOINT= os.getenv("AZURE_ENDPOINT")
+OPENAI_DEPLOYMENT = os.getenv("DEPLOYMENT_NAME")
+OPENAI_MODEL = os.getenv("MODEL_NAME")
+EMBEDDING = os.getenv("EMBEDDING")
 SEARCH_ENDPOINT = os.getenv("SEARCH_ENDPOINT")
 SEARCH_API_KEY= os.getenv("SEARCH_API_KEY")
 SEARCH_INDEX_NAME=os.getenv("SEARCH_INDEX_NAME")
 SYSTEM_TEXT = '''You are an academic advisor creating an FAQ from your university's website'''
-MAX_TOKEN_LENGTH = 4000
+EMBEDDING_DEPLOYMENT = os.getenv("EMBEDDING")
+MAX_TOKEN_LENGTH = 6000
+
 AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
 AZURE_STORAGE_ACCOUNT_CRED = os.getenv("AZURE_STORAGE_ACCOUNT_CRED")
 AZURE_STORAGE_CONTAINER=os.getenv("AZURE_STORAGE_CONTAINER")
@@ -134,7 +136,7 @@ class VectorUploader(FileLogger):
     async def upload_files(self):
         self.threads = []
         max_threads = 15  # be careful of rate limiting and CPU usage
-        await self.get_docs_to_process(CONTAINER_NAME)
+        await self.get_docs_to_process("index-processed")
         
         #start consumer thread production
         for _ in range(max_threads):
@@ -143,7 +145,7 @@ class VectorUploader(FileLogger):
             self.threads.append(thread)
 
         # start producing docs in the queue
-        await self.read_page_content_and_enqueue(CONTAINER_NAME)
+        await self.read_page_content_and_enqueue("index-processed")
 
         for _ in self.threads: 
             self.docs.put((None,None))
