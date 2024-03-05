@@ -9,6 +9,8 @@ import { useEffect } from "react";
 export default function ProtectedRoute({children}) {
     const { instance, inProgress } = useMsal();
     const isAuthenticated = useIsAuthenticated();
+    console.log(`checking login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`);
+    debugger;
 
 
 
@@ -32,6 +34,8 @@ export default function ProtectedRoute({children}) {
             console.log(`in progress: ${inProgress}`)
             console.log(`is Authenticated: ${isAuthenticated}`)
             try {
+                console.log(`initiating login for instance ${JSON.stringify(instance)}`);
+                debugger;
                 instance.loginRedirect(); // or loginPopup
             } catch (e) {
                 console.error("Login failed:", e);
