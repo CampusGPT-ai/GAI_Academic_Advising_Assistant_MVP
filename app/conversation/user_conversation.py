@@ -12,6 +12,7 @@ from conversation.retrieve_docs import SearchRetriever
 from user.get_user_info import UserInfo
 from cloud_services.openai_response_objects import Message
 from pathlib import Path
+from urllib.parse import urldefrag
 
 logger = logging.getLogger(__name__)
 
@@ -127,9 +128,14 @@ class UserConversation:
 
     @staticmethod
     def get_citations_from_text(cites: List, titles: dict, sources: dict) -> List[dict]:
-        #TODO: not implementd
+        # Remove url fragments and deduplicate
+        sources = [urldefrag(url).url for url in sources]
+        sources = list(dict.fromkeys(sources))
+        titles = list(dict.fromkeys(titles))
+
         for i in range(len(titles)):
-            cites.append({'citation_text' : titles[i],'citation_path':sources[i]})
+            cites.append({"citation_text": titles[i], "citation_path": sources[i]})
+
         return cites
     
     def query_gpt(self, full_prompt: List[Message], user_message: Message, topics: List[str], followups: str, citations: List[dict]) -> bool:
