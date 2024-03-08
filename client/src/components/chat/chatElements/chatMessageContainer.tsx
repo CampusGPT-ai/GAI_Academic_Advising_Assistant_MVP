@@ -9,7 +9,7 @@ import ChatUserChat from "./chatMessageElements/chatUserChat";
 import { MessageSimple } from "../../../model/messages/messages";
 //for default props
 const jsonString = JSON.stringify(messageSample);
-
+const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 /**
  * Props for the ChatMessages component.
  */
@@ -57,9 +57,9 @@ const ChatMessages: FC<ChatMessagesProps> = ({
     <Box display="flex" flexDirection={'column'}>
       {messageHistory &&
       <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
-      { appStatus==="GENERATING CHAT RESPONSE"  && <ChatUserChat text={userQuestion}></ChatUserChat>}
+      { (appStatus==="GENERATING CHAT RESPONSE" || AUTH_TYPE==='NONE') && <ChatUserChat text={userQuestion}></ChatUserChat>}
 
-      { appStatus==="GENERATING CHAT RESPONSE" && 
+      { (appStatus==="GENERATING CHAT RESPONSE" || AUTH_TYPE==='NONE') && chatResponse &&
       <Box><Box sx={{ height: "50px" }} />
         <ChatBotChat
             message={chatResponse}

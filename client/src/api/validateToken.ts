@@ -7,32 +7,66 @@ interface BackendResponse {
     account?: string;
     instance: any,
 }
+import {useMsal, useIsAuthenticated} from "@azure/msal-react";
+const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 
-const sendTokenToBackend = async(account: AccountInfo, instance: IPublicClientApplication) => {
 
-        const endpoint = `${BaseUrl()}/validate_token`;
+const sendTokenToBackend = async() => {
 
+
+        let backendResponse: Response = new Response();
         // Acquire token silently or interactively based on your requirement
         try {
-            const response = await instance.acquireTokenSilent({
-                scopes: ['828d30c9-9619-4a12-8604-96d44653958f/.default'], // Use .default alone
-                account: account,
-            });
+            if (AUTH_TYPE === 'MSAL')
+            { 
+                console.log('Using MSAL for token validation')
+                const { instance, accounts, inProgress} = useMsal();
+                const isAuthenticated = useIsAuthenticated();
+                const account = accounts[0];
+        
+                if ( isAuthenticated && inProgress === 'none') {
+
+                    const response = await instance.acquireTokenSilent({
+                        scopes: ['828d30c9-9619-4a12-8604-96d44653958f/.default'], // Use .default alone
+                        account: account,
+                    });
+                    
+        
+                    const token: string = response.accessToken;
+
+                    backendResponse = await fetch(`${BaseUrl()}/validate_token`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+    
+                });
+            };
+            }
+            else if (AUTH_TYPE === 'SAML')
+            {
+                // no need to get a token, it's passed in the headers using microsoft identity platform Easy Auth
+                console.log('Using Easy Auth for token validation')
+                debugger;
+                backendResponse = await fetch(`${BaseUrl()}/validate_token_saml`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+            else {
+                backendResponse = await fetch(`${BaseUrl()}/get_generic_token`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
             
-
-            const token: string = response.accessToken;
-            //console.log(`Got token from login: ${token}`);
-
-            // Send the token to your backend
-            const backendResponse = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-
-            });
-
+            console.log(`Backend response recieved from server: ${backendResponse}`)
+            debugger;
             if (!backendResponse.ok) {
                 // Handle the scenario where the token is not valid
                 console.error('Token validation failed');
@@ -46,16 +80,9 @@ const sendTokenToBackend = async(account: AccountInfo, instance: IPublicClientAp
                 // You can perform further actions here if needed
             }
         } catch (error: any) {
-            if (error.name === 'InteractionRequiredAuthError') {
-                await instance.acquireTokenRedirect({
-                    scopes: ['User.Read'],
-                    account: account,
-                });
-            } else {
                 console.error(error);
             }
         }
-    }
 ;
 
 // Use this function inside a React component or hook

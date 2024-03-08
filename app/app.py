@@ -107,7 +107,10 @@ origins = [
     "http://localhost:5001",
     "localhost:3000",
     f"https://node{os.getenv('APP_NAME')}-development.azurewebsites.net",
-    f"https://node{os.getenv('APP_NAME')}.azurewebsites.net"
+    f"https://node{os.getenv('APP_NAME')}.azurewebsites.net",
+    f"https://node{os.getenv('APP_NAME')}-dev-no-auth.azurewebsites.net",
+    f"https://node{os.getenv('APP_NAME')}-development.azurewebsites.net/.auth/login/aad/callback",
+    f"https://node{os.getenv('APP_NAME')}.azurewebsites.net/.auth/login/aad/callback"
 ]
 
 

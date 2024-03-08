@@ -5,7 +5,7 @@ import jwt, json
 from jwt import PyJWKClient
 from typing import Optional
 from uuid import uuid4
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 import os
 from datetime import datetime, timedelta
 from data.models import UserSession
@@ -48,18 +48,79 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
         options={"verify_signature": True, "verify_aud": True, "verify_iss": True}
         )
         
-        # print("got token payload", payload)
+        logger.info("got token payload, checking for sub", payload)
 
         username: str = payload.get("sub")
+        if username is None:
+            username = payload.get("givenname") + " " + payload.get("surname")
         if username is None:
             raise credentials_exception
         return username
     except:
         raise credentials_exception
 
+@router.get("/validate_token_saml")
+async def validate_and_create_session_saml():
+    token = Request.headers.get("X-MS-TOKEN-AAD-ID-TOKEN")
+    logger.info(f"Received token: {token}")
+    if not token or token == None:
+        logger.info("No token found in request")
+        raise credentials_exception
+    try:
+        # Validate the token
+        user_info = verify_token(token)  
+        logger.info(f"Token valid for user: {user_info}")
+    except HTTPException as e:
+        logger.error(f"Token validation error: {e.detail}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in token validation: {e}")
+        raise Exception(f"Unexpected token validation exception: {str(e)}")
+
+    if not user_info:
+        logger.error("No user info retrieved, token may be invalid")
+        raise credentials_exception
+
+
+    # Store session information
+    try:
+        user_session = get_session_from_user(user_info)
+        logger.info(f"got existing session for user: {user_session}")
+    except:
+        user_session = None
+    try:
+        if not user_session or user_session==None:
+                # Create a session ID
+            logger.info("No existing session found...creating new session")
+            session_guid = str(uuid4())
+            session_expiry = datetime.now() + timedelta(minutes=120)
+            user_session = UserSession(
+                                    user_id=user_info,
+                                    session_id=session_guid,
+                                    session_start=datetime.now(),
+                                    session_end=session_expiry
+                                    )
+            
+
+            # ensure session is unique 
+            try:
+                get_session_from_session(session_guid)
+                logger.info("No existing session found....saving")
+            except:
+                user_session.save()
+                
+            logger.info(f"Session created with ID: {session_guid} for user: {user_info}")
+        else: 
+            logger.info(f"user session already exists with session id {user_session.session_id}, {user_session.user_id}")
+    except Exception as e:
+        logger.error(f"Error saving session to the database: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    return {"user_id": user_session.user_id, "session_id": user_session.session_id}
+
 
 @router.post("/validate_token")
-async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
+async def validate_and_create_session_msal(token: str = Depends(oauth2_scheme)):
     logger.info(f"Received token: {token}")
     if not token or token == None:
         raise credentials_exception
@@ -114,11 +175,24 @@ async def validate_and_create_session(token: str = Depends(oauth2_scheme)):
 
     return {"user_id": user_session.user_id, "session_id": user_session.session_id}
 
+@router.get("/get_generic_token")
+def validate_session_no_auth():
+    logger.info(f"Received request for generic token for user: {settings.NON_SESSION_ID}")
+    try:
+        user_session = get_session_from_session(settings.NON_SESSION_ID)
+        logger.info(f"got existing session for user: {user_session}")
+    except Exception as e:
+        logger.error(f"no session found for generic user with error: ", e.__str__())
+        user_session = None
+        return {"user_id": settings.NON_SESSION_ID, "session_id": settings.NON_SESSION_ID}
+    return {"user_id": user_session.user_id, "session_id": user_session.session_id}
+
 
 def get_session_from_session(session_guid: str):
     current_time = datetime.now()
-    session_data = UserSession.objects(session_id=session_guid, session_end__gt=current_time).first()
 
+    session_data = UserSession.objects(session_id=session_guid, session_end__gt=current_time).first()
+    logger.info(f"querying session data from db...returning...{session_data}")
 
     if not session_data or session_data.session_end < current_time:
         message = ''

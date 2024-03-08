@@ -10,6 +10,9 @@ import '@fontsource/roboto/700.css';
 import MainPage from './pages/home.tsx';
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+const authType = process.env.REACT_APP_AUTH_TYPE;
+console.log(`auth type =`,authType);
+debugger;
 //<Navigate to="/index/chat" />
 //<Route path="/index/*" element={<MainPage />} />
 // add back <protected route>
@@ -17,9 +20,9 @@ const App = () => (
 <ThemeProvider theme={lightTheme}>
     <Router>
       <Routes>
-        <Route path="*" element={
-          <ProtectedRoute>
-          <MainPage /></ProtectedRoute>} />
+        <Route path="*" element=
+          {authType==='MSAL' ? <ProtectedRoute>
+          <MainPage /></ProtectedRoute> : <MainPage />} />
       </Routes>
     </Router>
 </ThemeProvider>

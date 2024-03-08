@@ -111,7 +111,7 @@ if __name__ == "__main__":
     retriever4= SearchRetriever.with_default_settings()
     from pathlib import Path
 
-    file_path = Path('app/data/test_user.json')
+    file_path = Path('/Users/marynelson/GAI_Academic_Advising_Assistant_MVP/app/data/test_user.json')
     with open(file_path, 'r') as f:
         data = json.load(f)
 
