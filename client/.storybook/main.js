@@ -10,7 +10,8 @@ const config = {
       "@storybook/addon-interactions",
       '@storybook/addon-styling',
       'storybook-addon-react-router-v6',
-      '@storybook/addon-a11y'
+      '@storybook/addon-a11y',
+      '@storybook/addon-coverage'
     ],
     
     framework: {
