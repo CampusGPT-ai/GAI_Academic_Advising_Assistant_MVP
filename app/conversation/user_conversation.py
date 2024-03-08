@@ -37,7 +37,7 @@ class UserConversation:
     @staticmethod
     def generate_gpt_prompt(user_info, rag, topics) -> Message:
         # Start with the system message
-        system_instructions = get_gpt_system_prompt(user_info, rag, topics)
+        system_instructions = get_gpt_system_prompt(user_info, rag[:2])
         return Message(role="system",content=system_instructions)
 
     @staticmethod
