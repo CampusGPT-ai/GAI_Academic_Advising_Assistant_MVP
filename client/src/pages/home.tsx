@@ -78,7 +78,7 @@ const MainPage: FC = () => {
   // custom hooks 
   // TODO: Create provider for stream data for nested content
   const { streamingMessage, citations, followups, isStreaming, streamingError } = useStreamData(apiUrl, setSelectedConversation, getSelectedConversationMessages);
-  const { userSession, sampleQuestions, conversations, initDataError, dataStatus, conversationHistoryFlag } = useAccountData({refreshFlag: conversationRefreshFlag})
+  const { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag } = useAccountData({refreshFlag: conversationRefreshFlag, setAppStatus})
 
   // console.log("loading main page")
   // console.log("selected conversation: ",JSON.stringify(selectedConversation))

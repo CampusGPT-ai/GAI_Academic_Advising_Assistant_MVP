@@ -36,7 +36,7 @@ interface AccountData {
 
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 
-function useAccountData({refreshFlag }: AccountData): ConversationData {
+function useAccountData({refreshFlag, setAppStatus }: AccountData): ConversationData {
 
   const { inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
