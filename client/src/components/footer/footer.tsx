@@ -7,7 +7,7 @@ const Template: FC = () => {
         <Box display={"flex"} flexDirection={"column"} alignContent={"center"} flexGrow={1}>
             <Box mt={5} display={'flex'} justifyContent={"center"} width={"100%"}>
                 <Link href="https://www.campusevolve.ai/">
-                <img src={logo} height={75}>
+                <img src={logo} height={75} alt='CampusEvolve Logo'>
                     </img>
                     </Link>
                     </Box>
