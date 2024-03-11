@@ -6,6 +6,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import Toolbar from '@mui/material/Toolbar';
 import Conversation from '../../model/conversation/conversations';
 import conversationSample from '../../model/conversation/conversationSample.json';
@@ -47,7 +48,7 @@ const DrawerContent: FC<Props> = ({
       <Divider />
       <List>
  
-          <ListItemButton onClick={() => resetConversation()}>
+          <ListItemButton component="li" role="listitem" onClick={() => resetConversation()}>
             <ListItemIcon >
               <QuestionAnswerOutlinedIcon color="primary" fontSize="medium" />
             </ListItemIcon>
@@ -66,22 +67,23 @@ const DrawerContent: FC<Props> = ({
 
         { AUTH_TYPE!=='NONE' && conversationList && conversationList.map((conversation, index) => (
           <ListItem key={index} disablePadding>
-            <ListItemButton onClick={() => handleSelectConversation(conversation)}>
+            <ListItemButton role="listitem" onClick={() => handleSelectConversation(conversation)}>
 
               <ListItemText disableTypography primary=
                 {<Typography variant="body1" marginLeft={4} style={{ color: '#000' }}>{conversation.topic}</Typography>} />
             </ListItemButton>
           </ListItem>
         ))}
-        {AUTH_TYPE!=='NONE' && !conversationList && conversationFlag && <Box m={2}><CircularProgress
-              size={20}
-              thickness={5}
-              style={{ marginLeft: 10 }}
-            /> </Box>}
-        {AUTH_TYPE!=='NONE' && !conversationFlag && <Box m={2}>You haven't started any conversations yet.  Ask a question to begin!</Box>}
+      </List>
+      {AUTH_TYPE!=='NONE' && !conversationList && conversationFlag && <Box m={2}><CircularProgress
+            size={20}
+            thickness={5}
+            style={{ marginLeft: 10 }}
+            aria-label="loading conversation"
+          /> </Box>}
+      {AUTH_TYPE!=='NONE' && !conversationFlag && <Box m={2}>You haven't started any conversations yet.  Ask a question to begin!</Box>}
         
 
-      </List>
     </Box>
   );
 }

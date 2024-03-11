@@ -29,7 +29,7 @@ ENV POETRY_HTTP_TIMEOUT=3000
 
 
 # Install dependencies using Poetry
-RUN POETRY_VIRTUALENVS_CREATE=false poetry install --no-root
+RUN POETRY_VIRTUALENVS_CREATE=false poetry install
 
 FROM python:3.11-slim-bookworm
 # Set the working directory in the run stage

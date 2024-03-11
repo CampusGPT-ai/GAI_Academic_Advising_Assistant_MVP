@@ -10,7 +10,7 @@ const ChatFollowUp: FC<ChatFollowUpProps> = ({ text, onFollowUpClicked }) =>
 {
   const theme = useTheme()
   const elevationLevel = 2;
-  console.log(`got follow up question for ${text}`)
+  // console.log(`got follow up question for ${text}`)
 
   return (   
       <Button variant="text"

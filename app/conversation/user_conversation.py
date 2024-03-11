@@ -1,21 +1,20 @@
 # TODO: USER PROFILE
 import openai, os, logging, sys, json, re
+
+print(sys.path)
+
 from typing import List
 from settings.settings import Settings
-from util.logger_format import CustomFormatter
 from data.models import UserSession, RawChatMessage, Conversation, MessageContent, ChatMessage
 from cloud_services.openai_response_objects import StreamingChatCompletion, Message
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt
 from conversation.retrieve_docs import SearchRetriever
 from user.get_user_info import UserInfo
+from cloud_services.openai_response_objects import Message
+from pathlib import Path
+from urllib.parse import urldefrag
 
-ch = logging.StreamHandler(stream=sys.stdout)
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(CustomFormatter())
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.handlers.clear()  
-logger.addHandler(ch)  
+logger = logging.getLogger(__name__)
 
 
 class UserConversation:
@@ -44,7 +43,7 @@ class UserConversation:
     def get_user_info() -> str :
         #removed demo profile here - might need to add back in future
         #TODO: pull in personalized data, remove temporary mock
-        file_path = Path('app/data/test_user.json')
+        file_path = Path('data/test_user.json')
         with open(file_path, 'r') as f:
             data = json.load(f)
         
@@ -54,7 +53,27 @@ class UserConversation:
     def parse_messages(message: Message) -> str:
         return message
     
-    def get_message_history(self, prompt: List, query_text: str) -> (str, Message):
+    def get_conversation_history(self, prompt: List, query_text:str, conversation: Conversation):
+        messages = []
+
+        from conversation.retrieve_messages import get_message_history
+        message_list = get_message_history(str(conversation.id), return_type='list')
+        
+        if message_list:
+            try:
+                for r in message_list:
+                    messages.append(Message(role=r["role"], content=r["message"]))
+                prompt.extend(messages)
+            except Exception as e:
+                logger.info(f"Unable to get message history with {str(e)}")
+
+        user_message = Message(role="user", content=query_text)
+        prompt.append(user_message)
+
+        return prompt, user_message
+    
+    # TODO: remove - using conversation history instead
+    def get_message_history(self, prompt: List, query_text: str):
         message_list = []
 
         try:
@@ -67,6 +86,7 @@ class UserConversation:
                 for r in raw_message_history:
                     message_dict = json.loads(r.message)
                     message_list.append(Message(**message_dict))
+                    logger.info(f"got message history item: {r.message}")
                 prompt.extend(message_list)
             except Exception as e:
                 logger.info(f"Unable to get message history with {str(e)}")
@@ -108,9 +128,14 @@ class UserConversation:
 
     @staticmethod
     def get_citations_from_text(cites: List, titles: dict, sources: dict) -> List[dict]:
-        #TODO: not implementd
+        # Remove url fragments and deduplicate
+        sources = [urldefrag(url).url for url in sources]
+        sources = list(dict.fromkeys(sources))
+        titles = list(dict.fromkeys(titles))
+
         for i in range(len(titles)):
-            cites.append({'citation_text' : titles[i],'citation_path':sources[i]})
+            cites.append({"citation_text": titles[i], "citation_path": sources[i]})
+
         return cites
     
     def query_gpt(self, full_prompt: List[Message], user_message: Message, topics: List[str], followups: str, citations: List[dict]) -> bool:
@@ -122,6 +147,8 @@ class UserConversation:
             output: StreamingChatCompletion = None
             buffer = ''  # Buffer to hold incoming JSON chunks
             response_in_progress = False
+            topic_index = 0
+            response_index = 0
             while not finished:
                 output = next(azure_streaming_result)
                 if output and output.choices[0].delta.content:
@@ -191,7 +218,7 @@ class UserConversation:
                 logger.error(f'caught exception on saving chat message in finally {e}')
                 raise e
 
-    def send_message(self, query_text: str) -> None:
+    def send_message(self, query_text: str, conversation: Conversation) -> None:
         # Step 1: grab user info and existing conversation from source TODO: not implemented
         user_info = UserInfo(self.user_session).get_user_info()
                
@@ -203,7 +230,8 @@ class UserConversation:
         full_prompt = [self.generate_gpt_prompt(user_info, content['content'], content['keywords'])]
 
         # step 4: add message history
-        full_prompt, user_message = self.get_message_history(full_prompt, query_text)
+        #full_prompt, user_message = self.get_message_history(full_prompt, query_text)
+        full_prompt, user_message = self.get_conversation_history(full_prompt, query_text, conversation)
 
         # step 5: get citations
         citations = []
@@ -266,18 +294,18 @@ if __name__=="__main__":
 
 
     from pathlib import Path
-    print("Current Working Directory:", os.getcwd())
+    logger.debug(f"Current Working Directory: {os.getcwd()}")
     relative_path = Path('./app/data/mock_user_session.json')
 
 
     with relative_path.open(mode='r') as file:
         mock_user_session : UserSession = UserSession(**json.load(file))
     
-    mock_conversation = Conversation(user_id=mock_user_session.user_id)
+    mock_conversation = Conversation(id="65cd0b42372b404efb9805f6")
 
     convo = UserConversation.with_default_settings(mock_user_session, mock_conversation, model_num='GPT4')
     
-    result = convo.send_message("what classes do I need to graduate?")
+    result = convo.send_message("what classes do I need to graduate?", mock_conversation)
     while True:
-        print(next(result))
-    
+        logger.info(next(result))
+
