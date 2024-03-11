@@ -62,6 +62,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
               size={20}
               thickness={5}
               style={{ marginLeft: 10 }}
+              aria-label="waiting for bot response"
             />
             <Typography variant="body1">Generating Answer</Typography>
           </div>

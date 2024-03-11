@@ -7,6 +7,7 @@ import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 import ChatUserChat from "./chatMessageElements/chatUserChat";
 import { MessageSimple } from "../../../model/messages/messages";
+import AppStatus from "../../../model/conversation/statusMessages";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
@@ -18,7 +19,7 @@ interface ChatMessagesProps {
   /** Whether the component is currently loading. */
   isLoading?: boolean;
   userQuestion?: string;
-  appStatus?: string;
+  appStatus: AppStatus;
 
   /** the latest bot response to stream*/
   chatResponse?: string;
@@ -52,7 +53,7 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   currentAnswerRef
 }) => {
 
-  console.log(`testing chat bot chat response ${chatResponse}`)
+  //console.log(`testing chat bot chat response ${chatResponse}`)
   return (
     <Box display="flex" flexDirection={'column'}>
       {messageHistory &&

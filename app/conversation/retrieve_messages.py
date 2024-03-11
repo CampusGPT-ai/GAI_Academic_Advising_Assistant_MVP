@@ -1,23 +1,18 @@
 from data.models import Conversation, UserSession
 import logging, sys, os, json
-from util.logger_format import CustomFormatter
-ch = logging.StreamHandler(stream=sys.stdout)
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(CustomFormatter())
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.handlers.clear()  
-logger.addHandler(ch)  
+
+logger = logging.getLogger(__name__)
+
 from settings.settings import Settings
 settings = Settings()
 from mongoengine import *
 from util.json_helper import CustomJSONEncoder
 
-def get_message_history(conversation_id):
+def get_message_history(conversation_id, return_type = "json"):
     try:
         conversation = Conversation.objects(id=conversation_id).select_related(max_depth=5)
         if not conversation:
-            raise Exception("failed to find conversation")
+            raise Exception(f"failed to find conversation for {conversation_id}")
         
         message_list = []
 
@@ -62,7 +57,10 @@ def get_message_history(conversation_id):
 
         json_data = json.dumps(sorted_messages, cls=CustomJSONEncoder)
 
-        return json_data
+        if return_type == 'json':
+            return json_data
+        else:
+            return sorted_messages
 
 
     except Exception as e:
@@ -78,7 +76,7 @@ if __name__=="__main__":
     conversation = Conversation.objects()
     
     from pathlib import Path
-    print("Current Working Directory:", os.getcwd())
+    logger.debug("Current Working Directory:", os.getcwd())
     relative_path = Path('./app/data/mock_user_session.json')
 
 

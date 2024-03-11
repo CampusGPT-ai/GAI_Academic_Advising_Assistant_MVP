@@ -3,21 +3,12 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-import { PublicClientApplication } from '@azure/msal-browser';
-import { MsalProvider } from '@azure/msal-react';
-import { msalConfig } from './authConfig';
-
-const msalInstance = new PublicClientApplication(msalConfig);
-
-console.log(`got msal config for url: ${msalConfig.auth.redirectUri}`)
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <MsalProvider instance={msalInstance}>
 
     <App />
 
-    </MsalProvider>
   </React.StrictMode>
 );
 

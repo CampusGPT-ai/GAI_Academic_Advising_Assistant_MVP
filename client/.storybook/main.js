@@ -10,7 +10,8 @@ const config = {
       "@storybook/addon-interactions",
       '@storybook/addon-styling',
       'storybook-addon-react-router-v6',
-      '@storybook/addon-a11y'
+      '@storybook/addon-a11y',
+      '@storybook/addon-coverage'
     ],
     
     framework: {
@@ -22,7 +23,7 @@ const config = {
       autodocs: "tag",
     },
     
-    staticDirs: ["..\\public"],
+    staticDirs: ["../public"],
   
     // Extend Webpack configuration to work better with TypeScript
     webpackFinal: async (config) => {

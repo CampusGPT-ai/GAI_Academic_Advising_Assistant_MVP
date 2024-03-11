@@ -56,6 +56,7 @@ web_modules/
 # Optional eslint cache
 .eslintcache
 
+
 # Optional stylelint cache
 .stylelintcache
 
@@ -76,11 +77,8 @@ web_modules/
 
 # dotenv environment variable files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-.env.ucf.local
+.env.test
+.env.*.env.ucf.local
 app/.env.ucf.local
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -159,3 +157,5 @@ topic_model.model.expElogbeta.npy
 topic_model.model.id2word
 topic_model.model.id2word
 topic_model.model.state
+.coverage
+app/env.it.local

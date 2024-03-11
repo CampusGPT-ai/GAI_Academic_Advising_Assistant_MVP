@@ -48,7 +48,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
         options={"verify_signature": True, "verify_aud": True, "verify_iss": True}
         )
         
-        logger.info("got token payload, checking for sub", payload)
+        # logger.debug("got token payload", payload)
 
         username: str = payload.get("sub")
         if username is None:
@@ -161,9 +161,13 @@ async def validate_and_create_session_msal(token: str = Depends(oauth2_scheme)):
 
             # ensure session is unique 
             try:
-                get_session_from_session(session_guid)
-                logger.info("No existing session found....saving")
+                existing_session = get_session_from_session(session_guid)
+                if existing_session:
+                    user_session=existing_session
+                    raise Exception('session ID already exists!!')
             except:
+                logger.info("saving session")
+            finally:
                 user_session.save()
                 
             logger.info(f"Session created with ID: {session_guid} for user: {user_info}")

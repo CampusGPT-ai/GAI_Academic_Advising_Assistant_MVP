@@ -24,13 +24,13 @@ interface ConversationData {
   sampleQuestions?: string[];
   userSession?: string;
   initDataError?: string;
-  dataStatus: AppStatus;
   conversationHistoryFlag: conversationHistoryStatus; 
 
 }
 
 interface AccountData {
     refreshFlag: detectHistoryRefresh;
+    setAppStatus: (status: AppStatus) => void;
     
 }
 
@@ -46,7 +46,6 @@ function useAccountData({refreshFlag }: AccountData): ConversationData {
   const [sampleQuestions, setSampleQuestions] = useState<string[]>();
   const [conversations, setConversations] = useState<Conversation[]>();
   const [initDataError, setInitDataError] = useState<string>();
-  const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
 
   const fetchUser = async () => {
     setAppStatus(AppStatus.LoggingIn)
@@ -74,6 +73,10 @@ function useAccountData({refreshFlag }: AccountData): ConversationData {
         setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching sample questions: ${error}`);
       }
+      finally {
+        setAppStatus(AppStatus.Idle);
+      }
+
     
   };
 
@@ -90,6 +93,9 @@ function useAccountData({refreshFlag }: AccountData): ConversationData {
       } catch (error) {
         setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching conversation history: ${error}`);
+    }
+    finally {
+      setAppStatus(AppStatus.Idle);
     }
   };
 
@@ -122,7 +128,7 @@ function useAccountData({refreshFlag }: AccountData): ConversationData {
   }, [isAuthenticated, inProgress, AUTH_TYPE, userSession]
   )
 
-  return { userSession, sampleQuestions, conversations, initDataError, dataStatus: appStatus, conversationHistoryFlag};
+  return { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag};
 }
 
  export default useAccountData;
