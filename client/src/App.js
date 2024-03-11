@@ -10,20 +10,29 @@ import '@fontsource/roboto/700.css';
 import MainPage from './pages/home.tsx';
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { MsalProvider } from '@azure/msal-react';
+import { msalConfig } from './authConfig';
+import { PublicClientApplication } from '@azure/msal-browser';
+
+const msalInstance = new PublicClientApplication(msalConfig);
+
+console.log(`got msal config for url: ${msalConfig.auth.redirectUri}`)
 
 //<Navigate to="/index/chat" />
 //<Route path="/index/*" element={<MainPage />} />
 // add back <protected route>
 const App = () => (
-<ThemeProvider theme={lightTheme}>
-    <Router>
-      <Routes>
-        <Route path="*" element={
-          <ProtectedRoute>
-          <MainPage /></ProtectedRoute>} />
-      </Routes>
-    </Router>
-</ThemeProvider>
+<MsalProvider instance={msalInstance}>
+    <ThemeProvider theme={lightTheme}>
+        <Router>
+          <Routes>
+            <Route path="*" element={
+              <ProtectedRoute>
+              <MainPage /></ProtectedRoute>} />
+          </Routes>
+        </Router>
+    </ThemeProvider>
+</MsalProvider>
 );
 
 export default App;

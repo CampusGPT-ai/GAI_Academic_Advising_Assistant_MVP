@@ -58,7 +58,7 @@ const ChatInput: FC<ChatInputProps> = ({ sendChat, appStatus }) => {
       />
         </Grid>
         <Grid item xs={2} sx={{display: "flex", justifyContent: "start"}}>
-      <IconButton onClick={handleSendClick} disabled={isLoading}>
+      <IconButton onClick={handleSendClick} disabled={isLoading} aria-label="Send icon">
         <SendIcon fontSize="medium" color="primary"/>
       </IconButton>
       </Grid>
