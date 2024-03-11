@@ -73,21 +73,21 @@ resource search 'Microsoft.Search/searchServices@2020-08-01' = {
 }
 
 // open ai deployments
-resource cognitiveService 'Microsoft.CognitiveServices/accounts@2021-10-01' = {
-  name: cognitiveServiceName
-  tags: resourceTags
-  location: location
-  sku: {
-    name: openAISKU
-  }
-  kind: 'OpenAI'
-  properties: {
-    restore: false
-    apiProperties: {
-      statisticsEnabled: false
-    }
-  }
-}
+// resource cognitiveService 'Microsoft.CognitiveServices/accounts@2021-10-01' = {
+//  name: cognitiveServiceName
+//   tags: resourceTags
+//   location: location
+//   sku: {
+//     name: openAISKU
+//   }
+//   kind: 'OpenAI'
+//   properties: {
+//     restore: false
+//     apiProperties: {
+//       statisticsEnabled: false
+//     }
+//   }
+// }
 
 // blob storage
 resource blobStorage 'Microsoft.Storage/storageAccounts@2021-04-01' = {

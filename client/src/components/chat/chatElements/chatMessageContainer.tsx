@@ -10,7 +10,7 @@ import { MessageSimple } from "../../../model/messages/messages";
 import AppStatus from "../../../model/conversation/statusMessages";
 //for default props
 const jsonString = JSON.stringify(messageSample);
-
+const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 /**
  * Props for the ChatMessages component.
  */
@@ -58,10 +58,9 @@ const ChatMessages: FC<ChatMessagesProps> = ({
     <Box display="flex" flexDirection={'column'}>
       {messageHistory &&
       <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
-      {/**if the response is still generating, show the active question and response.  After response is done generating, it should be refreshed in the history */}
-      { appStatus===AppStatus.GeneratingChatResponse && <ChatUserChat text={userQuestion}></ChatUserChat>}
+      { (appStatus==="GENERATING CHAT RESPONSE" || AUTH_TYPE==='NONE') && <ChatUserChat text={userQuestion}></ChatUserChat>}
 
-      { appStatus===AppStatus.GeneratingChatResponse && 
+      { (appStatus==="GENERATING CHAT RESPONSE" || AUTH_TYPE==='NONE') && chatResponse &&
       <Box><Box sx={{ height: "50px" }} />
         <ChatBotChat
             message={chatResponse}

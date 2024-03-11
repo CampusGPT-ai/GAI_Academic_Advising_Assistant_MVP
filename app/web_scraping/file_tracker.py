@@ -13,7 +13,7 @@ load_dotenv()
 AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
 AZURE_STORAGE_ACCOUNT_CRED = os.getenv("AZURE_STORAGE_ACCOUNT_CRED")
 AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER")
-SAS_TOKEN=os.getenv("SAS_TOKEN")
+SAS_TOKEN=os.getenv("SAS_TOKEN_UPLOAD")
 account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net"
 
 # Define the expiry time for the SAS token (e.g., 1 hour from now)
@@ -132,9 +132,14 @@ class FileLogger():
             self.docs.put((None,None))
 
     def save_json(self, data, filename, container_name):
-        blob_client = self.get_blob_client(container_name, filename)
+        blob_client = self.get_blob_client(container_name, filename, os.getenv("SAS_TOKEN_PROCESSED"))
         json_data = json.dumps(data, ensure_ascii=False, indent=4)
-        blob_client.upload_blob(json_data, overwrite=True)
+        try:
+            blob_client.upload_blob(json_data, overwrite=True)
+        except Exception as e:
+            print(f"upload to blob storage failed with {str(e)}")
+            raise e
+
 
 
 if __name__ == "__main__":

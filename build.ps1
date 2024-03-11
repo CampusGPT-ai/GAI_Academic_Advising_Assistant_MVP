@@ -73,7 +73,7 @@ function BuildAndRunContainer($path, $imageName, $port, $push) {
 
     # Run the image on the specified port
 
-    docker run --rm -d -p ${port}:${port} --env-file ./.env -v ${PWD}/.env:/.env  $FullImageName
+    docker run --rm -d -p ${port}:${port} --platform linux/amd64 --env-file ./.env -v ${PWD}/.env:/.env  $FullImageName
     Pop-Location
 }
 

@@ -4,7 +4,10 @@ import fetchConversations from "../api/fetchConversations";
 import fetchSampleQuestions from '../api/fetchQuestions';
 import sendTokenToBackend from '../api/validateToken';
 import AppStatus from "../model/conversation/statusMessages";
-import { Apps } from '@mui/icons-material';
+
+import { useMsal, useIsAuthenticated} from "@azure/msal-react";
+
+
 
 interface detectHistoryRefresh {
   isNewConversation: boolean,
@@ -26,16 +29,17 @@ interface ConversationData {
 }
 
 interface AccountData {
-    accounts: any;
-    instance: any;
-    isAuthenticated: any;
-    inProgress: any;
     refreshFlag: detectHistoryRefresh;
     setAppStatus: (status: AppStatus) => void;
     
 }
 
-function useAccountData({accounts, instance, isAuthenticated, inProgress, refreshFlag, setAppStatus }: AccountData): ConversationData {
+const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
+
+function useAccountData({refreshFlag, setAppStatus }: AccountData): ConversationData {
+
+  const { inProgress } = useMsal();
+  const isAuthenticated = useIsAuthenticated();
   const [userSession, setUserSession] = useState<string>();
   const [conversationHistoryFlag, setConversationHistoryFlag] = useState<conversationHistoryStatus>({userHasHistory: true, 
     isHistoryUpdated: false});
@@ -45,8 +49,10 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
 
   const fetchUser = async () => {
     setAppStatus(AppStatus.LoggingIn)
+    console.log(`fetching user from backend`)
+    debugger;
       try {
-        const userData = await sendTokenToBackend(accounts[0], instance);
+        const userData = await sendTokenToBackend();
         //console.log(`fetched user from backend ${userData}`)
         setUserSession(userData);
         setAppStatus(AppStatus.Idle)
@@ -116,10 +122,10 @@ function useAccountData({accounts, instance, isAuthenticated, inProgress, refres
 
   useEffect(() => {
     // retrieve token with user id from backend
-    if (isAuthenticated && inProgress === 'none') {
-    fetchUser();
-    }
-  }, [isAuthenticated, inProgress]
+    console.log(`fetching session data for Auth type: ${AUTH_TYPE}`)
+    !userSession && fetchUser();
+
+  }, [isAuthenticated, inProgress, AUTH_TYPE, userSession]
   )
 
   return { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag};

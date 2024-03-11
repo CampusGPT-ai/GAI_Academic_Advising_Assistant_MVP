@@ -21,7 +21,10 @@ import Typography from '@mui/material/Typography';
 import DrawerContainer from "../components/menuDrawer/drawerContainer";
 import AppStatus from "../model/conversation/statusMessages";
 
+const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
+
 const MainPage: FC = () => {
+  console.log("loading main page for auth type: ", AUTH_TYPE)
 
   interface detectHistoryRefresh {
     isNewConversation: boolean,
@@ -75,7 +78,7 @@ const MainPage: FC = () => {
   // custom hooks 
   // TODO: Create provider for stream data for nested content
   const { streamingMessage, citations, followups, isStreaming, streamingError } = useStreamData(apiUrl, setSelectedConversation, getSelectedConversationMessages);
-  const { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag } = useAccountData({accounts, instance, isAuthenticated, inProgress, refreshFlag: conversationRefreshFlag, setAppStatus})
+  const { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag } = useAccountData({refreshFlag: conversationRefreshFlag, setAppStatus})
 
   // console.log("loading main page")
   // console.log("selected conversation: ",JSON.stringify(selectedConversation))

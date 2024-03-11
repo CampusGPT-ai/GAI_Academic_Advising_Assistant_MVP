@@ -18,6 +18,8 @@ const sampleMessages = JSON.parse(jsonString) as Conversation[];
 
 const drawerWidth = 240;
 
+const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
+
 interface Props {
   conversationList?: Conversation[];
   conversationFlag: boolean;
@@ -55,14 +57,15 @@ const DrawerContent: FC<Props> = ({
           </ListItemButton>
 
 
-        <ListItem>
+        {AUTH_TYPE!=='NONE' && <ListItem>
           <ListItemIcon >
             <HistoryIcon color="primary" fontSize="medium" />
           </ListItemIcon>
           <ListItemText disableTypography primary=
             {<Typography variant="h6" style={{ color: '#000' }}>Chat History</Typography>} />
-        </ListItem>
-        { conversationList && conversationList.map((conversation, index) => (
+        </ListItem>}
+
+        { AUTH_TYPE!=='NONE' && conversationList && conversationList.map((conversation, index) => (
           <ListItem key={index} disablePadding>
             <ListItemButton role="listitem" onClick={() => handleSelectConversation(conversation)}>
 
@@ -72,13 +75,15 @@ const DrawerContent: FC<Props> = ({
           </ListItem>
         ))}
       </List>
-      {!conversationList && conversationFlag && <Box m={2}><CircularProgress
+      {AUTH_TYPE!=='NONE' && !conversationList && conversationFlag && <Box m={2}><CircularProgress
             size={20}
             thickness={5}
             style={{ marginLeft: 10 }}
             aria-label="loading conversation"
           /> </Box>}
-      {!conversationFlag && <Box m={2}>You haven't started any conversations yet.  Ask a question to begin!</Box>}
+      {AUTH_TYPE!=='NONE' && !conversationFlag && <Box m={2}>You haven't started any conversations yet.  Ask a question to begin!</Box>}
+        
+
     </Box>
   );
 }
