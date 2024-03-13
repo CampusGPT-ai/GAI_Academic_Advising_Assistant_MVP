@@ -1,16 +1,16 @@
-import dotenv
+import dotenv, re
 dotenv.load_dotenv()
 
 import threading
-from llm_services import AzureLLMClients, get_llm_client
+from cloud_services.llm_services import AzureLLMClients, get_llm_client
 import os, openai
 from typing import List
-from openai_response_objects import Message, ChatCompletion
+from cloud_services.openai_response_objects import Message, ChatCompletion
 
 # setup openai connection
 import logging, sys, json
-from file_tracker import FileLogger
-from file_utilities import remove_duplicate_passages
+from web_scraping.file_tracker import FileLogger
+from web_scraping.file_utilities import remove_duplicate_passages
 import time 
 
 logging.basicConfig(
@@ -25,8 +25,8 @@ logging.basicConfig(
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
 OPENAI_ENDPOINT= os.getenv("AZURE_ENDPOINT")
-OPENAI_DEPLOYMENT = os.getenv("DEPLOYMENT_NAME")
-OPENAI_MODEL = os.getenv("MODEL_NAME")
+OPENAI_DEPLOYMENT = os.getenv("GPT4_DEPLOYMENT_NAME")
+OPENAI_MODEL = os.getenv("GPT4_MODEL_NAME")
 EMBEDDING = os.getenv("EMBEDDING")
 SEARCH_ENDPOINT = os.getenv("SEARCH_ENDPOINT")
 SEARCH_API_KEY= os.getenv("SEARCH_API_KEY")
@@ -80,32 +80,19 @@ class SyntheticQnA(FileLogger):
         
         def get_prompt():
             user_content =(
-r"""the contents below are scraped from a webpage.  Read the contents from the perspective of a university student"""
-r"""and come up with some questions, answers and derived follow up questions, that might represent an FAQ on the content. """
-r""" Use keywords and topics in the question and response text as much as possible, as this will improve search results downstream."""
-r""" Do not answer the derived follow-up questions, just brainstorm some potential further avenues for exploration."""
-r"""Your response MUST BE valid json and should look similar to the structure below. """
-r"""The example below is only for illustration purposes, do NOT use this exact text in your response. """
-r"""{ """
-r"""    "Topics": [ """
-r"""        "Student Learning and Academic Success","""
-r"""        "Academic Services","""
-r"""        "Peer Coaching Program","""
-r"""        "Student Resources","""
-r"""    ], """
-r"""    "Questions": {"""
-r"""        "What is the Division of Student Learning and Academic Success?": "The Division of Student Learning and Academic Success helps undergraduates unleash their full potential and engage in educational and co-curricular opportunities.","""
-r"""        "What are the academic planning tools offered?": "Academic planning tools include..." """
-r"""    }, """
-r"""    "Follow-up Questions": [""" 
-r"""        "What are the obligations of peer tutors?","""
-r"""        "What kind of assistance does the university provide in terms of study skills?","""
-r"""        "How do the mentioned academic planning tools work?" """
-r"""    ] """
-r""" } """
+r"""You are an NLP agent.  Your job is to convert raw text into semantic search strings.  \n\n
+For the text below identify facts about people, places, entities, events, advice, recommendations, actions, or any other topics you can think of.  \n
+For each fact you find, list the fact in a short paragraph.  \n
+- The paragraph should include the fact itself and all additional context that will help improve semantic search results using cosign similarity search on the embedded data. \n
+- Each paragraph should stand alone, without relying on knowledge of preceeding text to make sense. \n  
+- Repeat major topics, themes, and other facts from the body of the text for each paragraph. \n
+Create as many paragraphs for as many facts as you possibly can.  \n
+always include specific dates if they are provided. \n
+Always include addresses and contact information if it is provided.  \n
+Do not number the paragraphs.  Separate each paragraph with a double line break.  """
 r"""\n\n"""
-r""" [SCRAPED WEBPAGE CONTENTS]: """
-f"""{context_str}"""
+r""" [SCRAPED WEBPAGE CONTENTS]:\n """
+f"""{context_str}\n\n"""
             )
             return (
                 [
@@ -117,8 +104,8 @@ f"""{context_str}"""
         
         messages = get_prompt()
         result : ChatCompletion = self.azure_llm.chat(messages)
-        return result.choices[0].message
-    
+        print(result.choices[0].message)
+        return result.choices[0].message  
     def extract_prefixes(self,filename):
         parts = filename.split('.ucf.edu')[0]
         return parts
@@ -133,9 +120,9 @@ f"""{context_str}"""
                 result = self.generate_completion(content)
                 print(f"Completed QnA for {filename}")
                 result_content = result.content.replace(r"```","").replace("json","")
-                qna = json.loads(result_content)
-                merged_data = {**docs, **qna}
-                self.save_json(merged_data, filename, 'index-processed')
+                result_content = {"qna": re.split('\n\n---\n\n|\n\n', result_content)}
+                merged_data = {**docs, **result_content}
+                self.save_json(merged_data, filename, 'index-short-text')
                 break  # Break out of the loop if successful
             except Exception as e:
                 print(f"Error querying GPT for {filename}: {e}")
@@ -153,7 +140,7 @@ f"""{context_str}"""
                     self.visited.add(filename)
                     break  # Break on other types of errors
 
-    async def upload_files(self):
+    async def chunked_files(self):
         self.threads = []
         max_threads = 15 # be careful of rate limiting and CPU usage
                 #start consumer thread production
@@ -162,9 +149,9 @@ f"""{context_str}"""
             thread.start()
             self.threads.append(thread)
 
-        await self.get_docs_to_process("index-upload")
+        await self.get_docs_to_process("index-upload-v2")
         # start producing docs in the queue
-        await self.read_page_content_and_enqueue("index-upload")
+        await self.read_page_content_and_enqueue("index-upload-v2")
 
         for _ in self.threads: 
             self.docs.put((None,None))
@@ -208,7 +195,7 @@ if __name__ == "__main__":
     import asyncio
     loop = asyncio.get_event_loop()
     loader = SyntheticQnA("visited.txt","rejected.txt", credentials=AZURE_STORAGE_ACCOUNT_CRED, account_url=account_url)
-    loop.run_until_complete(loader.upload_files())
+    loop.run_until_complete(loader.chunked_files())
     loop.close
     
     

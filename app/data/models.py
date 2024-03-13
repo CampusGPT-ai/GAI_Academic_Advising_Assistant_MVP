@@ -19,6 +19,32 @@ class UserSession(Document):
         ]
     } 
 
+class kbDocument(Document):
+    _auto_id_field = 'id'
+    source = StringField(required=True)
+    updated = StringField(required=True)
+    text = StringField(required=True)
+    meta = {
+        'collection': 'kb_document',  # the name of your collection in the database
+        'indexes': [
+            'source'  # index this field for faster querying
+        ]
+    }
+
+class indexDocument(Document):
+    _auto_id_field = 'id'
+    vector_id = StringField(required=True)
+    source = StringField(required=True)
+    last_updated = StringField(required=True)
+    content = StringField(required=True)
+    content_vector = ListField(FloatField())
+    meta = {
+        'collection': 'index_document',  # the name of your collection in the database
+        'indexes': [
+            'source'  # index this field for faster querying
+        ]
+    }
+
 class Citation(EmbeddedDocument):
     citation_text = StringField(required=True)
     citation_path = StringField(required=True)
