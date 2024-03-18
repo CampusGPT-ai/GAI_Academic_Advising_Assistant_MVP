@@ -19,6 +19,22 @@ class UserSession(Document):
         ]
     } 
 
+class Profile(Document):
+    _auto_id_field = 'id'
+    user_id = StringField(required=True, unique=True)
+    first_name = StringField(required=True)
+    last_name = StringField(required=True)
+    email = EmailField(required=True)
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+    considerations = ListField(StringField())
+    meta = {
+        'collection': 'user_profile',  # the name of your collection in the database
+        'indexes': [
+            'user_id'  # index this field for faster querying
+        ]
+    }
+
 class kbDocument(Document):
     _auto_id_field = 'id'
     source = StringField(required=True)

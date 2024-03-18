@@ -47,4 +47,8 @@ class Settings(BaseSettings):
      AZURE_CLIENT_SECRET: str
 
      NON_SESSION_ID: str
+
+     N4J_URI: str
+     N4J_USERNAME: str
+     N4J_PASSWORD: str
      

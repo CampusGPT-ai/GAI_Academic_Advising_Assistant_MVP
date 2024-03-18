@@ -1,12 +1,18 @@
 [{
-    "Full Name" : "Tiffany Tallahassee",
-    "Year" : "Freshman",
-    "Academic Major": "Physics",
-    "high school size": "5000",
-    "class rank": 143,
-    "SAT Score": 1490,
-    "Scholarship Status": "Bright futures recipient",
-    "Interests": "Greek life, intramural sports",
-    "residency": "on-campus",
-    "Is online student": "false"
+    "User ID": "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I",
+    "First Name" : "Tiffany",
+    "Last Name" : "Tallahassee",
+    "Email" : "ma137565admin@ucf.edu",
+    "created_at" : {
+		"$date" : 1707936097308
+	},
+    "updated_at" : {
+        "$date" : 1707936097308
+    },
+    "considerations" : {
+        "is_admin" : true,
+        "is_active" : true,
+        "is_verified" : true
+    }
+
 }]
