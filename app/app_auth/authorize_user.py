@@ -8,7 +8,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Request
 import os
 from datetime import datetime, timedelta
-from data.models import UserSession
+from data.models import UserSession, Profile
 import logging
 from settings.settings import Settings
 
@@ -48,16 +48,39 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
         options={"verify_signature": True, "verify_aud": True, "verify_iss": True}
         )
         
-        # logger.debug("got token payload", payload)
-
-        username: str = payload.get("sub")
-        if username is None:
-            username = payload.get("givenname") + " " + payload.get("surname")
-        if username is None:
-            raise credentials_exception
-        return username
+        logger.debug("got token payload", payload)
+        try:
+            create_user_if_not_exist(payload)
+        except Exception as e:
+            raise e
+    
     except:
         raise credentials_exception
+    
+def create_user_if_not_exist(payload):
+    from settings.settings import Settings
+    from mongoengine import connect
+    settings = Settings()
+    db_name = settings.MONGO_DB
+    db_conn = settings.MONGO_CONN_STR
+    _mongo_conn = connect(db=db_name, host=db_conn)
+    try:
+        user_id: str = payload.get("sub")
+        first_name: str = payload.get("first_name")
+        last_name: str = payload.get("last_name")
+        email: str = payload.get("email")
+        created_at =datetime.utcnow
+        updated_at = datetime.utcnow
+        considerations = []
+        user = Profile.objects(user_id=user_id).first()
+        if not user:
+            user =  Profile(user_id=user_id, first_name=first_name, last_name=last_name, email=email, created_at=created_at, updated_at=updated_at, considerations=considerations)
+            user.save()
+    except Exception as e:
+        print(f"Error saving user profile to the database: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return user_id
+
 
 @router.get("/validate_token_saml")
 async def validate_and_create_session_saml():

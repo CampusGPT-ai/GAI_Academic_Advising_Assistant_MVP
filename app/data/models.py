@@ -22,12 +22,12 @@ class UserSession(Document):
 class Profile(Document):
     _auto_id_field = 'id'
     user_id = StringField(required=True, unique=True)
-    first_name = StringField(required=True)
-    last_name = StringField(required=True)
-    email = EmailField(required=True)
+    first_name = StringField(required=False)
+    last_name = StringField(required=False)
+    email = EmailField(required=False)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
-    considerations = ListField(StringField())
+    considerations = ListField(StringField(required=False))
     meta = {
         'collection': 'user_profile',  # the name of your collection in the database
         'indexes': [
