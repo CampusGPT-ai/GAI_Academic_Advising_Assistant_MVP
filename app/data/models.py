@@ -23,11 +23,12 @@ class Profile(Document):
     _auto_id_field = 'id'
     user_id = StringField(required=True, unique=True)
     first_name = StringField(required=False)
+    active_conversation = ReferenceField('Conversation', required=False)
     last_name = StringField(required=False)
     email = EmailField(required=False)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
-    considerations = ListField(StringField(required=False))
+    considerations = ListField(DictField(required=False))
     meta = {
         'collection': 'user_profile',  # the name of your collection in the database
         'indexes': [
@@ -96,6 +97,22 @@ class Conversation(Document):
     end_time = DateTimeField()
     messages = ListField(EmbeddedDocumentField(ChatMessage, required=False))
     meta = {'collection': 'conversations'}
+
+    def is_new(self):
+        return self.end_time is None
+
+    def end_conversation(self):
+        self.end_time = datetime.now()
+        self.save()
+
+
+class ConversationSimple(Document):
+    _auto_id_field = 'id'
+    user_id = StringField(required=True)
+    start_time  = DateTimeField(required=True, default=datetime.now())
+    end_time = DateTimeField()
+    history = ListField(ReferenceField(RawChatMessage, required=False))
+    meta = {'collection': 'conversations_simple'}
 
     def is_new(self):
         return self.end_time is None

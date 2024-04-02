@@ -19,12 +19,11 @@ class UserInfo:
             return self.user_profile
         else:
             return self.default_info
+
+
         
 if __name__ == "__main__":
-    db_name = settings.MONGO_DB
-    db_conn = settings.MONGO_CONN_STR
-    _mongo_conn = connect(db=db_name, host=db_conn)
-    print(f"Connected to mongo: {_mongo_conn}")
+
     user_info = UserSession.objects().first()
     user = UserInfo(user_info.user_id)
     print(user.get_user_info())
