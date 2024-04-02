@@ -37,22 +37,56 @@ class Neo4jSession:
 
             for record in result:
                 return record['similarDescription']['name']
+    
+    def find_all_nodes(self, index='Consideration'):
+        record_list = []
+        with self.driver.session() as session:
+            result = session.run(f"""
+                MATCH (n: `{index}`)
+                RETURN n
+            """)
+            for record in result:
+                if record['n']['name'] and record['n']['description']:
+                    name = (record['n']['name'])
+                    description = (record['n']['description'])
+                    record_list.append(f'Name: {name}. Description: {description}. /n')
+
+        return record_list
+    
+    def run_query(self, query, parameters=None):
+        matches = []
+        with self.driver.session() as session:
+            try:
+                result = session.run(query, parameters) if parameters else session.run(query)
+                for record in result:
+                    o = record[0]
+                    dict = {
+                        'name': o.get('name'),
+                        'description': o.get('description')
+                    }
+                    matches.append(dict)
+            except Exception as e:
+                print(e)
+        return matches
+    
+    def query_outcomes(self, relationship_type, node_names):
+        query = f"""
+        MATCH (t:Topic)-[:`{relationship_type}`]->(o:Outcome)
+        WHERE t.name = $node_name
+        RETURN o
+        """
+        parameters = {'node_name': node_names, 'relationship_type': relationship_type}
+        return self.run_query(query, parameters)
         
 
-    def construct_and_execute_query(self, node_names, node_type, relationship_type):
+    def query_considerations(self, node_names, node_type, relationship_type):
     # Construct the query string dynamically using safe methods
         matches = []
         query = f"""
-        MATCH (c:`{node_type}`)-[:`{relationship_type}`]->(t:Topic {{name: $nodeNames}})
+        MATCH (c:`{node_type}`)-[:`{relationship_type}`]->(t:Topic {{name: "{node_names}"}})
         RETURN c
         """
-        with self.driver.session() as session:
-            result = session.run(query, parameters={'nodeNames': node_names})
-            for record in result:
-                record = record[0]
-                dict = {'name': record.get('name'), 'description': record.get('description')}
-                matches.append(dict)
-        return matches
+        return self.run_query(query)
 
     
 if __name__ == "__main__":
@@ -60,7 +94,8 @@ if __name__ == "__main__":
     user_question = "What interships should I apply for?"
     related_topic = finder.find_similar_nodes(user_question)
     print(related_topic)
-    print(finder.construct_and_execute_query(related_topic, 'Consideration','IS_CONSIDERATION_FOR'))
+    print(finder.query_outcomes('IS_OPPORTUNITY_FOR', related_topic))
     # frame = finder.query_terms(user_question, "Topic")
+    # print(finder.find_all_nodes('Consideration'))
     #print(frame)
     finder.close()

@@ -15,6 +15,7 @@ from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from conversation.user_conversation import UserConversation
+from conversation.ask_follow_up import FollowUp
 from conversation.retrieve_messages import get_message_history
 from azure.identity import DefaultAzureCredential
 from data.models import Conversation, UserSession
@@ -187,6 +188,24 @@ async def get_sample_questions(
             status_code=404,
         )
 
+def get_conversation(conversation_id, session_data):
+    try:
+        if conversation_id == "0":
+                logger.info(
+                    "saving new conversation",
+                )
+                conversation = Conversation(user_id=session_data.user_id)
+                conversation.save()
+                logger.info(
+                    f"got conversation information {conversation.id}",
+                )
+        else:
+            conversation = Conversation.objects(id=conversation_id).first()
+        if conversation is None:
+            raise Exception("unable to create conversation for user chat.")
+        return conversation
+    except Exception as e:
+        raise e
 
 # regular chat - main API.  creates new conversation is conversation doesn't exist.
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat/{user_question}")
@@ -200,19 +219,7 @@ async def chat(
         logger.info(
             f"got data from api call: {user_question}, {conversation_id}",
         )
-        if conversation_id == "0":
-            logger.info(
-                "saving new conversation",
-            )
-            conversation = Conversation(user_id=session_data.user_id)
-            conversation.save()
-            logger.info(
-                f"got conversation information {conversation.id}",
-            )
-        else:
-            conversation = Conversation.objects(id=conversation_id).first()
-        if conversation is None:
-            raise Exception("unable to create conversation for user chat.")
+        conversation = get_conversation(conversation_id, session_data)
 
         chain = UserConversation.with_default_settings(
             session_data,
@@ -230,6 +237,28 @@ async def chat(
             status_code=404,
         )
 
+# regular chat - main API.  creates new conversation is conversation doesn't exist.
+@app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
+async def chat_new(
+    user_question,
+    conversation_id,
+    session_data: UserSession = Depends(get_session_from_session),
+):
+    set_context_from_session_data(session_data)
+    try:
+        logger.info(
+            f"got data from api call: {user_question}, {conversation_id}",
+        )
+        conversation = get_conversation(conversation_id, session_data)
+        chain = FollowUp(user_question,session_data,conversation)
+    except Exception as e:
+        logger.error(
+            f"Conversation not found with {str(e)}",
+        )
+        return JSONResponse(
+            content={"message": f"Conversation not found with {str(e)}"},
+            status_code=404,
+        )
 
 # return list of user conversation ids
 @app.get("/users/{session_guid}/conversations")
