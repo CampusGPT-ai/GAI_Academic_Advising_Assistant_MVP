@@ -6,16 +6,18 @@ from conversation.retrieve_docs import SearchRetriever
 from conversation.prompt_templates.kick_back_prompt import get_gpt_system_prompt as kick_back_prompt
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt as gpt_qa_prompt
 from conversation.prompt_templates.classify_graph_prompt import get_gpt_classification_prompt
+from conversation.prompt_templates.internet_search_query import get_gpt_search_prompt
 from cloud_services.openai_response_objects import Message
 from cloud_services.connect_mongo import MongoConnection
 from threading import Thread
+from cloud_services.internet_search import query_google
 import json
 from queue import Queue, Empty
 from data.models import ConversationSimple as Conversation, MessageContent, RawChatMessage, UserSession
 
 settings = Settings()
 
-USER_QUESTION = "How do I decide which electives to take for my physics degree?"
+USER_QUESTION = "What internships should I look for?"
 USER_ID = "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I"
 #will just proxy this for testing (this will be a route)
 
@@ -43,6 +45,7 @@ class FollowUp:
         self.graph_considerations = []
         self.related_topics = None
         self.rag = []
+        self.rag_links = []
         self.missing_considerations = []
         self.retry_count = 0
         self.user = self.user_info.user_profile
@@ -158,6 +161,7 @@ class FollowUp:
 
     def run_rag(self, user_context):
         result = self.retriever.retrieve_content(user_context, n=10)
+        self.rag_links = result['source']
         self.rag_response = result['content']
         return
     
@@ -231,7 +235,6 @@ class FollowUp:
         try:
             chat = self.azure_llm_client.chat(prompt, True)
             formatted_response = self._format_json(chat)
-            print("LLM RESPONSE:", formatted_response)
             if expected_json != [] and not self.validate_json(formatted_response, expected_json):
                 raise ValueError("Unexpected JSON response from LLM")
             self.response_pool.put({name:formatted_response})
@@ -243,6 +246,17 @@ class FollowUp:
                 self.run_llm(prompt, expected_json)
             else:
                 return "Error querying LLM"
+    
+    def agent_search(self, search_list):
+        resource_list = []
+        for string in search_list['search_strings']:
+            try:
+                search_results = query_google(string, num_results=1)
+                if search_results:
+                    resource_list.append(search_results)
+            except Exception as e:
+                print(f"Error querying Google: {e}")
+        return resource_list
             
 
     def update_conversation_history(self, responses):
@@ -325,6 +339,8 @@ class FollowUp:
         kickback_thread.start()
 
         rag_thread.join()
+
+
         kickback_thread.join()
         responses = []
         try:
@@ -334,10 +350,19 @@ class FollowUp:
                 if type(item) == dict:
                     item_key = next(iter(item))  # Or q.get(block=False)
                 if item_key == 'rag_response':
+                    search_prompt, search_json = self.create_prompt_template(
+                        get_gpt_search_prompt(item[item_key]['response']))
+                    search_thread = Thread(target=self.run_llm, args=(search_prompt, search_json, "search_response"))
+                    search_thread.start()
+                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
+                    search_thread.join()
                     responses.append(item)
                 if item_key == 'kickback_response':
                     responses.append(item)
-                yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
+                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
+                if item_key == 'search_response':
+                    item = self.agent_search(item[item_key])
+                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
         except Empty: 
             print('Queue is empty')
         finally:
@@ -365,4 +390,7 @@ if __name__ == "__main__":
     mock_conversation = Conversation(id="65cd0b42372b404efb9805f6", user_id=USER_ID)
 
     follow_up = FollowUp(USER_QUESTION, mock_user_session, mock_conversation)
-    follow_up.full_response()
+    result = follow_up.full_response()
+    while True:
+        print(next(result))
+        

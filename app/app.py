@@ -237,7 +237,7 @@ async def chat(
             status_code=404,
         )
 
-# regular chat - main API.  creates new conversation is conversation doesn't exist.
+# TESTING OUT FOLLOW UP QUESTIONS
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
 async def chat_new(
     user_question,
