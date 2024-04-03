@@ -76,10 +76,6 @@ function useStreamData(apiUrl?: string, setSelectedConversation?: (conversation:
     }
   }, [apiUrl]);
 
-  useEffect(() =>{
-    console.log(`detected change to streaming message value ${streamingMessage}`)
-  },[streamingMessage])
-
   useEffect(()=>{
     !isStreaming && setStreamingMessage('');
   },[isStreaming])
