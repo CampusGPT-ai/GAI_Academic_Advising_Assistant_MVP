@@ -29,7 +29,6 @@ const ChatBotChatResponse: FC<ChatBotChatResponseProps> = ({
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   const messageWithLineBreaks = message ? message.replace(/\n/g, '<br>') : "";
   const sanitizedHTML = DOMPurify.sanitize(messageWithLineBreaks);
-  console.log(`follow up in chatbotchatresponse ${JSON.stringify(follow_up_questions)}`)
   const labelsCol = 2;
   const openCitation = (path: string) => {
     setIframeSrc(path);
