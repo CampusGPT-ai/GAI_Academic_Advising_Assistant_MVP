@@ -14,7 +14,6 @@ interface ChatHistoryProps {
 }
 
 const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollowupClicked }) => {
-  console.log(`chat message history set to: ${JSON.stringify(messages)}`)
   return (
     <div>
       {messages.map((m, index) => {
