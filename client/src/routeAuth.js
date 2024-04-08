@@ -28,28 +28,27 @@ export default function ProtectedRoute({children}) {
     // console.log(`checking login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`)
 
     useEffect(() => {
-        if (!isAuthenticated && inProgress === "none") {
-            // Initiate login only if no other interaction is in progress
-            // console.log(`initiating login for instance ${JSON.stringify(instance)}`);
-            console.log(`in progress: ${inProgress}`)
-            console.log(`is Authenticated: ${isAuthenticated}`)
-            try {
-                console.log(`initiating login for instance ${JSON.stringify(instance)}`);
-                
-                instance.loginRedirect(); // or loginPopup
-                console.log(`checking state variables for isAuth: ${isAuthenticated} and inProgress: ${inProgress}`)
-                debugger;
-            } catch (e) {
-
-                console.error("Login failed:", e);
-                debugger;
-                // Optionally, update state to show error message to the user
-                // setError(e); // You would need to define `setError` and `error` state with `useState`
+        const authenticate = async () => {
+            if (!isAuthenticated && inProgress === "none") {
+                console.log(`in progress: ${inProgress}`);
+                console.log(`is Authenticated: ${isAuthenticated}`);
+                try {
+                    console.log(`initiating login for instance ${JSON.stringify(instance)}`);
+                    await instance.loginRedirect(); // or loginPopup
+                    console.log(`checking state variables for isAuth: ${isAuthenticated} and inProgress: ${inProgress}`);
+                } catch (e) {
+                    console.error("Login failed:", e);
+                }
             }
-        }
+        };
+    
+        authenticate();
+    
         return () => {
+            // Cleanup if needed
         };
     }, [isAuthenticated, inProgress, instance]);
+    
 
 
     // Render content conditionally based on the authentication status

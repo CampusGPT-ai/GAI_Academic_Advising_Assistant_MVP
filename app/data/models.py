@@ -109,6 +109,7 @@ class Conversation(Document):
 class ConversationSimple(Document):
     _auto_id_field = 'id'
     user_id = StringField(required=True)
+    topic = StringField()
     start_time  = DateTimeField(required=True, default=datetime.now())
     end_time = DateTimeField()
     history = ListField(ReferenceField(RawChatMessage, required=False))

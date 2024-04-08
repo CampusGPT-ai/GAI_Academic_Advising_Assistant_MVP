@@ -7,11 +7,17 @@ interface BackendResponse {
     account?: string;
     instance: any,
 }
-import {useMsal, useIsAuthenticated} from "@azure/msal-react";
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 
+interface tokenData {
+    accounts?: any;
+    isAuthenticated?: boolean;
+    inProgress?: string;
+    instance?: IPublicClientApplication;
 
-const sendTokenToBackend = async() => {
+}
+
+const sendTokenToBackend = async( {accounts, isAuthenticated, inProgress, instance} : tokenData ) => {
 
 
         let backendResponse: Response = new Response();
@@ -20,11 +26,9 @@ const sendTokenToBackend = async() => {
             if (AUTH_TYPE === 'MSAL')
             { 
                 console.log('Using MSAL for token validation')
-                const { instance, accounts, inProgress} = useMsal();
-                const isAuthenticated = useIsAuthenticated();
                 const account = accounts[0];
         
-                if ( isAuthenticated && inProgress === 'none') {
+                if ( isAuthenticated && inProgress === 'none' && instance) {
 
                     const response = await instance.acquireTokenSilent({
                         scopes: ['828d30c9-9619-4a12-8604-96d44653958f/.default'], // Use .default alone
@@ -66,7 +70,6 @@ const sendTokenToBackend = async() => {
             }
             
             console.log(`Backend response recieved from server: ${backendResponse}`)
-            debugger;
             if (!backendResponse.ok) {
                 // Handle the scenario where the token is not valid
                 console.error('Token validation failed');

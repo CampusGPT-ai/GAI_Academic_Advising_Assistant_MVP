@@ -10,11 +10,11 @@ import ChatUserChat from "./chatUserChat";
 interface ChatHistoryProps {
   /** An array of messages to display in the chat. */
   messages: MessageSimple[];
-  onFollowupClicked: (message: string) => void;
 }
 
-const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollowupClicked }) => {
-  console.log(`chat message history set to: ${JSON.stringify(messages)}`)
+
+const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages}) => {
+  //console.log(`chat message history set to: ${JSON.stringify(messages)}`)
   return (
     <div>
       {messages.map((m, index) => {
@@ -30,12 +30,9 @@ const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollo
             }
 
 
-            {m.role === "assistant" && (
+            {m.role === "system" && (
               <>
-                <ChatBotChat message={m.message}
-                  follow_up_questions={m.followups}
-                  citations={m.citations}
-                  onFollowupClicked={onFollowupClicked} />
+                <ChatBotChat message={m.message}/>
                 <Box sx={{ height: "50px" }} />
               </>
             )

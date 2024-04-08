@@ -10,5 +10,12 @@ type Conversation = {
     user_id?: string,
 };
 
-
+export type ConversationNew = {
+    id: string;
+    topic?: string;
+    start_time: Timestamp;
+    end_time?: Timestamp;
+    history?: any;
+    user_id?: string,
+};
 export default Conversation;

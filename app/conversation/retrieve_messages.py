@@ -1,4 +1,4 @@
-from data.models import Conversation, UserSession
+from data.models import ConversationSimple, UserSession
 import logging, sys, os, json
 
 logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ from util.json_helper import CustomJSONEncoder
 
 def get_message_history(conversation_id, return_type = "json"):
     try:
-        conversation = Conversation.objects(id=conversation_id).select_related(max_depth=5)
+        conversation = ConversationSimple.objects(id=conversation_id).select_related(max_depth=5)
         if not conversation:
             raise Exception(f"failed to find conversation for {conversation_id}")
         
@@ -18,40 +18,30 @@ def get_message_history(conversation_id, return_type = "json"):
 
         # should always be one but query returns array
         for c in conversation:
-            messages = c.messages
+            messages = c.history
 
             #data contains topic, start, end, id
             #messages are a list of message objects that need to be parsed further
             c_dict = c._data
             c_dict["id"]=str(c_dict["id"])
-            del c_dict['messages']
+            del c_dict['history']
 
             for m in messages:
 
                 #data contains two chat messages with references (follow ups, citations)
                 m_dict = m._data
 
-                citation_list = []
-                for cit in m.citations:
-                    cit_dict = cit._data
-                    citation_list.append(cit_dict)
-                
-                m_dict['citations'] = citation_list
-                
                 new_message = {}
 
                 #get chats
                 message_small_list = []
-                for r in m.message.message:
+                for r in m.message:
                     message_small_list.append(r._data)
 
                 message_small_list = sorted(message_small_list, key=lambda x: (x['role']), reverse=True)
 
                 for role in message_small_list:
                     new_message = role
-                    if role["role"] == 'assistant':
-                        new_message["citations"]=citation_list
-                        new_message["followups"]=m_dict["follow_up_questions"]
                     message_list.append(new_message)
         sorted_messages = sorted(message_list, key=lambda x: (x['created_at']), reverse=False)
 
@@ -73,7 +63,7 @@ if __name__=="__main__":
     db_conn = settings.MONGO_CONN_STR
     _mongo_conn = connect(db=db_name, host=db_conn)
 
-    conversation = Conversation.objects()
+    conversation = ConversationSimple.objects()
     
     from pathlib import Path
     logger.debug("Current Working Directory:", os.getcwd())
@@ -83,5 +73,5 @@ if __name__=="__main__":
     with relative_path.open(mode='r') as file:
         mock_user_session : UserSession = UserSession(**json.load(file))
     
-    get_message_history(conversation_id="65bc1e6b24ea835e402e6b1b")
+    get_message_history(conversation_id="660f349865fb022222dcd495")
 

@@ -8,12 +8,6 @@ import AppStatus from "../model/conversation/statusMessages";
 import { useMsal, useIsAuthenticated} from "@azure/msal-react";
 
 
-
-interface detectHistoryRefresh {
-  isNewConversation: boolean,
-  isMessageLoaded: boolean,
-}
-
 interface conversationHistoryStatus {
   userHasHistory: boolean,
   isHistoryUpdated: boolean,
@@ -29,14 +23,14 @@ interface ConversationData {
 }
 
 interface AccountData {
-    refreshFlag: detectHistoryRefresh;
+    newConversationFlag: Boolean;
     setAppStatus: (status: AppStatus) => void;
     
 }
 
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 
-function useAccountData({refreshFlag, setAppStatus }: AccountData): ConversationData {
+function useAccountData({newConversationFlag, setAppStatus }: AccountData): ConversationData {
 
   const { inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
@@ -47,13 +41,16 @@ function useAccountData({refreshFlag, setAppStatus }: AccountData): Conversation
   const [conversations, setConversations] = useState<Conversation[]>();
   const [initDataError, setInitDataError] = useState<string>();
 
+
+    const { instance, accounts } = useMsal();
+
+
   const fetchUser = async () => {
     setAppStatus(AppStatus.LoggingIn)
     console.log(`fetching user from backend`)
-    debugger;
       try {
-        const userData = await sendTokenToBackend();
-        //console.log(`fetched user from backend ${userData}`)
+        const userData = await sendTokenToBackend({accounts, isAuthenticated, inProgress, instance});
+        console.log(`fetched user from backend ${userData}`)
         setUserSession(userData);
         setAppStatus(AppStatus.Idle)
       } catch (error) {
@@ -101,11 +98,9 @@ function useAccountData({refreshFlag, setAppStatus }: AccountData): Conversation
 
   useEffect(() => {
     // if a new conversation has been added, refresh the history list
-    refreshFlag.isMessageLoaded && refreshFlag.isNewConversation && userSession &&
+    newConversationFlag && userSession &&
     getConversations();
-    // otherwise, set the refresh flag to false (no new history item) and return the history flag update status to false (no new updates)
-    !refreshFlag.isMessageLoaded &&!refreshFlag.isNewConversation && setConversationHistoryFlag({userHasHistory: true, isHistoryUpdated: false})
-  },[refreshFlag])
+},[newConversationFlag])
 
   useEffect(() => {
     if (userSession != undefined) {

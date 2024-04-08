@@ -23,9 +23,9 @@ import AppStatus from "../model/conversation/statusMessages";
 interface ChatProps {
   sampleQuestions?: string[];
   chatResponse?: string;
-  follow_up_questions?: string[];
-  citations?: Citation[];
   appStatus: AppStatus;
+  errMessage?: string;
+  notifications?: string;
   sendChatClicked: (messageText: string) => void;
   messageHistory?: MessageSimple[];
   currentAnswerRef: React.MutableRefObject<any>;
@@ -34,10 +34,10 @@ interface ChatProps {
 
 const Chat: FC<ChatProps> = ({
   appStatus,
+  errMessage,
+  notifications,
   sampleQuestions,
   chatResponse,
-  follow_up_questions,
-  citations,
   sendChatClicked,
   messageHistory,
   currentAnswerRef,
@@ -50,9 +50,9 @@ const Chat: FC<ChatProps> = ({
  
       <Box height={"100%"} display="flex" justifyContent={"center"} width={chatWidth}>
           <ChatActive //src/sections/chat/chatActive
+            errMessage={errMessage}
+            notifications={notifications}
             chatResponse={chatResponse}
-            follow_up_questions={follow_up_questions}
-            citations={citations}
             messageHistory={messageHistory}
             sendChatClicked={sendChatClicked}
             appStatus={appStatus}

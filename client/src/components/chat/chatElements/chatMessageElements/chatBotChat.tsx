@@ -1,7 +1,7 @@
 
 import { Box, CircularProgress, Typography, useTheme } from "@mui/material";
 import propTypes from "prop-types";
-import React, { FC } from "react";
+import React, { FC, useEffect } from "react";
 import messageSample from "../../../../model/messages/messageSample.json";
 import { MessageContent, Citation} from "../../../../model/messages/messages";
 import ChatBotChatResponse from "./chatResponse/chatBotChatResponse";
@@ -15,12 +15,8 @@ interface ChatBotChatProps {
   isLoading?: boolean;
   isError?: boolean;
   message?: string;
-  follow_up_questions?: string[];
-  citations?: Citation[];
   onRetry?: () => void;
-  onFollowupClicked: (message: string) => void;
   error?: string;
-  currentAnswerRef?: React.MutableRefObject<any>;
 }
 
 /**
@@ -34,17 +30,29 @@ interface ChatBotChatProps {
  */
 const ChatBotChat: FC<ChatBotChatProps> = ({
   message,
-  follow_up_questions,
-  citations,
   isLoading,
   isError,
   onRetry,
-  onFollowupClicked,
-  error,
-  currentAnswerRef
+  error
 }) => {
   const theme = useTheme();
-  //console.log(`checking message content on bot return: ${JSON.stringify(follow_up_questions)}`)
+  const [formatted_message, setFormattedMessage] = React.useState<string>('');
+  function hyperlinkPreviousWord(text: string) {
+    let cleanedText = text.replace(/\[\s*(Source|Links)?:?\s*\]|\(\s*(Source|Links)?:?\s*\)/gi, '');
+
+    const urlRegex = /(\w+\s\w+)\s\[(https?:\/\/\S+)\]/gi;
+    const replacement = cleanedText.replace(urlRegex, (match, precedingWord, url) => {
+      // Replace the matched pattern with the preceding word wrapped in an anchor tag
+      return `<a target="_blank" style="text-decoration: underline;" href="${url}">${precedingWord}</a>`;
+  });
+
+    return replacement;
+}
+  useEffect(() => {
+    message && setFormattedMessage(hyperlinkPreviousWord(message));
+  },[message])
+
+
   return (
       
       <Box sx={{
@@ -75,11 +83,8 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
 }
 
         {!isError && message && (
-          <ChatBotChatResponse message={message}
-           follow_up_questions={follow_up_questions}
-            citations={citations}
-             currentAnswerRef={currentAnswerRef}
-              onFollowupClicked={onFollowupClicked}/>)
+          <ChatBotChatResponse message={formatted_message}
+             />)
       }
     </Box>
   );

@@ -14,12 +14,12 @@ from sse_starlette.sse import EventSourceResponse
 from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from conversation.user_conversation import UserConversation
 from conversation.ask_follow_up import FollowUp
 from conversation.retrieve_messages import get_message_history
 from azure.identity import DefaultAzureCredential
 from data.models import Conversation, UserSession
 from settings.settings import Settings
+from cloud_services.llm_services import get_llm_client
 
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +29,7 @@ from app_auth.authorize_user import get_session_from_session
 from user.get_user_info import UserInfo
 import logging, sys
 from conversation.retrieve_docs import SearchRetriever
-
+from data.models import ConversationSimple
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -174,11 +174,12 @@ async def add_code_version(request: Request, call_next):
 async def get_sample_questions(
     session_data: UserSession = Depends(get_session_from_session),
 ):
-    user = UserInfo(session_data)
+    from conversation.return_questions import get_questions
+    conversation_topics = get_conversation_topics(session_data)
     try:
-        retriever: SearchRetriever = SearchRetriever.with_default_settings()
-        data = retriever.generate_questions(user.get_user_info())
-        return JSONResponse(content={"data": data}, status_code=200)
+        
+        questions = get_questions(conversation_topics,session_data)
+        return JSONResponse(content={"data": questions}, status_code=200)
     except Exception as e:
         logger.error(
             f"failed to load sample questions with error {str(e)}",
@@ -194,48 +195,21 @@ def get_conversation(conversation_id, session_data):
                 logger.info(
                     "saving new conversation",
                 )
-                conversation = Conversation(user_id=session_data.user_id)
+                conversation = ConversationSimple(user_id=session_data.user_id)
+
                 conversation.save()
                 logger.info(
                     f"got conversation information {conversation.id}",
                 )
         else:
-            conversation = Conversation.objects(id=conversation_id).first()
+            conversation = ConversationSimple.objects(id=conversation_id).select_related(max_depth=5)
+            conversation = conversation[0]
+
         if conversation is None:
             raise Exception("unable to create conversation for user chat.")
         return conversation
     except Exception as e:
         raise e
-
-# regular chat - main API.  creates new conversation is conversation doesn't exist.
-@app.get("/users/{session_guid}/conversations/{conversation_id}/chat/{user_question}")
-async def chat(
-    user_question,
-    conversation_id,
-    session_data: UserSession = Depends(get_session_from_session),
-):
-    set_context_from_session_data(session_data)
-    try:
-        logger.info(
-            f"got data from api call: {user_question}, {conversation_id}",
-        )
-        conversation = get_conversation(conversation_id, session_data)
-
-        chain = UserConversation.with_default_settings(
-            session_data,
-            conversation,
-            model_num="GPT4",
-        )
-        generator = chain.send_message(user_question, conversation)
-        return EventSourceResponse(generator, media_type="text/event-stream")
-    except Exception as e:
-        logger.error(
-            f"Conversation not found with {str(e)}",
-        )
-        return JSONResponse(
-            content={"message": f"Conversation not found with {str(e)}"},
-            status_code=404,
-        )
 
 # TESTING OUT FOLLOW UP QUESTIONS
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
@@ -251,6 +225,9 @@ async def chat_new(
         )
         conversation = get_conversation(conversation_id, session_data)
         chain = FollowUp(user_question,session_data,conversation)
+        chain= chain.full_response()
+        logger.info("chain created")
+        return EventSourceResponse(chain, media_type="text/event-stream")
     except Exception as e:
         logger.error(
             f"Conversation not found with {str(e)}",
@@ -259,6 +236,29 @@ async def chat_new(
             content={"message": f"Conversation not found with {str(e)}"},
             status_code=404,
         )
+    
+def get_conversation_topics(session_data):
+    try:
+        conversations: List[ConversationSimple] = ConversationSimple.objects(
+                user_id=session_data.user_id
+            )
+        if not conversations:
+            return False
+        conversation_topics = []
+        if conversations:
+            for c in conversations:
+                c_dict = {
+                    "topic": c.topic if c.topic else "No topic",
+                    "id": str(c.id),
+                    "start_time": c.start_time.isoformat() if c.start_time else None,
+                    "end_time": c.end_time.isoformat() if c.end_time else None,
+                }
+                conversation_topics.append(c_dict)
+        else:
+            raise
+        return conversation_topics
+    except Exception as e:
+        raise e
 
 # return list of user conversation ids
 @app.get("/users/{session_guid}/conversations")
@@ -274,27 +274,14 @@ async def get_conversations(
             logger.info(
                 f"finding conversations for user: {session_data.user_id}",
             )
-            conversations: List[Conversation] = Conversation.objects(
-                user_id=session_data.user_id
+            conversation_topics = get_conversation_topics(session_data)
+
+        if not conversation_topics:
+            return JSONResponse(
+                content={"message": f"no conversations found for {session_data.user_id}"},
+                status_code=404,
             )
-        if not conversations:
-            logger.info("conversation not found in db")
-            return Response(status_code=204)
         else:
-            conversation_topics = []
-            if conversations:
-                for c in conversations:
-                    c_dict = {
-                        "topic": c.topic,
-                        "id": str(c.id),
-                        "start_time": (
-                            c.start_time.isoformat() if c.start_time else None
-                        ),
-                        "end_time": c.end_time.isoformat() if c.end_time else None,
-                    }
-                    conversation_topics.append(c_dict)
-            else:
-                raise
             logger.info(
                 f"got conversations from documents {conversation_topics}",
             )

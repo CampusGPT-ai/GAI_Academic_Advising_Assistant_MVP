@@ -8,11 +8,10 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import MainPage from './pages/home.tsx';
-
+import MainPageGraph from './pages/home';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 const authType = process.env.REACT_APP_AUTH_TYPE;
 console.log(`auth type =`,authType);
-debugger;
 //<Navigate to="/index/chat" />
 //<Route path="/index/*" element={<MainPage />} />
 // add back <protected route>
