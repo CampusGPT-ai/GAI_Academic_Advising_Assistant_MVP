@@ -59,19 +59,23 @@ class SearchRetriever:
         result : ChatCompletion = self.azure_llm.chat(default_messages)
         return result.choices[0].message.content
     
-    def refine_questions(self, user_info, input):
-        prompt = get_questions_prompt(user_info, input)
+    def refine_questions(self, user_info):
+        prompt = get_questions_prompt(user_info)
         default_messages = [
             Message(role='system', content=prompt),
             ]
-        result : ChatCompletion = self.azure_llm.chat(default_messages)
-        result_split = self.split_questions(result.choices[0].message.content)
-        return result_split
+        result : ChatCompletion = self.azure_llm.chat(default_messages, True)
+        #  logger.info(f"Refine questions result: {result}")
+        result = self.azure_llm._format_json(result)
+
+        result = self.azure_llm.validate_json(result, ['questions'])
+
+        return result
     
     def generate_questions(self, user_info):
          #search_string = self.get_search_string(user_info)
-         results = self.retrieve_content(user_info, n=10)
-         result = self.refine_questions(user_info, results['questions'])
+         result = self.refine_questions(user_info)
+         logger.info(f"Refined questions: {result}")
          return result
     
     def generate_content_and_questions(self, query, user_info):

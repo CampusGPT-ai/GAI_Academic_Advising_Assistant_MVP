@@ -32,6 +32,8 @@ interface ChatActiveProps {
   citations?: Citation[];
   messageHistory?: MessageSimple[];  //optional history on selected conversation
   appStatus: AppStatus;
+  errMessage?: string;
+  notifications?: string;
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
@@ -39,9 +41,9 @@ interface ChatActiveProps {
 
 const ChatActive: FC<ChatActiveProps> = ({
   chatResponse,
-  follow_up_questions,
-  citations,
   appStatus,
+  errMessage,
+  notifications,
   sampleQuestions,
   messageHistory,
   sendChatClicked,
@@ -82,7 +84,7 @@ const ChatActive: FC<ChatActiveProps> = ({
   },[userQuestion])
 
 
-  //console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
+  //console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
   return (
     
     <Box sx={{alignItems: "center", 
@@ -95,16 +97,15 @@ const ChatActive: FC<ChatActiveProps> = ({
     borderRadius: 1, 
     justifyContent: "space-between"
     }}>
-      {((messageHistory && messageHistory.length>0) || appStatus === AppStatus.GeneratingChatResponse ) ? (
+      {(messageHistory && messageHistory.length>0) ? (
         <>
           <ChatMessages
             userQuestion={userQuestion}
             chatResponse={chatResponse}
-            follow_up_questions={follow_up_questions}
-            citations={citations}
             messageHistory={messageHistory}
             appStatus={appStatus}
-            onFollowupClicked={handleQuestionClick}
+            errMessage={errMessage}
+            notifications={notifications}
             onRetry={handleRetry}
             currentAnswerRef={currentAnswerRef}
           />

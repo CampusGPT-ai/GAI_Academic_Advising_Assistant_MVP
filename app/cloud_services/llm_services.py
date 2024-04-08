@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from openai import AzureOpenAI, OpenAI
-import openai
+import openai, json
 from azure.identity import DefaultAzureCredential
 import logging, sys, os
 import cloud_services.openai_response_objects as openai_response_objects
@@ -122,6 +122,27 @@ class AzureLLMClients(AILLMClients):
                 yield openai_response_objects.parse_completion_object(True,chunk)
         except Exception as e:
             raise e
+        
+    def validate_json(self, dict, string_list):
+        output = None
+
+        for l in string_list:
+            logger.info(f"checking for {l}")
+            try: 
+                output = dict.get(l)
+                logger.info(f"output is {output}")
+                if output:
+                    return output
+            except:
+                continue
+        return output
+    
+    @staticmethod
+    def _format_json(gpt_response):
+        response = gpt_response.choices[0].message.content
+        formatted_response = response.replace("\n", "").replace(r"```", "").replace("json", "")   
+        return json.loads(formatted_response)
+
 
     def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:
         """

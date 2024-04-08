@@ -6,11 +6,12 @@ import Conversation from "../model/conversation/conversations";
 import { MessageSimple } from "../model/messages/messages";
 import Footer from "../components/footer/footer";
 import Chat from "./chat";
-import { Box, Container} from "@mui/material";
+import { Box, Container, Grid, CircularProgress } from "@mui/material";
 import { BaseUrl } from "../api/baseURL";
 import { useMsal, useIsAuthenticated} from "@azure/msal-react";
 import useStreamData from "../hooks/botResponse";
 import useAccountData from "../hooks/userData";
+import useStreamDataNew from "../hooks/botResponseNew";
 import AppBar from '@mui/material/AppBar';
 import { useTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -20,31 +21,35 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import DrawerContainer from "../components/menuDrawer/drawerContainer";
 import AppStatus from "../model/conversation/statusMessages";
-
+import ChatSampleQuestion from "../components/chat/chatElements/chatMessageElements/chatSampleQuestion";
+import ChatInput from "../components/chat/chatElements/chatInput";
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
+import ChatUserChat from "../components/chat/chatElements/chatMessageElements/chatUserChat";
 
 const MainPage: FC = () => {
-  console.log("loading main page for auth type: ", AUTH_TYPE)
+  // console.log("loading main page for auth type: ", AUTH_TYPE)
 
   interface detectHistoryRefresh {
     isNewConversation: boolean,
-    isMessageLoaded: boolean,
   }
 
   const { instance, accounts, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
   const [messageHistory, setMessageHistory] = useState<MessageSimple[]>();
+  const [currentMessage, setCurrentMessage] = useState<MessageSimple>();
+  const [currentResponse, setCurrentResponse] = useState<MessageSimple>();
   const [isError, setIsError] = useState(false);
+  const [notification, setNotification] = useState<string>();
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [apiUrl, setApiUrl] = useState<string>();
-  const [conversationRefreshFlag, setRefreshFlag] = useState<detectHistoryRefresh>({isNewConversation: false, isMessageLoaded: false});
+  const [newConversationFlag, setRefreshFlag] = useState<Boolean>(false);
 
   // track current values for state changes
   const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
   const conversationRef = useRef<Conversation>();
 
   //TODO: I think I can get rid of this 
-  const currentAnswerRef = useRef<Conversation>();
+  const currentAnswerRef = useRef<MessageSimple>();
   
 
   
@@ -77,8 +82,16 @@ const MainPage: FC = () => {
   
   // custom hooks 
   // TODO: Create provider for stream data for nested content
-  const { streamingMessage, citations, followups, isStreaming, streamingError } = useStreamData(apiUrl, setSelectedConversation, getSelectedConversationMessages);
-  const { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag } = useAccountData({refreshFlag: conversationRefreshFlag, setAppStatus})
+ const { message, risks, opportunities, isStreaming, streamingError } = useStreamDataNew(
+  setAppStatus,
+  apiUrl,
+  setSelectedConversation,
+  getSelectedConversationMessages,
+  setIsError,
+  setNotification)
+
+  const { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag } = useAccountData(
+    {newConversationFlag, setAppStatus})
 
   // console.log("loading main page")
   // console.log("selected conversation: ",JSON.stringify(selectedConversation))
@@ -96,25 +109,40 @@ const MainPage: FC = () => {
   };
 
   /**
-   * Resets the selected conversation state.
+   * Resets the selected conversation state if the new chat button is clicked
    */
   const resetConversation = () => {
     setSelectedConversation(undefined);
     setMessageHistory(undefined);
+    setCurrentMessage(undefined);
+    setCurrentResponse(undefined);
   };
+
+  // when a new question is recieved, update the history
+  const updateHistory = (message: MessageSimple) => {
+    if (!messageHistory) {
+      console.log("no message history - creating new history")
+      setMessageHistory([message]);
+    }
+    else {
+      console.log("updating history with ", JSON.stringify(message))  
+      setMessageHistory([...messageHistory, message]);
+    }
+  }
 
 
   const handleUserQuestion = async (input: string) => {
+
+    const userMessage : MessageSimple = {role: "user", message: input, created_at: { $date: Date.now() }};
+    updateHistory(userMessage);
+
     if (userSession) {
     if (selectedConversation && selectedConversation.id) {
-      setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/${selectedConversation.id}/chat/${input}`);
+      setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/${selectedConversation.id}/chat_new/${input}`);
     } else     
     {
-      setRefreshFlag({
-        isNewConversation: true,
-        isMessageLoaded: false
-      });
-      setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/0/chat/${input}`);
+      setRefreshFlag(true);
+      setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/0/chat_new/${input}`);
     }
   }
   };
@@ -122,55 +150,58 @@ const MainPage: FC = () => {
   useEffect(() => {
     // if new conversation with Message History, flag to reload history
     if (
-      conversationRefreshFlag.isNewConversation &&
-      appStatus === AppStatus.Idle &&
-      messageHistory
+      newConversationFlag &&
+      appStatus === AppStatus.Idle
       ){
-        setRefreshFlag({
-          isNewConversation: true,
-          isMessageLoaded: true
-        })
+        // refresh conversation list to grab the latest. 
+        // set the selected conversation to the latest
       }
-  }, [conversationRefreshFlag, messageHistory, appStatus])
-
-  useEffect(()=>{
-    // reset loading flag when conversation history is updated
-    conversationHistoryFlag.isHistoryUpdated  &&         
-    setRefreshFlag({
-      isNewConversation: false,
-      isMessageLoaded: false
-    })
-  },[conversationHistoryFlag])
-
+  }, [newConversationFlag, appStatus])
 
   useEffect(() => {
     //change triggered by conversation change
-    if (selectedConversation && selectedConversation !== conversationRef.current) {
-        if(!isStreaming && selectedConversation){
-          getSelectedConversationMessages()
-          appStatus != AppStatus.Idle && setAppStatus(AppStatus.Idle)
-          console.log(`detected conversation change while not streaming.  Resetting chat history for new conversation`)
-        }
-        conversationRef.current === selectedConversation
+
+    if (newConversationFlag && selectedConversation && selectedConversation !== conversationRef.current)
+    {
+      setRefreshFlag(false)
     }
-    else {
-      if (!isStreaming && appStatus === AppStatus.GeneratingChatResponse)
-      {
-          setAppStatus(AppStatus.Idle)
-        }
+    else if (selectedConversation && selectedConversation !== conversationRef.current) {
+          getSelectedConversationMessages()
+          appStatus != AppStatus.Idle && setAppStatus(AppStatus.Idle)  
+    }
+
+    conversationRef.current === selectedConversation
+
+  },[selectedConversation])
+
+  useEffect(() => {
+    console.log("message recieved: ", message)
+    if (message) { 
+      const response : MessageSimple = {role: "system", message: message, created_at: { $date: Date.now() }};
+      if (currentAnswerRef.current === undefined) {
+        console.log("current answer is undefined - updating history")
+        updateHistory(response);
+        currentAnswerRef.current = response;
       }
-    
-
-    isStreaming && setAppStatus(AppStatus.GeneratingChatResponse)
-
-  },[isStreaming, selectedConversation])
+      else
+      if (currentAnswerRef.current && currentAnswerRef.current.message !== response.message) {
+        console.log("current answer is different - updating history")
+        updateHistory(response);
+        currentAnswerRef.current = response;
+      }
+  }},[message]
+  )
 
 
   useEffect(() => {
     (initDataError || streamingError) && setIsError(true)
-    isError && console.error(`ERROR DETECTED: Implement Error Handling`)
+    isError && console.error(`ERROR DETECTED: ${JSON.stringify(streamingError)}`)
     isError && setAppStatus(AppStatus.Error)
   },[isError, initDataError, streamingError] )
+
+  useEffect(() => {
+    console.log("detected change in selected conversation", JSON.stringify(selectedConversation))
+  }, [selectedConversation])
 
   const mainContentStyles = {
     flexGrow: 1,
@@ -220,7 +251,7 @@ const MainPage: FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Box display="flex" width="100%" justifyContent={"center"} mt={2}>
+          <Box display="flex" width="100%" justifyContent={"center"} mt={2} mb={2}>
             <Typography variant="h2" noWrap component="div" color="#000">
               Your personal <Typography variant="h1" color="primary">AI Assistant </Typography>
             </Typography>
@@ -251,17 +282,17 @@ const MainPage: FC = () => {
             mainContentStyles
           }}
         >
-          <Chat
-            appStatus={appStatus}
-            sampleQuestions={sampleQuestions}
-            sendChatClicked={handleUserQuestion}
-            messageHistory={messageHistory}
-            chatResponse={streamingMessage}
-            currentAnswerRef={currentAnswerRef}
-            follow_up_questions={followups}
-            citations={citations}
-            chatWidth={"100%"}
-          /></Box>
+         <Chat 
+           appStatus = {appStatus}
+           errMessage = {streamingError}
+           notifications = {notification}
+           sampleQuestions = {sampleQuestions}
+           chatResponse = {message}
+           sendChatClicked = {handleUserQuestion}
+           messageHistory = {messageHistory}
+           currentAnswerRef = {currentAnswerRef}
+           chatWidth = "70vw"/>
+          </Box>
       </Container>
 
       <Box component="footer" sx={{

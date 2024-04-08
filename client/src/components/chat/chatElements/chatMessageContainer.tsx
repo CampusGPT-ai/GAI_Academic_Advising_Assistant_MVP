@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import React, { FC } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
@@ -8,6 +8,7 @@ import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 import ChatUserChat from "./chatMessageElements/chatUserChat";
 import { MessageSimple } from "../../../model/messages/messages";
 import AppStatus from "../../../model/conversation/statusMessages";
+import ChatBotChatError from "./chatMessageElements/chatResponse/chatResponseElements/chatBotChatError";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
@@ -15,23 +16,23 @@ const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
  * Props for the ChatMessages component.
  */
 interface ChatMessagesProps {
-  onFollowupClicked: (message: string) => void;
+
   /** Whether the component is currently loading. */
   isLoading?: boolean;
   userQuestion?: string;
   appStatus: AppStatus;
-
+  errMessage?: string;
+  notifications?: string;
   /** the latest bot response to stream*/
   chatResponse?: string;
-  follow_up_questions?: string[];
-  citations?: Citation[];
+  currentAnswerRef: React.MutableRefObject<any>;
+
   /** A function to call when the component should retry loading. */
   onRetry?: () => void;
 
   /**An array of messages to display as history */
   messageHistory?: MessageSimple[];
 
-  currentAnswerRef: React.MutableRefObject<any>;
 }
 
 function getCurrentTimestamp(): Timestamp {
@@ -41,37 +42,36 @@ function getCurrentTimestamp(): Timestamp {
 }
 
 const ChatMessages: FC<ChatMessagesProps> = ({
-  chatResponse,
-  userQuestion,
-  follow_up_questions,
-  citations,
   appStatus,
-  onFollowupClicked,
-  isLoading,
+  errMessage,
+  notifications,
   onRetry,
   messageHistory, 
-  currentAnswerRef
+  currentAnswerRef,
 }) => {
 
   //console.log(`testing chat bot chat response ${chatResponse}`)
   return (
     <Box display="flex" flexDirection={'column'}>
       {messageHistory &&
-      <ChatMessageHistory messages={messageHistory} onFollowupClicked={onFollowupClicked}/>}
-      { (appStatus==="GENERATING CHAT RESPONSE" || AUTH_TYPE==='NONE') && <ChatUserChat text={userQuestion}></ChatUserChat>}
+      <ChatMessageHistory messages={messageHistory} />}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        marginTop: '20px',
+        marginBottom: '20px'
+      }}>
+        {appStatus === AppStatus.GeneratingChatResponse && <CircularProgress />}
+        {appStatus === AppStatus.GeneratingChatResponse &&
+          <Typography variant="body1" color="textSecondary" align="center"> 
+            {notifications ? notifications : "Generating response..."}
+          </Typography>}
+        {appStatus === AppStatus.Error && <ChatBotChatError onRetry={onRetry} error={errMessage} />}
+      </Box>
+     
 
-      { (appStatus==="GENERATING CHAT RESPONSE" || AUTH_TYPE==='NONE') && chatResponse &&
-      <Box><Box sx={{ height: "50px" }} />
-        <ChatBotChat
-            message={chatResponse}
-            follow_up_questions={follow_up_questions}
-            citations={citations}
-            isLoading={isLoading}
-            onFollowupClicked={onFollowupClicked}
-            onRetry={onRetry}
-            currentAnswerRef={currentAnswerRef}
-          />
-          </Box>}
+  
     </Box>
   );
 };

@@ -51,4 +51,6 @@ class Settings(BaseSettings):
      N4J_URI: str
      N4J_USERNAME: str
      N4J_PASSWORD: str
+
+     UNIVERSITY_NAME: str
      

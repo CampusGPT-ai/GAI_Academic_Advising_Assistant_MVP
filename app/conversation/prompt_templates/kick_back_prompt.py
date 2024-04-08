@@ -22,6 +22,7 @@ def get_gpt_system_prompt(input_q,user_info, considirations):
     {user_info} \n\n 
 
     If the user information is missing any of the below considerations, you should ask a follow up question to gather the missing information. \n
+    Do not repeat questions that have already been asked. \n
     [CONSIDERATIONS]:\n 
     {considirations} \n\n
 
