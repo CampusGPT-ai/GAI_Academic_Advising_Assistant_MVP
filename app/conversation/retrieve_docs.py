@@ -118,5 +118,4 @@ if __name__ == "__main__":
         data = json.load(f)
 
     user_info = json.dumps(data)
-    logger.info(retriever.generate_content_and_questions("what classes do I need to graduate?", user_info))
     logger.info(retriever.generate_questions(user_info))

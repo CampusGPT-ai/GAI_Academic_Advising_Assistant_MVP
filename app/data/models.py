@@ -20,7 +20,7 @@ class UserSession(Document):
     } 
 
 class Citation(EmbeddedDocument):
-    citation_text = StringField(required=True)
+    citation_text = StringField(required=False)
     citation_path = StringField(required=True)
 
 class MessageContent(EmbeddedDocument):
@@ -43,8 +43,8 @@ class RawChatMessage(Document):
 
 class ChatMessage(EmbeddedDocument):
     message = ReferenceField(RawChatMessage, required = True)
-    citations = ListField(EmbeddedDocumentField(Citation))
-    follow_up_questions = ListField(StringField())
+    citations = ListField(EmbeddedDocumentField(Citation), required = False)
+    follow_up_questions = ListField(StringField(), required = False)
 
 
 class Conversation(Document):
