@@ -52,7 +52,7 @@ build_and_run_container() {
     buildArgs=$(awk -F= '$1 ~ /^[a-zA-Z_]+[a-zA-Z0-9_]*$/ {print "--build-arg " $1 "=" $2}' .env)
     echo docker buildx build --no-cache --platform=linux/amd64 $buildArgs -t $2 .
 
-    docker buildx build --platform=linux/amd64 $buildArgs -t "$2" .
+    docker buildx build --platform=linux/amd64 $buildArgs -t $2 .
     docker tag $2 $FullImageName
     if [ "$4" == "true" ]; then
         docker push $FullImageName
