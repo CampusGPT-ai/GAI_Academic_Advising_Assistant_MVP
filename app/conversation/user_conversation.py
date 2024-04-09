@@ -13,6 +13,7 @@ from user.get_user_info import UserInfo
 from cloud_services.openai_response_objects import Message
 from pathlib import Path
 from urllib.parse import urldefrag
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class UserConversation:
         self.settings = settings
         self.user_session : UserSession = user_session
         self.conversation: Conversation = conversation
+        self.message_time: datetime = None
 
     @staticmethod
     def generate_gpt_prompt(user_info, rag, topics) -> Message:
@@ -109,8 +111,8 @@ class UserConversation:
     def save_raw_chat(self, response_text: List[str], user_message: Message) -> None:
         content_string = "".join(response_text)
         message_list = []
+        message_list.append(MessageContent(role=user_message.role, message=user_message.content, created_at=self.message_time))
         message_list.append(MessageContent(role='assistant', message=content_string))
-        message_list.append(MessageContent(role=user_message.role, message=user_message.content))
         try:
             raw_chat = RawChatMessage(user_session_id=self.user_session,message=message_list)
             raw_chat.save()
@@ -141,6 +143,7 @@ class UserConversation:
     def query_gpt(self, full_prompt: List[Message], user_message: Message, topics: List[str], followups: str, citations: List[dict]) -> bool:
         try:   
             # streaming access
+            self.message_time = datetime.utcnow()
             azure_streaming_result = self.ai_model.stream(full_prompt) 
             finished = False
             response_text = []
@@ -236,6 +239,8 @@ class UserConversation:
         # step 5: get citations
         citations = []
         if 'title' in content and 'source' in content:
+            if content['title'] == None or content['title'] == '':
+                content['title'] = content['source']
             citations = self.get_citations_from_text(citations, content['title'], content['source'])
 
         # step 5: query generator
