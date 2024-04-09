@@ -4,7 +4,7 @@ set -e
 AppImage="app"
 ClientImage="client"
 # Docker registry
-Registry="acre6xms76htorcw"
+Registry="acrgnoba4quzzn5u"
 tag="latest"
 # az acr build --registry acrgnoba4quzzn5u --image client-frontend-dev --tag latest .
 
@@ -50,7 +50,9 @@ build_and_run_container() {
 
     # Build the Docker image
     buildArgs=$(awk -F= '$1 ~ /^[a-zA-Z_]+[a-zA-Z0-9_]*$/ {print "--build-arg " $1 "=" $2}' .env)
-    docker build --no-cache --platform=linux/amd64 $buildArgs -t $2 .
+    echo docker buildx build --no-cache --platform=linux/amd64 $buildArgs -t $2 .
+
+    docker buildx build --platform=linux/amd64 $buildArgs -t "$2" .
     docker tag $2 $FullImageName
     if [ "$4" == "true" ]; then
         docker push $FullImageName
