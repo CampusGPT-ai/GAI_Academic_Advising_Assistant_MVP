@@ -70,11 +70,6 @@ function useAccountData({newConversationFlag, setAppStatus }: AccountData): Conv
         setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching sample questions: ${error}`);
       }
-      finally {
-        setAppStatus(AppStatus.Idle);
-      }
-
-    
   };
 
   const getConversations = async () => {
@@ -84,15 +79,13 @@ function useAccountData({newConversationFlag, setAppStatus }: AccountData): Conv
           user: userSession
         })
         // history flag works if history is updated
-        result.message==='info' && setConversationHistoryFlag({userHasHistory: false, isHistoryUpdated: false})
+        console.log(`result from fetchConversations: ${JSON.stringify(result)}`)
+        result.message==='no history found' && setConversationHistoryFlag({userHasHistory: false, isHistoryUpdated: false})
         result.data && setConversations(result.data);
         result.data && setConversationHistoryFlag({userHasHistory: true, isHistoryUpdated: true})
       } catch (error) {
         setAppStatus(AppStatus.Error)
         setInitDataError(`Error fetching conversation history: ${error}`);
-    }
-    finally {
-      setAppStatus(AppStatus.Idle);
     }
   };
 
@@ -110,10 +103,10 @@ function useAccountData({newConversationFlag, setAppStatus }: AccountData): Conv
   }, [userSession]);
 
   useEffect(() => {
-    if (conversations && sampleQuestions) {
+    if ((conversations || !conversationHistoryFlag.userHasHistory) && sampleQuestions) {
       setAppStatus(AppStatus.Idle);
     }
-  }, [conversations, sampleQuestions])
+  }, [conversations, sampleQuestions, conversationHistoryFlag])
 
   useEffect(() => {
     // retrieve token with user id from backend
@@ -122,6 +115,10 @@ function useAccountData({newConversationFlag, setAppStatus }: AccountData): Conv
 
   }, [isAuthenticated, inProgress, AUTH_TYPE, userSession]
   )
+
+  useEffect(() => {
+    console.log(`conversation history flag is ${JSON.stringify(conversationHistoryFlag)}`)
+  }, [conversationHistoryFlag])
 
   return { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag};
 }

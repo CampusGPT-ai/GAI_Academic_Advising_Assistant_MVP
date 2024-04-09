@@ -16,14 +16,15 @@ const fetchConversations = async ({
 }: fetchConversationsParams): Promise<ConversationsApiResponse> => {
   const apiUrl = `${BaseUrl()}/users/${user}/conversations`;
 
-  console.log("pinging for conversations API: ",apiUrl)
+  // console.log("pinging for conversations API: ",apiUrl)
 
   try {
     const response = await axios.get(apiUrl, {});
 
     if (response.status === 204)
     {
-      return {message: 'info'}
+      console.log(`no history found for user ${user}`)
+      return {message: 'no history found'}
     }
     
     if (response.data && Array.isArray(response.data)) {

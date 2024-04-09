@@ -16,8 +16,8 @@ const fetchSampleQuestions = async ({
   try {
     const response = await axios.get(apiUrl, {});
     //console.log("got data from questions api: ", JSON.stringify(response.data))
-
-    const questions = response.data.data;
+    
+    const questions = response.data.data.questions;
     
     if (questions && Array.isArray(questions)) {
       //console.log(`Got response from questions API: ${JSON.stringify(questions)}`)

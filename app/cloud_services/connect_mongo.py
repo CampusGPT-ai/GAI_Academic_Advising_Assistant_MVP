@@ -26,7 +26,7 @@ class MongoConnection():
         except Exception as e:
             print(f"Error connecting to mongo: {e}")
 
-    def save_doc(self):
+    def save_index_docs(self):
         import os, json
         from data.models import kbDocument
 
@@ -48,12 +48,15 @@ class MongoConnection():
             with open(file_path, 'w') as file:
                 
                 json.dump(doc_dict, file, default=str)  # Using default=str to handle any non-serializable data like datetime
+    
+    def delete_docs(self):
+        from data.models import ConversationSimple
+        ConversationSimple.objects().delete()
 
 if __name__ == "__main__":
+    from data.models import ConversationSimple
     mongo = MongoConnection()
     mongo.connect()
-    mongo.save_doc()
-    mongo.disconnect_all()
-    print("Disconnected from mongo")
+    mongo.delete_docs()
 
         

@@ -40,7 +40,7 @@ const DrawerContent: FC<Props> = ({
 * Handles the selection of a conversation and updates the state accordingly.
 * @param conversation - The conversation object that was selected.
 */
-
+  console.log(`conversationList is ${conversationList} and conversationFlag is ${conversationFlag}`)
 
   return (
     <Box flexGrow="1" sx={{overflowY: "auto"}}>

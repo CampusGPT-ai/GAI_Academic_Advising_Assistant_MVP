@@ -33,6 +33,7 @@ interface ChatActiveProps {
   messageHistory?: MessageSimple[];  //optional history on selected conversation
   appStatus: AppStatus;
   errMessage?: string;
+  isError?: boolean;
   notifications?: string;
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
@@ -46,6 +47,7 @@ const ChatActive: FC<ChatActiveProps> = ({
   notifications,
   sampleQuestions,
   messageHistory,
+  isError,
   sendChatClicked,
   currentAnswerRef,
 
@@ -84,7 +86,8 @@ const ChatActive: FC<ChatActiveProps> = ({
   },[userQuestion])
 
 
-  //console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
+
+  console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
   return (
     
     <Box sx={{alignItems: "center", 
@@ -107,6 +110,7 @@ const ChatActive: FC<ChatActiveProps> = ({
             errMessage={errMessage}
             notifications={notifications}
             onRetry={handleRetry}
+            isError={isError}
             currentAnswerRef={currentAnswerRef}
           />
         </>

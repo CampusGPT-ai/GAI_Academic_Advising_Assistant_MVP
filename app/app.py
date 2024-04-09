@@ -279,7 +279,7 @@ async def get_conversations(
         if not conversation_topics:
             return JSONResponse(
                 content={"message": f"no conversations found for {session_data.user_id}"},
-                status_code=404,
+                status_code=204,
             )
         else:
             logger.info(

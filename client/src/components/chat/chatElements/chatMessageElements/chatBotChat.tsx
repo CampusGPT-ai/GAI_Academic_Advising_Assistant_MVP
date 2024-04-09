@@ -5,7 +5,7 @@ import React, { FC, useEffect } from "react";
 import messageSample from "../../../../model/messages/messageSample.json";
 import { MessageContent, Citation} from "../../../../model/messages/messages";
 import ChatBotChatResponse from "./chatResponse/chatBotChatResponse";
-
+import ChatBotChatError from "./chatResponse/chatResponseElements/chatBotChatError";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 //const sampleMessages = JSON.parse(jsonString) as Message[];
@@ -40,11 +40,11 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
   function hyperlinkPreviousWord(text: string) {
     let cleanedText = text.replace(/\[\s*(Source|Links)?:?\s*\]|\(\s*(Source|Links)?:?\s*\)/gi, '');
 
-    const urlRegex = /(\w+\s\w+)\s\[(https?:\/\/\S+)\]/gi;
-    const replacement = cleanedText.replace(urlRegex, (match, precedingWord, url) => {
-      // Replace the matched pattern with the preceding word wrapped in an anchor tag
-      return `<a target="_blank" style="text-decoration: underline;" href="${url}">${precedingWord}</a>`;
-  });
+    const urlRegex = /([^.?!]+\s?\b)\s\[(https?:\/\/\S+)\]/gi;
+    const replacement = cleanedText.replace(urlRegex, (match, precedingSentence, url) => {
+      // Replace the matched pattern with the preceding sentence wrapped in an anchor tag
+      return `<a target="_blank" style="text-decoration: underline;" href="${url}">${precedingSentence}</a>`;
+    });
 
     return replacement;
 }
@@ -64,23 +64,12 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
         boxShadow: theme.shadows[2],
         backgroundColor: theme.palette.primary.contrastText,
       }}>
-        {(!message || message === '') && (
-          <div>
-            <CircularProgress
-              size={20}
-              thickness={5}
-              style={{ marginLeft: 10 }}
-              aria-label="waiting for bot response"
-            />
-            <Typography variant="body1">Generating Answer</Typography>
-          </div>
-        )}
 
-{
-  /* isError && !isLoading && (
-    <ChatBotChatError onRetry={onRetry} error={error} />
-  ) */
-}
+      {
+        isError && !isLoading && (
+          <ChatBotChatError onRetry={onRetry} error={error} />
+        ) 
+      }
 
         {!isError && message && (
           <ChatBotChatResponse message={formatted_message}

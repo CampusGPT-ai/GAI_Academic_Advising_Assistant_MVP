@@ -9,7 +9,6 @@ import Chat from "./chat";
 import { Box, Container, Grid, CircularProgress } from "@mui/material";
 import { BaseUrl } from "../api/baseURL";
 import { useMsal, useIsAuthenticated} from "@azure/msal-react";
-import useStreamData from "../hooks/botResponse";
 import useAccountData from "../hooks/userData";
 import useStreamDataNew from "../hooks/botResponseNew";
 import AppBar from '@mui/material/AppBar';
@@ -207,6 +206,7 @@ const MainPage: FC = () => {
     flexGrow: 1,
     p: 3,
     width: { sm: `calc(100% - ${drawerWidth}px)` },
+    maxHeight: { sm: `calc(100% - 600px)` },
     mt: { xs: 8, sm: 0 }, // Adjust the margin top to align with the AppBar height.
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
@@ -271,6 +271,7 @@ const MainPage: FC = () => {
       <Container component="main" sx={{
         display: "flex",
         flexGrow: 1,
+        maxHeight: "80%",
         marginLeft: { sm: `${drawerWidth}px`, xs: 0 },
         width: { sm: `calc(100% - ${drawerWidth}px)`, xs: "100%" },
         marginRight: "0"
@@ -278,12 +279,11 @@ const MainPage: FC = () => {
         <Box
           display="flex"
           flexGrow={1}
-          sx={{
-            mainContentStyles
-          }}
+          maxHeight={"100%"}
         >
          <Chat 
            appStatus = {appStatus}
+           isError = {isError}
            errMessage = {streamingError}
            notifications = {notification}
            sampleQuestions = {sampleQuestions}
