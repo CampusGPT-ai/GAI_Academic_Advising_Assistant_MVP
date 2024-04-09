@@ -25,6 +25,7 @@ interface ChatMessagesProps {
   notifications?: string;
   /** the latest bot response to stream*/
   chatResponse?: string;
+  isError?: boolean;
   currentAnswerRef: React.MutableRefObject<any>;
 
   /** A function to call when the component should retry loading. */
@@ -46,21 +47,23 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   errMessage,
   notifications,
   onRetry,
+  isError,
   messageHistory, 
   currentAnswerRef,
 }) => {
 
-  //console.log(`testing chat bot chat response ${chatResponse}`)
+  console.log(`testing app status: ${appStatus}`)
   return (
-    <Box display="flex" flexDirection={'column'}>
+    <Box display="flex" flexDirection={'column'} sx={{
+    height: "90%",
+    overflowY: "auto",
+    }}>
       {messageHistory &&
-      <ChatMessageHistory messages={messageHistory} />}
+      <ChatMessageHistory messages={messageHistory} isLoading={appStatus===AppStatus.GeneratingChatResponse} isError={isError} onRetry={onRetry}/>}
       <Box sx={{
         display: 'flex',
         justifyContent: 'center',
         flexDirection: 'column',
-        marginTop: '20px',
-        marginBottom: '20px'
       }}>
         {appStatus === AppStatus.GeneratingChatResponse && <CircularProgress />}
         {appStatus === AppStatus.GeneratingChatResponse &&

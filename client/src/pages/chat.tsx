@@ -22,6 +22,7 @@ import AppStatus from "../model/conversation/statusMessages";
  */
 interface ChatProps {
   sampleQuestions?: string[];
+  isError: boolean;
   chatResponse?: string;
   appStatus: AppStatus;
   errMessage?: string;
@@ -34,6 +35,7 @@ interface ChatProps {
 
 const Chat: FC<ChatProps> = ({
   appStatus,
+  isError,
   errMessage,
   notifications,
   sampleQuestions,
@@ -57,6 +59,7 @@ const Chat: FC<ChatProps> = ({
             sendChatClicked={sendChatClicked}
             appStatus={appStatus}
             sampleQuestions={sampleQuestions}
+            isError={isError}
             currentAnswerRef={currentAnswerRef}
 
           />
