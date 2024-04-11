@@ -20,7 +20,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import DrawerContainer from "../components/menuDrawer/drawerContainer";
 import AppStatus from "../model/conversation/statusMessages";
-import ChatSampleQuestion from "../components/chat/chatElements/chatMessageElements/chatSampleQuestion";
+import ChatSampleQuestion from "../components/chat/chatElements/chatSampleQuestion";
 import ChatInput from "../components/chat/chatElements/chatInput";
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 import ChatUserChat from "../components/chat/chatElements/chatMessageElements/chatUserChat";
@@ -41,56 +41,51 @@ const MainPage: FC = () => {
   const [notification, setNotification] = useState<string>();
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [apiUrl, setApiUrl] = useState<string>();
-  const [newConversationFlag, setRefreshFlag] = useState<Boolean>(false);
+  const [refreshFlag, setRefreshFlag] = useState<Boolean>(false);
+  const [newConversationFlag, setNewConversationFlag] = useState<Boolean>(false);
+  const [userQuestion, setUserQuestion] = useState<string>();
 
   // track current values for state changes
   const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
+  const statusRef = useRef<AppStatus>(appStatus);
   const conversationRef = useRef<Conversation>();
+  const messageHistoryRef = useRef<MessageSimple[]>();
 
-  //TODO: I think I can get rid of this 
+
   const currentAnswerRef = useRef<MessageSimple>();
-  
 
-  
-  /**
-   * Fetches and sets the selected conversation.
-   */
-  const getSelectedConversationMessages = async () => {
-    setAppStatus(AppStatus.GettingMessageHistory)
+  const getMessageHistory = async () => {
+    if (userSession && selectedConversation && selectedConversation.id ) {
     try {
-      if (selectedConversation && userSession) {
-        console.log("fetching message history from api")
-        const result = await fetchMessageHistory({ user: userSession, conversationId: selectedConversation.id });
-        if (result.type === 'messages') {
-          setMessageHistory(result.data);
-        } else if (result.type === 'info') {
-          console.info("no conversations created yet")
+      // console.log("fetching message history from api")
+      const result = await fetchMessageHistory({ user: userSession, conversationId: selectedConversation.id });
+      if (result.type === 'messages') {
+        setMessageHistory(result.data);
+      } else if (result.type === 'info') {
+        console.info("no conversations created yet")
 
-        }
-        }
-    } catch (error) {
-      setIsError(true)
-      console.error(`An error occurred while fetching conversations ${error}`);
+      }
+      
+  } catch (error) {
+    setIsError(true)
+    console.error(`An error occurred while fetching conversations ${error}`);
 
-    }
-    finally {
-      setAppStatus(AppStatus.Idle)
-    }
-  };
-
+  }
+}
+};
   
   // custom hooks 
   // TODO: Create provider for stream data for nested content
- const { message, risks, opportunities, isStreaming, streamingError } = useStreamDataNew(
+ const { taskId, message, question, risks, opportunities, isStreaming, streamingError } = useStreamDataNew(
   setAppStatus,
   apiUrl,
   setSelectedConversation,
-  getSelectedConversationMessages,
   setIsError,
   setNotification)
 
+
   const { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag } = useAccountData(
-    {newConversationFlag, setAppStatus})
+    refreshFlag, setRefreshFlag, setAppStatus)
 
   // console.log("loading main page")
   // console.log("selected conversation: ",JSON.stringify(selectedConversation))
@@ -111,96 +106,112 @@ const MainPage: FC = () => {
    * Resets the selected conversation state if the new chat button is clicked
    */
   const resetConversation = () => {
+    setRefreshFlag(false);
     setSelectedConversation(undefined);
     setMessageHistory(undefined);
     setCurrentMessage(undefined);
     setCurrentResponse(undefined);
+    setAppStatus(AppStatus.Idle);
   };
 
   // when a new question is recieved, update the history
   const updateHistory = (message: MessageSimple) => {
     if (!messageHistory) {
-      console.log("no message history - creating new history")
+      console.log("no message history - creating new history with message ", JSON.stringify(message), appStatus)
       setMessageHistory([message]);
     }
     else {
-      console.log("updating history with ", JSON.stringify(message))  
+      console.log(`history before udpate: ${JSON.stringify(messageHistory)}, app Status: ${appStatus}`)
       setMessageHistory([...messageHistory, message]);
+      console.log(`history after udpate: ${JSON.stringify(messageHistory)}, app Status: ${appStatus}`)
     }
   }
 
 
   const handleUserQuestion = async (input: string) => {
-
+    console.log(`handle user question app Status: ${appStatus}`)
     const userMessage : MessageSimple = {role: "user", message: input, created_at: { $date: Date.now() }};
     updateHistory(userMessage);
 
     if (userSession) {
-    if (selectedConversation && selectedConversation.id) {
-      setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/${selectedConversation.id}/chat_new/${input}`);
-    } else     
-    {
-      setRefreshFlag(true);
-      setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/0/chat_new/${input}`);
-    }
+    setUserQuestion(input)
+    setAppStatus(AppStatus.GeneratingChatResponse)
   }
   };
 
+  // this effect should only run if there is a change in the app status.  It does the following:
+  // 1.  If the app status is generating chat response, it sets the api url to the appropriate value
+  // 2.  If the app status is getting message history, it fetches the message history
+  // 3.  If the app status is idle, it sets the api url to undefined
   useEffect(() => {
-    // if new conversation with Message History, flag to reload history
-    if (
-      newConversationFlag &&
-      appStatus === AppStatus.Idle
-      ){
-        // refresh conversation list to grab the latest. 
-        // set the selected conversation to the latest
+// first ensure there has been a true status change.  
+if (appStatus !== statusRef.current) {
+    statusRef.current = appStatus;
+    if (appStatus === AppStatus.GeneratingChatResponse && userQuestion) {
+      if (selectedConversation && selectedConversation.id) {
+          setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/${selectedConversation.id}/chat_new/${userQuestion}`);
+        } else     
+        {
+          console.log("checking app status before setting refresh flag on line 153: ", appStatus)
+          setNewConversationFlag(true);
+          setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/0/chat_new/${userQuestion}`);
+        }
+    }
+
+    if (appStatus === AppStatus.Idle || appStatus === AppStatus.Error) {
+      // only refresh history list when the app is idle
+      newConversationFlag && setRefreshFlag(true);
+      setNewConversationFlag(false)
+      setApiUrl(undefined);
+    }
+
+    if (selectedConversation 
+      && userSession 
+      && appStatus===AppStatus.GettingMessageHistory) {
+        getMessageHistory();
+        conversationRef.current = selectedConversation;
       }
-  }, [newConversationFlag, appStatus])
+  }
+}, [newConversationFlag, appStatus, userQuestion, selectedConversation])
+
+// this effect sets the app status to get message history if the conversation changes and app status is currently idle (only runs when idle)
+useEffect(() =>{
+  if (selectedConversation && appStatus === AppStatus.Idle && selectedConversation !== conversationRef.current) {
+    conversationRef.current = selectedConversation;
+    setAppStatus(AppStatus.GettingMessageHistory)
+  }
+},[selectedConversation, appStatus])
+
+// this effect sets the app status to idle when the message history is updated (Idle is the default status when no other status is set, and indicates the app is ready to process new requests)
+useEffect(() => {
+  if (messageHistory && appStatus === AppStatus.GettingMessageHistory && messageHistory !== messageHistoryRef.current) {
+    messageHistoryRef.current = messageHistory;
+    setAppStatus(AppStatus.Idle)
+  }
+},[messageHistory])
 
   useEffect(() => {
-    //change triggered by conversation change
+    if (message !== undefined && question !== undefined && message !== "" && question !== "") { 
+      console.log("message and question recieved: ", message, question)
 
-    if (newConversationFlag && selectedConversation && selectedConversation !== conversationRef.current)
-    {
-      setRefreshFlag(false)
-    }
-    else if (selectedConversation && selectedConversation !== conversationRef.current) {
-          getSelectedConversationMessages()
-          appStatus != AppStatus.Idle && setAppStatus(AppStatus.Idle)  
-    }
-
-    conversationRef.current === selectedConversation
-
-  },[selectedConversation])
-
-  useEffect(() => {
-    console.log("message recieved: ", message)
-    if (message) { 
       const response : MessageSimple = {role: "system", message: message, created_at: { $date: Date.now() }};
-      if (currentAnswerRef.current === undefined) {
-        console.log("current answer is undefined - updating history")
-        updateHistory(response);
-        currentAnswerRef.current = response;
-      }
-      else
-      if (currentAnswerRef.current && currentAnswerRef.current.message !== response.message) {
-        console.log("current answer is different - updating history")
-        updateHistory(response);
-        currentAnswerRef.current = response;
-      }
-  }},[message]
-  )
+      console.log(`creating simple message with ${JSON.stringify(response)}`)
+      updateHistory(response);
+      
+      const followup: MessageSimple = {role: "system", message: question, created_at: { $date: Date.now() }};
+      console.log(`creating simple message with ${JSON.stringify(followup)}`)
+      updateHistory(followup);
 
+
+  }},[message, question]
+  )
 
   useEffect(() => {
     (initDataError || streamingError) && setIsError(true)
     isError && console.error(`ERROR DETECTED: ${JSON.stringify(streamingError)}`)
     isError && setAppStatus(AppStatus.Error)
+    
   },[isError, initDataError, streamingError] )
-
-  useEffect(() => {
-    console.log("detected change in selected conversation", JSON.stringify(selectedConversation))
-  }, [selectedConversation])
 
   const mainContentStyles = {
     flexGrow: 1,
@@ -254,6 +265,7 @@ const MainPage: FC = () => {
           <Box display="flex" width="100%" justifyContent={"center"} mt={2} mb={2}>
             <Typography variant="h2" noWrap component="div" color="#000">
               Your personal <Typography variant="h1" color="primary">AI Assistant </Typography>
+              TESTING: {appStatus}
             </Typography>
           </Box>
         </Toolbar>

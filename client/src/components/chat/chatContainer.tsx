@@ -5,7 +5,7 @@ import messageSample from "../../model/messages/messageSample.json";
 import ParentMessage, {Citation, MessageSimple} from "../../model/messages/messages";
 import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
-import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQuestion";
+import ChatSampleQuestion from "./chatElements/chatSampleQuestion";
 import AppStatus from "../../model/conversation/statusMessages";
 
 /**
@@ -69,6 +69,7 @@ const ChatActive: FC<ChatActiveProps> = ({
    * @param questionText - The text of the question to set as the message.
    */
   const handleQuestionClick = (questionText: string) => {
+    // console.log(`sample question clicked: ${questionText}`);
     setUserQuestion(questionText)
   };
 
@@ -81,13 +82,13 @@ const ChatActive: FC<ChatActiveProps> = ({
    */
   useEffect(() => {
     if (userQuestion.trim() !== '' && userQuestion !== undefined) {
-      sendChatClicked(userQuestion);
+      appStatus === AppStatus.Idle && sendChatClicked(userQuestion);
     }
-  },[userQuestion])
+  },[userQuestion, appStatus])
 
 
 
-  console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
+  // console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
   return (
     
     <Box sx={{alignItems: "center", 

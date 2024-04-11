@@ -2,7 +2,7 @@ import React, { FC } from 'react';
 import { Button, Typography } from "@mui/material";
 import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
-import AppStatus from '../../../../model/conversation/statusMessages';
+import AppStatus from '../../../model/conversation/statusMessages';
 /**
  * Props for the ChatSampleQuestions component.
  */
@@ -26,6 +26,7 @@ const ChatSampleQuestion: FC<ChatSampleQuestionsProps> = ({ text, appStatus, onS
   
   const handleQuestionClick = () => {
     if (appStatus===AppStatus.Idle) {
+      // console.log(`sample question clicked: ${text}`);
       onSampleQuestionsClicked(text);
     }
   };

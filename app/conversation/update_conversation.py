@@ -31,10 +31,15 @@ def update_conversation_history(responses, conversation, user_session, user_ques
         messages = assemble_messages()
         raw_chat_message = create_raw_chat_message(messages)
         raw_chat_message.save()
+
+        print(f"Raw chat message saved: {raw_chat_message}")
         
         conversation.history.append(raw_chat_message)
         conversation.topic = topic if topic else None
         conversation.save()
+
+        print(f"Conversation saved: {conversation}")
+        return
 
 if __name__ == "__main__":
     result = update_conversation_history()
