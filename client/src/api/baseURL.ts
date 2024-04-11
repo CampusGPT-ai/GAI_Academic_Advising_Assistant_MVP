@@ -4,7 +4,7 @@ const CLIENT_BASE = process.env.REACT_APP_CLIENT_APP_NAME || 'http://localhost:3
 const APP_BASE = process.env.REACT_APP_APP_NAME || 'http://localhost:8000';
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 export const BaseUrl = () => {
-    console.log(`Base URL Domain: ${DOMAIN},Base URL environment: ${ENV}`)
+    // console.log(`Base URL Domain: ${DOMAIN},Base URL environment: ${ENV}`)
     
     let BASE_URL = '';
     if (DOMAIN === 'development') {

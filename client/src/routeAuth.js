@@ -9,7 +9,7 @@ import { useEffect } from "react";
 export default function ProtectedRoute({children}) {
     const { instance, inProgress } = useMsal();
     const isAuthenticated = useIsAuthenticated();
-    console.log(`checking login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`);
+    // console.log(`checking login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`);
     
 
 
@@ -17,7 +17,7 @@ export default function ProtectedRoute({children}) {
     instance.addEventCallback((event) => {
         // set active account after redirect
         if (event.eventType === EventType.LOGIN_SUCCESS && event.payload.account) {
-            console.log("login success")
+            // console.log("login success")
             const account = event.payload.account;
             instance.setActiveAccount(account);
         }
@@ -30,12 +30,12 @@ export default function ProtectedRoute({children}) {
     useEffect(() => {
         const authenticate = async () => {
             if (!isAuthenticated && inProgress === "none") {
-                console.log(`in progress: ${inProgress}`);
-                console.log(`is Authenticated: ${isAuthenticated}`);
+                // console.log(`in progress: ${inProgress}`);
+                // console.log(`is Authenticated: ${isAuthenticated}`);
                 try {
-                    console.log(`initiating login for instance ${JSON.stringify(instance)}`);
+                    // console.log(`initiating login for instance ${JSON.stringify(instance)}`);
                     await instance.loginRedirect(); // or loginPopup
-                    console.log(`checking state variables for isAuth: ${isAuthenticated} and inProgress: ${inProgress}`);
+                    // console.log(`checking state variables for isAuth: ${isAuthenticated} and inProgress: ${inProgress}`);
                 } catch (e) {
                     console.error("Login failed:", e);
                 }
@@ -53,7 +53,7 @@ export default function ProtectedRoute({children}) {
 
     // Render content conditionally based on the authentication status
     if (isAuthenticated) {
-        console.log(`returning auth status: ${isAuthenticated}`)
+        // console.log(`returning auth status: ${isAuthenticated}`)
     // User is authenticated, render the protected content
     return (
         <div>

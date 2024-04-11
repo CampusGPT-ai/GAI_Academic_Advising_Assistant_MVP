@@ -54,7 +54,6 @@ class MongoConnection():
         ConversationSimple.objects().delete()
 
 if __name__ == "__main__":
-    from data.models import ConversationSimple
     mongo = MongoConnection()
     mongo.connect()
     mongo.delete_docs()

@@ -52,7 +52,7 @@ const ChatMessages: FC<ChatMessagesProps> = ({
   currentAnswerRef,
 }) => {
 
-  console.log(`testing app status: ${appStatus}`)
+  // console.log(`testing app status: ${appStatus}`)
   return (
     <Box display="flex" flexDirection={'column'} sx={{
     height: "90%",

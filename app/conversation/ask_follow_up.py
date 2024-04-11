@@ -146,7 +146,7 @@ class FollowUp:
             else:
                 return history[-5:]
         except Exception as e:
-            print(f"Error getting conversation history: {e}")
+            logger.error(f"Error getting conversation history: {e}")
             return []
 
     def match_llm_to_profile(self, new_considerations):
@@ -197,7 +197,7 @@ class FollowUp:
             self.user.save()
             return True
         except Exception as e:
-            print(f"Error saving considerations: {e}")
+            logger.error(f"Error saving considerations: {e}")
             return e
             
     def run_llm(self, prompt, expected_json = [], name = None):
@@ -246,7 +246,7 @@ class FollowUp:
                 yield {"event": "notification", "data": json.dumps({'message': 'got user context from backend'})}
 
                 if not try_update:
-                    print("Error updating user considerations")
+                    logger.error("Error updating user considerations")
                 
             user_context = self.get_user_context()
 
@@ -287,25 +287,29 @@ class FollowUp:
                 if type(item) == dict:
                     item_key = next(iter(item))  # Or q.get(block=False)
                 if item_key == 'rag_response':
-
-                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
                     self.topic = item[item_key]['topic']
-
                     responses.append(item)
+                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
+                    print(f'got to kickback response.  Len responses {len(responses)}.  Queue size {self.response_pool.qsize()}. IsError {isError}')
                 if item_key == 'kickback_response':
                     responses.append(item)
                     yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
-                if item_key == 'search_response':
-                    item = self.agent_search(item[item_key])
-                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
+                    print(f'got to kickback response.  Len responses {len(responses)}.  Queue size {self.response_pool.qsize()}. IsError {isError}')
+                if len(responses) == 2:
+                    break
+            print('got to break')
         except Empty: 
-            print('Queue is empty')
+            logger.info('Queue is empty')
         except Exception as e:
-            print(f"Error processing responses: {str(e)}")
+            logger.error(f"Error processing responses: {str(e)}")
             yield {"event": "error_message", "data": json.dumps({'message': f'Error processing responses {str(e)}'})}
             isError = True
         finally:
-            update_conversation_history(responses, self.conversation, self.user_session, self.user_question, self.topic)
+            print('finally block')
+            if responses and len(responses) > 0:
+                logger.info('updating conversation history with responses')
+                update_conversation_history(responses, self.conversation, self.user_session, self.user_question, self.topic)
+                
             yield {"event": "conversation", "data": json.dumps({'message': self.return_conversation_reference()})}
             yield {"event": "risks", "data": json.dumps({'message': self.risks})}
             yield {"event": "opportunities", "data": json.dumps({'message': self.opportunities})}
@@ -334,10 +338,15 @@ if __name__ == "__main__":
     
     # mock_conversation = Conversation(id="65cd0b42372b404efb9805f6", user_id=USER_ID)
 
-    mock_conversation = Conversation.objects(id="661066e1e6a80ce1f8c03546").select_related(max_depth=5)
+    mock_conversation = Conversation.objects(id="6616e022a430f64a4b4c3dd0").select_related(max_depth=5)
 
     follow_up = FollowUp(USER_QUESTION, mock_user_session, mock_conversation[0])
-    result = follow_up.full_response()
-    while True:
-        print(next(result))
+    try:
+        result = follow_up.full_response()
+        while True: 
+            r = next(result)
+            print(r)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        
         

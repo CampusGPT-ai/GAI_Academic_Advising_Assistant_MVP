@@ -2,7 +2,7 @@ import React from "react";
 import { RedirectUrl } from "./api/baseURL";
 
 
-console.log(`redirect url: ${RedirectUrl()}, tenant: ${process.env.REACT_APP_MSAL_TENANT}, client: ${process.env.REACT_APP_MSAL_CLIENT}`);
+// console.log(`redirect url: ${RedirectUrl()}, tenant: ${process.env.REACT_APP_MSAL_TENANT}, client: ${process.env.REACT_APP_MSAL_CLIENT}`);
 
 
 export const msalConfig = {

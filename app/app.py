@@ -5,11 +5,11 @@ import time
 
 from typing import List
 from dotenv import load_dotenv
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.encoders import jsonable_encoder
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, BackgroundTasks, HTTPException
 from sse_starlette.sse import EventSourceResponse
 from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
@@ -30,6 +30,7 @@ from user.get_user_info import UserInfo
 import logging, sys
 from conversation.retrieve_docs import SearchRetriever
 from data.models import ConversationSimple
+import asyncio
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -169,26 +170,6 @@ async def add_code_version(request: Request, call_next):
     return response
 
 
-# all validations return 401 unauthorized if no user session.  {"detail":"Invalid or expired session"}
-@app.get("/users/{session_guid}/questions")
-async def get_sample_questions(
-    session_data: UserSession = Depends(get_session_from_session),
-):
-    from conversation.return_questions import get_questions
-    conversation_topics = get_conversation_topics(session_data)
-    try:
-        
-        questions = get_questions(conversation_topics,session_data)
-        return JSONResponse(content={"data": questions}, status_code=200)
-    except Exception as e:
-        logger.error(
-            f"failed to load sample questions with error {str(e)}",
-        )
-        return JSONResponse(
-            content={"message": f"failed to load sample questions with error {str(e)}"},
-            status_code=404,
-        )
-
 def get_conversation(conversation_id, session_data):
     try:
         if conversation_id == "0":
@@ -211,31 +192,6 @@ def get_conversation(conversation_id, session_data):
     except Exception as e:
         raise e
 
-# TESTING OUT FOLLOW UP QUESTIONS
-@app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
-async def chat_new(
-    user_question,
-    conversation_id,
-    session_data: UserSession = Depends(get_session_from_session),
-):
-    set_context_from_session_data(session_data)
-    try:
-        logger.info(
-            f"got data from api call: {user_question}, {conversation_id}",
-        )
-        conversation = get_conversation(conversation_id, session_data)
-        chain = FollowUp(user_question,session_data,conversation)
-        chain= chain.full_response()
-        logger.info("chain created")
-        return EventSourceResponse(chain, media_type="text/event-stream")
-    except Exception as e:
-        logger.error(
-            f"Conversation not found with {str(e)}",
-        )
-        return JSONResponse(
-            content={"message": f"Conversation not found with {str(e)}"},
-            status_code=404,
-        )
     
 def get_conversation_topics(session_data):
     try:
@@ -259,6 +215,83 @@ def get_conversation_topics(session_data):
         return conversation_topics
     except Exception as e:
         raise e
+
+# Keeping track of operations
+operations = {}
+
+async def start_query_process(task_id, cancellation_event, user_question, conversation_id, session_data):
+        # First, send the task_id back to the client
+    logger.info(f'yeilding task_id: {task_id}')
+    yield f"event: task_id\ndata: {json.dumps({'task_id': task_id})}\n\n"
+    logger.info('starting conversation')
+    try:
+        set_context_from_session_data
+        conversation = get_conversation(conversation_id, session_data)
+        logger.info(f'starting chain for question')
+        chain = FollowUp(user_question, session_data, conversation)
+        result = chain.full_response()
+        logger.info(f'chain started')
+        while True:
+            r = next(result)
+            logger.info(f'yeilding response: {r} with type {type(r)}')
+            if cancellation_event.is_set():
+                break
+            yield json.dumps(r)
+    except Exception as e:
+        error_message = f"event: error_message\ndata: {json.dumps({'message': f'Error processing responses: {str(e)}'})}\n\n"
+        yield error_message
+        logger.error(f"Error processing responses: {str(e)}")
+
+# all validations return 401 unauthorized if no user session.  {"detail":"Invalid or expired session"}
+@app.get("/users/{session_guid}/questions")
+async def get_sample_questions(
+    session_data: UserSession = Depends(get_session_from_session),
+):
+    from conversation.return_questions import get_questions
+    conversation_topics = get_conversation_topics(session_data)
+    try:
+        
+        questions = get_questions(conversation_topics,session_data)
+        return JSONResponse(content={"data": questions}, status_code=200)
+    except Exception as e:
+        logger.error(
+            f"failed to load sample questions with error {str(e)}",
+        )
+        return JSONResponse(
+            content={"message": f"failed to load sample questions with error {str(e)}"},
+            status_code=404,
+        )
+
+@app.post("/cancel-operation/{task_id}")
+async def cancel_operation(task_id: str):
+    cancellation_event = operations.get(task_id)
+    if cancellation_event:
+        cancellation_event.set()
+        return {"status": "Cancellation requested", "task_id": task_id}
+    else:
+        logger.error(f"Failed to cancel task {task_id}")
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+# TESTING OUT FOLLOW UP QUESTIONS
+@app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
+async def chat_new(
+    user_question,
+    conversation_id,
+    session_data: UserSession = Depends(get_session_from_session),
+):
+    logger.info(f"chat_new: {user_question}, {conversation_id}")
+    task_id = str(uuid.uuid4())
+    cancellation_event = asyncio.Event()
+    logger.info(f"task_id: {task_id}")
+    operations[task_id] = cancellation_event
+
+    logger.info(f"starting streaming response for task_id: {task_id}")
+    
+    return StreamingResponse(
+        start_query_process(task_id, cancellation_event, user_question, conversation_id, session_data),
+        media_type="text/event-stream"
+    )
+
 
 # return list of user conversation ids
 @app.get("/users/{session_guid}/conversations")
