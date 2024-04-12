@@ -169,7 +169,7 @@ class FollowUp:
         return
 
     def run_rag(self, user_context):
-        result = self.retriever.retrieve_content(user_context, n=10)
+        result = self.retriever.retrieve_content(user_context, n=4)
         self.rag_links = result['source']
         self.rag_response = result['content']
         return
@@ -221,9 +221,9 @@ class FollowUp:
     def full_response(self):
         try:
             conversation_history = self.get_conversation_history()
+
             user_context = self.get_user_context()
             yield {"event": "notification", "data": json.dumps({'message': 'got user context from backend'})}
-
 
             rag = Thread(target=self.run_rag, args=(user_context,))
             rag.start()
@@ -231,6 +231,8 @@ class FollowUp:
 
             self.get_initial_graph()
             self.thread_pool['topic_thread'].join()
+
+            yield {"event": "conversation", "data": json.dumps({'message': self.return_conversation_reference()})}
             yield {"event": "notification", "data": json.dumps({'message': 'querying graph for related topics'})}
 
             self.run_graph_info()
@@ -258,8 +260,6 @@ class FollowUp:
             self.thread_pool['graph_consideration_thread'].join()
             self.match_profile_to_graph()
 
-
-
             rag_prompt, _ = self.llm_query.create_prompt_template(
                 gpt_qa_prompt(user_context,json_string),conversation_history, self.user_question)
             kickback_prompt, kickback_json = self.llm_query.create_prompt_template(
@@ -274,12 +274,18 @@ class FollowUp:
             kickback_thread.start()
             
             rag_thread.join()
-            yield {"event": "notification", "data": json.dumps({'message': f'rag response received {self.rag_response}'})}
+            yield {"event": "notification", "data": json.dumps({'message': f'got to rag response.' })}
 
 
             kickback_thread.join()
+            yield {"event": "notification", "data": json.dumps({'message': f'got to kickback response.' })}
             responses = []
             isError = False
+
+            if self.risks:
+                yield {"event": "risks", "data": json.dumps({'message': self.risks})}
+            if self.opportunities:
+                yield {"event": "opportunities", "data": json.dumps({'message': self.opportunities})}
             
             while not self.response_pool.empty() and not isError:
                 item = self.response_pool.get_nowait()
@@ -298,6 +304,9 @@ class FollowUp:
                 if len(responses) == 2:
                     break
             print('got to break')
+            if responses and len(responses) > 0:
+                logger.info('updating conversation history with responses')
+                update_conversation_history(responses, self.conversation, self.user_session, self.user_question, self.topic)
         except Empty: 
             logger.info('Queue is empty')
         except Exception as e:
@@ -306,17 +315,12 @@ class FollowUp:
             isError = True
         finally:
             print('finally block')
-            if responses and len(responses) > 0:
-                logger.info('updating conversation history with responses')
-                update_conversation_history(responses, self.conversation, self.user_session, self.user_question, self.topic)
-                
-            yield {"event": "conversation", "data": json.dumps({'message': self.return_conversation_reference()})}
-            yield {"event": "risks", "data": json.dumps({'message': self.risks})}
-            yield {"event": "opportunities", "data": json.dumps({'message': self.opportunities})}
             yield {"event": "stream-ended", "data": json.dumps({'stream-ended': 'true'})}
-
-            if self.finder:
-                self.finder.close()
+            try:
+                if self.finder:
+                    self.finder.close()
+            except Exception as e:
+                logger.info(f"Error closing neo4j session: {e}")
     
 if __name__ == "__main__":
 
@@ -338,7 +342,7 @@ if __name__ == "__main__":
     
     # mock_conversation = Conversation(id="65cd0b42372b404efb9805f6", user_id=USER_ID)
 
-    mock_conversation = Conversation.objects(id="6616e022a430f64a4b4c3dd0").select_related(max_depth=5)
+    mock_conversation = Conversation.objects(id="66198dc3b13545c2ee78f190").select_related(max_depth=5)
 
     follow_up = FollowUp(USER_QUESTION, mock_user_session, mock_conversation[0])
     try:
