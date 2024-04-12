@@ -1,5 +1,5 @@
 from mongoengine import connect, disconnect
-from data.models import kbDocument
+from data.models import WebPageDocument, Metadata
 import mongoengine.connection
 import threading, os
 from web_scraping.file_tracker import FileLogger
@@ -24,21 +24,26 @@ account_url = f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net"
 fp = FileLogger(visited_log='visited.txt', rejected_log='rejected.txt', credentials=AZURE_STORAGE_ACCOUNT_CRED, account_url=account_url)
 threads = []
 
+# this module simply moves files from the blob to mongo (easier access for processing and uploading to index)
+
 def parse_json(json_data):
-    output = []
+    metadata_dict = json_data.get("metadata", {})
+    metadata = Metadata(
+        source=metadata_dict.get("source", ""),
+        last_updated=metadata_dict.get("last_updated", ""),
+        title=metadata_dict.get("title", "")
+    )
 
-    for qna_item in json_data.get("qna", []):
-        dict_item = kbDocument(
-            source = json_data.get("metadata", {}).get("source", ""),
-            updated = json_data.get("metadata", {}).get("last_updated", ""),
-            text = qna_item
-        )
-        output.append(dict_item)
+    document = WebPageDocument(
+        page_content=json_data.get("page_content", []),
+        metadata=metadata,
+        type="Document"  # Assuming type is constant; adjust if it varies
+    )
 
-    return output
+    return document
 
 
-def run_qna():
+def run_move_file():
     while True:
         doc, filename = fp.docs.get()
 
@@ -51,8 +56,11 @@ def run_qna():
             try:
                 # process completed threads:
                 output = parse_json(doc)
-                for o in output:
-                    o.save()
+                if len(output.page_content) < 2:
+                    print(f"skipping {filename} due to empty content")
+                    fp.rejected.add(filename)
+                    continue
+                output.save()
 
                 fp.visited.add(filename)
 
@@ -65,18 +73,18 @@ def run_qna():
             
             #self.save_visited_urls()
 
-
+# creates a thread pool to run qna processing (this is the main function to convert pages to short text)
 async def chunked_files():
     max_threads = 15 # be careful of rate limiting and CPU usage
             #start consumer thread production
     for _ in range(max_threads):
-        thread = threading.Thread(target=run_qna)
+        thread = threading.Thread(target=run_move_file)
         thread.start()
         threads.append(thread)
 
-    await fp.get_docs_to_process("index-short-text")
+    await fp.get_docs_to_process("index-upload")
     # start producing docs in the queue
-    await fp.read_page_content_and_enqueue("index-short-text")
+    await fp.read_page_content_and_enqueue("index-upload")
 
     for _ in threads: 
         fp.docs.put((None,None))

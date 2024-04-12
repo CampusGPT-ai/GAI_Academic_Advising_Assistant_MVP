@@ -12,6 +12,13 @@ import logging, sys, json
 from web_scraping.file_tracker import FileLogger
 from web_scraping.file_utilities import remove_duplicate_passages
 import time 
+from data.models import kbDocument, WebPageDocument
+from settings.settings import Settings
+from mongoengine import connect
+from web_scraping.scraping_prompts import summarize_chunks
+import queue 
+
+settings = Settings()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -63,6 +70,7 @@ class SyntheticQnA(FileLogger):
         self.lock = threading.Lock()
         self.threads = []
         self.prefix_whitelist = []
+        self.mongo_docs = queue.Queue()
 
     def query_ai(self, messages: List[Message]): 
         return self.azure_llm.chat(messages)
@@ -79,33 +87,27 @@ class SyntheticQnA(FileLogger):
     def generate_completion(self, context_str: list) -> str:
         
         def get_prompt():
-            user_content =(
-r"""You are an NLP agent.  Your job is to convert raw text into semantic search strings.  \n\n
-For the text below identify facts about people, places, entities, events, advice, recommendations, actions, or any other topics you can think of.  \n
-For each fact you find, list the fact in a short paragraph.  \n
-- The paragraph should include the fact itself and all additional context that will help improve semantic search results using cosign similarity search on the embedded data. \n
-- Each paragraph should stand alone, without relying on knowledge of preceeding text to make sense. \n  
-- Repeat major topics, themes, and other facts from the body of the text for each paragraph. \n
-Create as many paragraphs for as many facts as you possibly can.  \n
-always include specific dates if they are provided. \n
-Always include addresses and contact information if it is provided.  \n
-Do not number the paragraphs.  Separate each paragraph with a double line break.  """
-r"""\n\n"""
-r""" [SCRAPED WEBPAGE CONTENTS]:\n """
-f"""{context_str}\n\n"""
-            )
-            return (
-                [
-            Message(role='system', content=SYSTEM_TEXT),
-            Message(role='user',content=user_content)
-        ]
-            )
+            return summarize_chunks(context_str)
     
         
         messages = get_prompt()
         result : ChatCompletion = self.azure_llm.chat(messages)
         print(result.choices[0].message)
-        return result.choices[0].message  
+        return result.choices[0].message 
+
+    def parse_json(self, json_data):
+        output = []
+
+        for qna_item in json_data.get("qna", []):
+            dict_item = kbDocument(
+                source = json_data.get("metadata", {}).get("source", ""),
+                updated = json_data.get("metadata", {}).get("last_updated", ""),
+                text = qna_item
+            )
+            output.append(dict_item)
+
+        return output
+
     def extract_prefixes(self,filename):
         parts = filename.split('.ucf.edu')[0]
         return parts
@@ -122,7 +124,14 @@ f"""{context_str}\n\n"""
                 result_content = result.content.replace(r"```","").replace("json","")
                 result_content = {"qna": re.split('\n\n---\n\n|\n\n', result_content)}
                 merged_data = {**docs, **result_content}
-                self.save_json(merged_data, filename, 'index-short-text')
+                output = self.parse_json(merged_data)
+                for o in output:
+                    try:
+                        o.save()
+                        print(f"Saved to MongoDB")
+                    except Exception as e:
+                        raise e
+
                 break  # Break out of the loop if successful
             except Exception as e:
                 print(f"Error querying GPT for {filename}: {e}")
@@ -148,24 +157,49 @@ f"""{context_str}\n\n"""
             thread = threading.Thread(target=self.run_qna)
             thread.start()
             self.threads.append(thread)
+        
+        self.get_docs_from_mongo()
 
-        await self.get_docs_to_process("index-upload-v2")
+        # replaced with mongo - can clean up later
+        #await self.get_docs_to_process("index-upload")
         # start producing docs in the queue
-        await self.read_page_content_and_enqueue("index-upload-v2")
+        #await self.read_page_content_and_enqueue("index-upload")
 
         for _ in self.threads: 
-            self.docs.put((None,None))
+            self.mongo_docs.put(None)
 
         for thread in self.threads:
             thread.join()
 
+    @staticmethod
+    def find_document_by_source_and_updated(source, updated):
+        # Query for a document with the given source and updated time
+        document = kbDocument.objects(source=source, updated=updated).first()
+        
+        if document:
+            return True
+        else:
+            return False
+        
+    def get_docs_from_mongo(self):
+        documents = WebPageDocument.objects.all()
+        for doc in documents:
+            json_doc = doc._data
+            self.mongo_docs.put(json_doc)
 
     def run_qna(self):
         while True:
-            doc, filename = self.docs.get()
+            doc = self.mongo_docs.get()
+            doc['metadata'] = doc.get('metadata')._data
+            metadata = doc.get('metadata')
 
-            if doc is None and filename is None:
-                break
+            if self.find_document_by_source_and_updated(metadata.get('source'), metadata.get('last_updated')):
+                continue
+
+            if doc is None:
+                continue
+
+            filename = metadata.get('source')
 
             max_retries = 3  # Maximum number of retries
             retry_delay = 10  # Delay in seconds
@@ -192,10 +226,14 @@ f"""{context_str}\n\n"""
         
     
 if __name__ == "__main__":
+    db_name = settings.MONGO_DB
+    db_conn = settings.MONGO_CONN_STR
+    _mongo_conn = connect(db=db_name, host=db_conn)
     import asyncio
     loop = asyncio.get_event_loop()
     loader = SyntheticQnA("visited.txt","rejected.txt", credentials=AZURE_STORAGE_ACCOUNT_CRED, account_url=account_url)
     loop.run_until_complete(loader.chunked_files())
     loop.close
+    _mongo_conn.close()
     
     

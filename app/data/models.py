@@ -48,6 +48,20 @@ class kbDocument(Document):
         ]
     }
 
+class Metadata(EmbeddedDocument):
+    source = StringField(required=True)
+    last_updated = StringField(required=True)  # Consider using DateTimeField for real datetime management
+    title = StringField(required=True)
+
+class WebPageDocument(Document):
+    page_content = StringField(required=True)
+    metadata = EmbeddedDocumentField(Metadata, required=True)
+    type = StringField(required=True, default="Document")
+    meta = {
+        'collection': 'raw_webpage_document',  # the name of your collection in the database
+    }
+
+
 class indexDocument(Document):
     _auto_id_field = 'id'
     vector_id = StringField(required=True)

@@ -12,9 +12,9 @@ from unidecode import unidecode
 DOCUMENT_DIRECTORY = '/Users/marynelson/docs/ucf_catalog'
 VISITED_LOG = '/Users/marynelson/docs/ucf_catalog/logs/visited.txt'
 REJECTED_LOG = '/Users/marynelson/docs/ucf_catalog/logs/rejected.txt'
-SELECTOR = '.style__navListItem___20sM3'
-MAIN_PAGE = '#kuali-catalog-main' 
-
+SELECTOR = '.style__collapsibleBox___15waq'
+MAIN_PAGE = '#kuali-catalog-main'
+# <div name="ACG - Accounting General" class="style__collapsibleBox___15waq"><div class="style__header___2lB0y style__headerExpandable___2d4hu"><div style="flex: 2 1 0%;"><h2 class="style__title___3KgQi">ACG - Accounting General</h2><div class="style__subtitle___BSfwg"></div></div><a aria-hidden="true" target="_blank" tabindex="-1" class="style__linkButton___2NRHE" href="https://www.ucf.edu/catalog/undergraduate/#/courses?group=ACG%20-%20Accounting%20General"><button tabindex="-1" aria-label="Link to ACG - Accounting General" aria-hidden="true" type="button" class="md-btn md-btn--icon md-pointer--hover md-inline-block"><div class="md-ink-container"></div><i class="md-icon material-icons md-text--inherit">open_in_new</i></button></a><button aria-controls="ACG - Accounting General" aria-expanded="false" aria-label="show  ACG - Accounting General" type="button" class="md-btn md-btn--icon md-pointer--hover md-inline-block style__collapseButton___12yNL"><div class="md-ink-container"></div><i class="md-icon material-icons md-text--inherit">keyboard_arrow_down</i></button></div></div>
 class Crawler():
     def __init__(
         self,
@@ -34,12 +34,7 @@ class Crawler():
 
         # initialize list to last visited if it exists
         self.visited = self.read_visited_urls()
-
-    def read_all_links(self):
-        with open('all_links.txt', 'r') as file:
-            for line in file:
-                self.links.put(line.strip())
-
+        self.all_links = set()
         
     def read_visited_urls(self):
         visited = set()
@@ -63,6 +58,16 @@ class Crawler():
         with open(REJECTED_LOG, 'w') as file:
             for url in self.rejected:
                 file.write(f"{url}\n")
+    
+    def read_all_links(self):
+        with open('all_links.txt', 'r') as file:
+            for line in file:
+                self.all_links.add(line.strip())
+
+    def save_all_links(self):
+        with open('all_links.txt', 'w') as file:
+            for link in self.all_links:
+                file.write(f"{link}\n")
 
     def extract_sld_tld(self, url):
         """
@@ -77,13 +82,40 @@ class Crawler():
         
     async def fetch_selector(self, selector, page):
         selectors = await page.query_selector_all(selector)
+        await asyncio.sleep(10)
         return selectors
-
-    async def expand_menus(self, selectors, page):
+    
+    async def expand_all_menus(self, selectors, page):
         for selector in selectors:
-            await selector.click()
-            asyncio.sleep(1)
-            self.links.put(page.url)
+            try:
+                await selector.click()
+                await asyncio.sleep(1)
+            except:
+                print("failed to click on selector for ", page.url)
+        return page
+
+    async def expand_left_menu(self, selectors, page):
+        for selector in selectors:
+            try:
+                await selector.click()
+                await asyncio.sleep(1)
+                all_content = ''
+                main_page = await page.query_selector_all(MAIN_PAGE)
+                for elements in main_page:
+                    html_content = await elements.inner_html()
+
+                    content = self.extract_text_from_html(html_content)
+                    content = self.remove_extra_line_breaks(content)
+                    content =  unidecode(content)
+                    content = content.replace('\n', ' ').replace('\t',' ').replace('\'',' ').replace('\"',' ')
+                    all_content += content
+
+                self.links.put(page.url)
+
+                print(f'added link to list {page.url}')
+            except:
+                print("failed to click on selector for ", page.url)
+
  
     async def fetch_content_playwright(self, url):
         metadata = {"source": url}
@@ -95,22 +127,19 @@ class Crawler():
                 await page.set_viewport_size({"width": 1280, "height": 720}) #avoid hidden content with responsive design
                 
                 await page.goto(url, wait_until="domcontentloaded", timeout=5000) 
-
-                main_page = await page.wait_for_selector(MAIN_PAGE)
-                main_page = await page.query_selector_all(MAIN_PAGE)
-                #if main_page:
-                #    for elements in main_page:
-                #        html_content = await elements.inner_html()
                 
-                content = await page.content()
 
                 metadata["last_updated"] = datetime.now().isoformat()
                 metadata["title"] = await page.title()
                 meta_description = await page.query_selector('meta[name="description"]')
 
-                #selectors_list = await self.fetch_selector(SELECTOR, page)
+                selectors_list = await self.fetch_selector(SELECTOR, page)
 
-                #page = await self.expand_menus(selectors_list, page)   
+                page = await self.expand_all_menus(selectors_list, page)   
+
+                content = await page.content()
+
+                await asyncio.sleep(10)
 
                 if meta_description:
                     metadata["description"] = await meta_description.get_attribute('content')
@@ -126,58 +155,6 @@ class Crawler():
             print(f"An error occurred: {e}")
             return None
 
-    def fetch_content_requests(self, url):
-        """
-        Fetch page content using Requests for static HTML content.
-        """
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            print(f"Error fetching content with Requests: {e}")
-            return ""
-    
-
-    async def filter_links(self, links, file_types, domain_sld_tld, same_domain):
-        """
-        Filter out links that do not match the specified file types, domain SLD and TLD, and domain.
-
-        Args:
-            links (list): List of links to be filtered.
-            file_types (list): List of file types to filter by.
-            domain_sld_tld (str): Domain SLD and TLD to filter by.
-            same_domain (bool): Flag indicating whether to filter by the same domain.
-
-        Returns:
-            list: Filtered list of links.
-        """
-        filtered_links = []
-        for link in links:
-            parsed_link = urlparse(link)
-            link_sld_tld = self.extract_sld_tld(link)
-
-            if same_domain and domain_sld_tld != link_sld_tld:
-                continue
-
-            path = parsed_link.path.lower()
-
-            # Check if the path ends with a slash or if it doesn't have a dot in the last segment.
-            if path.endswith('/'):
-                filtered_links.append(link)
-                continue
-            if '.' not in path.split('/')[-1]:
-                filtered_links.append(link)
-                continue
-
-            # Check if the link has one of the valid file extensions
-            if file_types:
-                if any(path.endswith(f".{file_type.lower()}") for file_type in file_types):
-                    filtered_links.append(link)
-                    continue
-
-        return filtered_links
-
     async def crawl_single_page(self, url, domain_sld_tld = None, same_domain = None, file_types = None):
         """
         Crawl a single page and get the page content.  
@@ -189,26 +166,61 @@ class Crawler():
         print(f"Crawling page {url}")
         
         try:
-            content = ""
             content, metadata = await self.fetch_content_playwright(url)
         except Exception as e:
             print(f"failed to get content from playwright with exception: {e}")
-            try:
-                content = self.fetch_content_requests(url)
-                metadata = {"source": url}
-                metadata["last_updated"] = datetime.now().isoformat()
-            except Exception as e:
-                print(f"Error crawling page {url}: {e}")
-                self.rejected.add(url)
-                return [], "", {}
+            raise e
 
         soup = BeautifulSoup(content, "html.parser")
+
         links = [urljoin(url, a.get('href'))
                 for a in soup.find_all('a', href=True)]
         
-        filtered_links = await self.filter_links(links, file_types, domain_sld_tld, same_domain)
+        for link in links:
+            self.all_links.add(link)
+        
+        self.save_all_links()
+
+        # filtered_links = await self.filter_links(links, file_types, domain_sld_tld, same_domain)         
+        return content, metadata
+
+    async def crawl(self, file_types=None, same_domain=True):
+        """
+        Start crawling from the given URL. Main method for class. 
+
+        Args:
+            file_types (list, optional): List of file types to filter the crawled URLs. Defaults to None.
+            same_domain (bool, optional): Flag to indicate whether to crawl only within the same domain. Defaults to True.
+        """
+        already_scraped = self.read_scraped_files()
+        self.read_all_links()
+        
+        try:    
+            while not self.links.empty():
+                current_url = self.links.get()
+                filename = f"{self.url_to_filename(current_url)}.json"
+                print(f'crawling {current_url}')
                 
-        return filtered_links, content, metadata
+                if current_url in self.visited or filename in already_scraped:
+                    print("skipping file for ", filename)
+                    if self.links.qsize()!=0: 
+                        continue
+                
+                self.visited.add(current_url)
+                
+                domain_sld_tld = self.extract_sld_tld(current_url)
+                content, metadata = await self.crawl_single_page(current_url, domain_sld_tld, same_domain, file_types)
+
+                content = self.extract_text_from_html(content)
+                content = self.remove_extra_line_breaks(content)
+                content =  unidecode(content)
+                content = content.replace('\n', ' ').replace('\t',' ').replace('\'',' ').replace('\"',' ')
+                self.save_to_file(current_url, content, metadata)
+                self.save_visited_urls()
+
+        except KeyboardInterrupt:  
+            print("program interrupted, saving urls")  
+            self.save_visited_urls()
 
     
     def remove_extra_line_breaks(self, markdown_content: str) -> str:
@@ -273,49 +285,9 @@ class Crawler():
 
         return filename
 
-    async def crawl(self, file_types=None, same_domain=True):
-        """
-        Start crawling from the given URL. Main method for class. 
-
-        Args:
-            file_types (list, optional): List of file types to filter the crawled URLs. Defaults to None.
-            same_domain (bool, optional): Flag to indicate whether to crawl only within the same domain. Defaults to True.
-        """
-        already_scraped = self.read_scraped_files()
-        self.read_all_links()
-        
-        try:    
-            while not self.links.empty():
-                current_url = self.links.get()
-                filename = f"{self.url_to_filename(current_url)}.json"
-                
-                if current_url in self.visited or filename in already_scraped:
-                    print("skipping file for ", filename)
-                    if self.links.qsize()!=0: 
-                        continue
-                
-                self.visited.add(current_url)
-                
-                domain_sld_tld = self.extract_sld_tld(current_url)
-                urls, content, metadata = await self.crawl_single_page(current_url, domain_sld_tld, same_domain, file_types)
-
-                content = self.extract_text_from_html(content)
-                content = self.remove_extra_line_breaks(content)
-                content =  unidecode(content)
-                content = content.replace('\n', ' ').replace('\t',' ').replace('\'',' ').replace('\"',' ')
-                self.save_to_file(current_url, content, metadata)
-                
-               # for url in urls:
-                 #   if url not in self.visited:
-                 #       self.links.put(url)
-                self.save_visited_urls()
-        except KeyboardInterrupt:  
-            print("program interrupted, saving urls")  
-            self.save_visited_urls()
-
 # Example usage:
 if __name__ == '__main__':
-    url = '''https://www.ucf.edu/catalog/undergraduate/'''
+    url = '''https://www.ucf.edu/catalog/undergraduate/#/courses'''
     crawler = Crawler(starting_url=url, directory=DOCUMENT_DIRECTORY, visited_log=VISITED_LOG)
     asyncio.run(crawler.crawl())
    
