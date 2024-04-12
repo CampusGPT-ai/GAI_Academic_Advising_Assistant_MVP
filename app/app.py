@@ -215,32 +215,7 @@ def get_conversation_topics(session_data):
         return conversation_topics
     except Exception as e:
         raise e
-
-# Keeping track of operations
-operations = {}
-
-async def start_query_process(task_id, cancellation_event, user_question, conversation_id, session_data):
-        # First, send the task_id back to the client
-    logger.info(f'yeilding task_id: {task_id}')
-    yield f"event: task_id\ndata: {json.dumps({'task_id': task_id})}\n\n"
-    logger.info('starting conversation')
-    try:
-        set_context_from_session_data
-        conversation = get_conversation(conversation_id, session_data)
-        logger.info(f'starting chain for question')
-        chain = FollowUp(user_question, session_data, conversation)
-        result = chain.full_response()
-        logger.info(f'chain started')
-        while True:
-            r = next(result)
-            logger.info(f'yeilding response: {r} with type {type(r)}')
-            if cancellation_event.is_set():
-                break
-            yield json.dumps(r)
-    except Exception as e:
-        error_message = f"event: error_message\ndata: {json.dumps({'message': f'Error processing responses: {str(e)}'})}\n\n"
-        yield error_message
-        logger.error(f"Error processing responses: {str(e)}")
+    
 
 # all validations return 401 unauthorized if no user session.  {"detail":"Invalid or expired session"}
 @app.get("/users/{session_guid}/questions")
@@ -261,6 +236,38 @@ async def get_sample_questions(
             content={"message": f"failed to load sample questions with error {str(e)}"},
             status_code=404,
         )
+
+# Keeping track of operations
+operations = {}
+
+async def start_query_process(task_id, cancellation_event, user_question, conversation_id, session_data):
+        # First, send the task_id back to the client
+    logger.info(f'yeilding task_id: {task_id}')
+    yield f"event: task_id\ndata: {json.dumps({'task_id': task_id})}\n\n"
+    logger.info('starting conversation')
+    try:
+        set_context_from_session_data
+        conversation = get_conversation(conversation_id, session_data)
+        logger.info(f'starting chain for question')
+        chain = FollowUp(user_question, session_data, conversation)
+        result = chain.full_response()
+        logger.info(f'chain started')
+        while True:
+            r = next(result)
+            if cancellation_event.is_set():
+                logger.info(f"task_id: {task_id} cancelled")
+                break
+            event = r.get('event')
+            data = r.get('data')
+            logger.info(f"Sending event: {event}, data: {data} with type {type(data)}")
+            yield f"event: {event}\ndata: {data}\n\n"
+            if event == 'stream-ended':
+                break
+    except Exception as e:
+        error_message = f"event: error_message\ndata: {json.dumps({'message': f'Error processing responses: {str(e)}'})}\n\n"
+        yield error_message
+        logger.error(f"Error processing responses: {str(e)}")
+
 
 @app.post("/cancel-operation/{task_id}")
 async def cancel_operation(task_id: str):

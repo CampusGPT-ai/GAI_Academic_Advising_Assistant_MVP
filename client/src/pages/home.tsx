@@ -50,6 +50,8 @@ const MainPage: FC = () => {
   const statusRef = useRef<AppStatus>(appStatus);
   const conversationRef = useRef<Conversation>();
   const messageHistoryRef = useRef<MessageSimple[]>();
+  const urlRef = useRef<string>();
+  const streamingRef = useRef<boolean>(false);
 
 
   const currentAnswerRef = useRef<MessageSimple>();
@@ -116,20 +118,22 @@ const MainPage: FC = () => {
 
   // when a new question is recieved, update the history
   const updateHistory = (message: MessageSimple) => {
-    if (!messageHistory) {
-      console.log("no message history - creating new history with message ", JSON.stringify(message), appStatus)
-      setMessageHistory([message]);
+    if (message) { // Ensure message is not undefined or null
+      //console.log("Received message: ", JSON.stringify(message));
+      setMessageHistory(prevHistory => {
+        // If prevHistory is undefined, start with an empty array
+        const history = prevHistory || [];
+        return [...history, message];
+      });
+    } else {
+      console.error("Attempted to update history with undefined or null message");
     }
-    else {
-      console.log(`history before udpate: ${JSON.stringify(messageHistory)}, app Status: ${appStatus}`)
-      setMessageHistory([...messageHistory, message]);
-      console.log(`history after udpate: ${JSON.stringify(messageHistory)}, app Status: ${appStatus}`)
-    }
-  }
+  };
+  
 
 
   const handleUserQuestion = async (input: string) => {
-    console.log(`handle user question app Status: ${appStatus}`)
+    console.log(`handle user question with app Status: ${appStatus}`)
     const userMessage : MessageSimple = {role: "user", message: input, created_at: { $date: Date.now() }};
     updateHistory(userMessage);
 
@@ -139,14 +143,29 @@ const MainPage: FC = () => {
   }
   };
 
+  //update the app status when the streaming status changes (only runs when the streaming status changes)
+  useEffect(() => {
+    if (isStreaming !== streamingRef.current) {
+      streamingRef.current = isStreaming;
+      !isStreaming && setAppStatus(AppStatus.Idle)
+    }
+  }, [isStreaming])
+
   // this effect should only run if there is a change in the app status.  It does the following:
   // 1.  If the app status is generating chat response, it sets the api url to the appropriate value
   // 2.  If the app status is getting message history, it fetches the message history
   // 3.  If the app status is idle, it sets the api url to undefined
   useEffect(() => {
-// first ensure there has been a true status change.  
+
+      console.log(`app status use effect triggered with ${appStatus} 
+      and ref is ${statusRef.current} and user question is ${userQuestion} 
+      and selected conversation is ${selectedConversation} 
+      and new conversation flag is ${newConversationFlag}`)
+
+
 if (appStatus !== statusRef.current) {
     statusRef.current = appStatus;
+
     if (appStatus === AppStatus.GeneratingChatResponse && userQuestion) {
       if (selectedConversation && selectedConversation.id) {
           setApiUrl(`${BaseUrl()}/users/${userSession}/conversations/${selectedConversation.id}/chat_new/${userQuestion}`);
@@ -160,25 +179,34 @@ if (appStatus !== statusRef.current) {
 
     if (appStatus === AppStatus.Idle || appStatus === AppStatus.Error) {
       // only refresh history list when the app is idle
-      newConversationFlag && setRefreshFlag(true);
-      setNewConversationFlag(false)
       setApiUrl(undefined);
+      if (newConversationFlag) { setNewConversationFlag(false) 
+      setRefreshFlag(true);
+      }
     }
 
     if (selectedConversation 
       && userSession 
       && appStatus===AppStatus.GettingMessageHistory) {
         getMessageHistory();
-        conversationRef.current = selectedConversation;
+        if (selectedConversation !== conversationRef.current) {
+          conversationRef.current = selectedConversation;
+        }
       }
   }
-}, [newConversationFlag, appStatus, userQuestion, selectedConversation])
+}, [newConversationFlag, appStatus, userQuestion, selectedConversation, isStreaming])
 
 // this effect sets the app status to get message history if the conversation changes and app status is currently idle (only runs when idle)
 useEffect(() =>{
   if (selectedConversation && appStatus === AppStatus.Idle && selectedConversation !== conversationRef.current) {
+    if (conversationRef.current === undefined || conversationRef.current === null) {
+      conversationRef.current = selectedConversation;
+      return;
+    }
+    else {
     conversationRef.current = selectedConversation;
     setAppStatus(AppStatus.GettingMessageHistory)
+    }
   }
 },[selectedConversation, appStatus])
 
@@ -188,18 +216,15 @@ useEffect(() => {
     messageHistoryRef.current = messageHistory;
     setAppStatus(AppStatus.Idle)
   }
-},[messageHistory])
+},[messageHistory, appStatus])
 
   useEffect(() => {
-    if (message !== undefined && question !== undefined && message !== "" && question !== "") { 
-      console.log("message and question recieved: ", message, question)
+    if (message && question) { 
 
-      const response : MessageSimple = {role: "system", message: message, created_at: { $date: Date.now() }};
-      console.log(`creating simple message with ${JSON.stringify(response)}`)
-      updateHistory(response);
-      
+      const response: MessageSimple = {role: "system", message: message, created_at: { $date: Date.now() }};
       const followup: MessageSimple = {role: "system", message: question, created_at: { $date: Date.now() }};
-      console.log(`creating simple message with ${JSON.stringify(followup)}`)
+      
+      updateHistory(response);
       updateHistory(followup);
 
 

@@ -31,6 +31,16 @@ function useStreamDataNew(
   const [error, setError] = useState<string>();
   const [taskId, setTaskId] = useState<string>();
 
+  function processMessage(event: any) {
+    let data = event.data;
+    if (typeof data === 'string') {
+      data = JSON.parse(data); 
+    }
+    console.log(`Received data from event.  Data is ${JSON.stringify(data)}`)
+    return data;
+  }
+
+
   useEffect(() => {
     console.log(`task id changed to ${taskId}`)
   },[taskId])
@@ -46,57 +56,60 @@ function useStreamDataNew(
       if (isMounted) {
 
         source.addEventListener('task_id', event => {
-          const data = JSON.parse(event.data);
-          console.log(`got task id from event source ${JSON.stringify(data)}`)
+          const data = processMessage(event);
           setTaskId(data.task_id);
         });
 
         source.addEventListener('conversation', event => {
-          const data = JSON.parse(event.data);
-          console.log(`got conversation response from event source ${data.message.id}`)
-          //this should be a whole conversation object (might need new one for simple conversation)
-          setSelectedConversation && setSelectedConversation(data.message);
+          try {
+            const data = processMessage(event);
+            if (!data.message) {
+              console.error('no message in conversation response')
+              return;
+            }
+            const message = data.message
+            const conversation : ConversationNew = {id: message.id, start_time: message.start_time };
+            setSelectedConversation && setSelectedConversation(conversation);
+          } catch (error) {
+            setError("error parsing conversation response");
+            setIsError && setIsError(true);
+            console.error(`error parsing conversation response ${error}`)
+          }
         });
 
         source.addEventListener('rag_response', event => {
-          const data = JSON.parse(event.data);
-          // console.log(`got rag response from event source ${data.message.response}`)
- 
-          setMessage(prev => prev + data.message.response);
+          const data = processMessage(event);
+          setMessage(data.message.response);
           
         });
 
         source.addEventListener('notification', event => {
-          const data = JSON.parse(event.data);
-          // console.log(`got notification from event source ${data.message}`)   
+          const data = processMessage(event);
         });
 
         source.addEventListener('error_message', event => {
-          const data = JSON.parse(event.data);
-          // console.log(`got error from event source ${data.message}`)
+          const data = processMessage(event);
+          console.error(`got error from event source ${data.message}`)
           cancelConversations({task_id: taskId})
           setError(data.message);
           return;
         });
 
         source.addEventListener('kickback_response', event => {
-          const data = JSON.parse(event.data);
-          // console.log(`got follow up q response from event source ${JSON.stringify(data)}`)
-
+          const data = processMessage(event);
           if (data.message.follow_up_question) {
-          setQuestion(prev => prev + data.message.follow_up_question);
+          setQuestion(data.message.follow_up_question);
           }
           
         });
 
         source.addEventListener('risks', event => {
-
-          const data = JSON.parse(event.data);
+          const data = processMessage(event);
           setRisks(prevRisks => [...prevRisks, data.message]);
       
         });
 
-        source.onerror = (event) => {
+        source.onerror = (event: any) => {
           console.log(`error detected in event source ${event}`)
           setIsError && setIsError(true);
           setAppStatus(AppStatus.Error)
@@ -106,7 +119,7 @@ function useStreamDataNew(
         }
 
         source.addEventListener('opportunities', event => {
-          const data = JSON.parse(event.data);
+          const data = processMessage(event);
           // console.log(`got opportunities from event source ${event.data}`)
    
           if (data.message) {
@@ -119,9 +132,10 @@ function useStreamDataNew(
         // console.log(`detecting event listener for stream ended`)
         source.addEventListener('stream-ended', () => {
           console.log(`stream end detected`)
+          if (isMounted) {
+            setIsStreaming(false);
+          }
           source.close();
-          setMessage('');
-          setIsStreaming(false);
           
       });
     
@@ -129,17 +143,13 @@ function useStreamDataNew(
       return () => {
         isMounted=false;
         setIsStreaming(false);
-        setAppStatus(AppStatus.Idle)
-        source.close();
+        if (source) {
+          source.close();
+        }
       }
     }
   }, [apiUrl]);
 
-
-  useEffect(()=>{
-    !isStreaming && setMessage('');
-    !isStreaming && setQuestion('');
-  },[isStreaming])
 
   return {taskId, message, question, risks, opportunities, isStreaming, streamingError: error
    };

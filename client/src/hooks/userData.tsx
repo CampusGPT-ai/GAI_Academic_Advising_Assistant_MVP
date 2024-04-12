@@ -40,7 +40,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   const priorStatus = useRef<AppStatus>(AppStatus.Idle);
   const sessionRef = useRef<string>();
   const conversationRef = useRef<Conversation[]>();
-
+  const refreshRef = useRef<Boolean>();
 
   const { instance, accounts } = useMsal();
 
@@ -98,11 +98,14 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   };
 
   useEffect(() => {
+    if (refreshFlag !== refreshRef.current) {
+      refreshRef.current = refreshFlag;
     // if a new conversation has been added, refresh the history list
     console.log(`conversation refresh flag change detected ${refreshFlag}`)
     refreshFlag && userSession &&
     getConversations();
     setRefreshFlag(false);
+    }
 },[refreshFlag])
 
   useEffect(() => {

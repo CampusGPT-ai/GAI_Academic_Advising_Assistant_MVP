@@ -54,6 +54,7 @@ const ChatActive: FC<ChatActiveProps> = ({
 }) => {
   
   const [userQuestion, setUserQuestion] = useState('');
+  const questionRef = React.useRef(userQuestion);
   const theme = useTheme()
   //console.log(`user questions is set to ${userQuestion} with ${appStatus}`);
   /**
@@ -61,6 +62,7 @@ const ChatActive: FC<ChatActiveProps> = ({
    * @param inputText - The text to set as the message state.
    */
   const handleSendClick = (inputText: string) => {
+    console.log(`sending chat from send clicked with ${inputText}`);
     setUserQuestion(inputText);
   };
 
@@ -69,11 +71,12 @@ const ChatActive: FC<ChatActiveProps> = ({
    * @param questionText - The text of the question to set as the message.
    */
   const handleQuestionClick = (questionText: string) => {
-    // console.log(`sample question clicked: ${questionText}`);
+    console.log(`sample question clicked: ${questionText}`);
     setUserQuestion(questionText)
   };
 
   const handleRetry = () => {
+    console.log(`retrying chat due to error`)
     userQuestion != '' && userQuestion && sendChatClicked(userQuestion)
   }
 
@@ -81,12 +84,15 @@ const ChatActive: FC<ChatActiveProps> = ({
    * activates the call back function when the message state is changed.
    */
   useEffect(() => {
-    if (userQuestion.trim() !== '' && userQuestion !== undefined) {
-      appStatus === AppStatus.Idle && sendChatClicked(userQuestion);
+    if (questionRef.current !== userQuestion) {
+      console.log(`user question changed to ${userQuestion}`);
+      questionRef.current = userQuestion;
+    
+      if (userQuestion.trim() !== '' && userQuestion !== undefined) {
+        appStatus === AppStatus.Idle && sendChatClicked(userQuestion);
+      }
     }
   },[userQuestion, appStatus])
-
-
 
   // console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
   return (
@@ -125,7 +131,7 @@ const ChatActive: FC<ChatActiveProps> = ({
                 <ChatSampleQuestion onSampleQuestionsClicked={handleQuestionClick} text={question} appStatus={appStatus}/>
             </Grid>
             ))}
-            {!sampleQuestions && appStatus===AppStatus.InitializingData &&
+            {!sampleQuestions && appStatus===AppStatus.GettingQuestions &&
             <Box width={'100%'} display={"flex"} justifyContent={"center"}>
               <CircularProgress
               size={20}
