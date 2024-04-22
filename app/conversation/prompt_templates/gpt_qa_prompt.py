@@ -34,3 +34,5 @@ def get_gpt_system_prompt(user_info, rag):
 """
     
     return system_instructions, ['topic','response']
+
+#    - Include HTML tags for formatting including paragraph tags, bold, italics, lists, and line breaks. \n

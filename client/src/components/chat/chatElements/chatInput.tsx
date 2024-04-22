@@ -34,7 +34,7 @@ const ChatInput: FC<ChatInputProps> = ({ sendChat, appStatus }) => {
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
-    console.log(`key pressed: ${e.key}`)
+    // console.log(`key pressed: ${e.key}`)
     if (e.key === 'Enter' && !e.shiftKey) {  // Check for Enter key without Shift key
       e.preventDefault();  // Prevent default to avoid line break in TextField
       handleSendClick();

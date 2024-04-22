@@ -1,8 +1,5 @@
 from cloud_services.llm_services import AzureLLMClients, get_llm_client
 from settings.settings import Settings
-from user.get_user_info import UserInfo
-from cloud_services.kg_neo4j import Neo4jSession
-from conversation.retrieve_docs import SearchRetriever
 from conversation.prompt_templates.kick_back_prompt import get_gpt_system_prompt as kick_back_prompt
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt as gpt_qa_prompt
 from conversation.prompt_templates.classify_graph_prompt import get_gpt_classification_prompt
@@ -12,6 +9,7 @@ from cloud_services.connect_mongo import MongoConnection
 from threading import Thread
 from cloud_services.internet_search import query_google
 import json
+from mongoengine import Document
 from queue import Queue, Empty
 from data.models import ConversationSimple as Conversation, MessageContent, RawChatMessage, UserSession
 import logging
@@ -23,15 +21,14 @@ USER_ID = "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I"
 #will just proxy this for testing (this will be a route)
 
 class QueryLLM:
-    def __init__(self, user_session: UserSession, user_info, model=settings.GPT4_MODEL_NAME, deployment=settings.GPT4_DEPLOYMENT_NAME):
+    def __init__(self, user_session: UserSession, model=settings.GPT4_MODEL_NAME, deployment=settings.GPT4_DEPLOYMENT_NAME):
         self.model = model
         self.deployment = deployment
-        self.user_info = user_info
         self.user_session = user_session
         self.user_id = user_session.user_id
 
 
-        self.azure_llm_client = get_llm_client(api_type='azure',
+        self.azure_llm_client : AzureLLMClients = get_llm_client(api_type='azure',
                                                 api_version=settings.OPENAI_API_VERSION,
                                                 endpoint=settings.AZURE_OPENAI_ENDPOINT,
                                                 model=self.model,
@@ -60,15 +57,10 @@ class QueryLLM:
             validation_keys = []
 
         system_message = Message(role="system",content=instructions)
-   
         messages.append(system_message)
 
-        if history != []:
-            for message in history:
-                message_data = message._data['message']
-                for m in message_data:
-                    messages.append(Message(role=m.role, content=m.message))
-       
+        messages.extend(history)
+
         if user_question:
             user_message = Message(role="user",content=user_question)
             messages.append(user_message)
@@ -80,16 +72,16 @@ class QueryLLM:
         try:
             chat = self.azure_llm_client.chat(prompt, True)
             formatted_response = self.azure_llm_client._format_json(chat)
-            if expected_json != [] and not self.azure_llm_client.validate_json(formatted_response, expected_json):
-                raise ValueError("Unexpected JSON response from LLM")
-            return formatted_response
+            final_out = self.azure_llm_client.validate_json(formatted_response, expected_json)
+            return final_out
         except Exception as e:
-            print("Error querying LLM - retrying..." + str(e))
             if self.retry_count < 2:
                 self.retry_count += 1
+                logger.error(f"error returning response from LLM:  {str(e)} \n retrying with retry count at {self.retry_count}")
                 self.run_llm(prompt, expected_json)
             else:
-                return "Error querying LLM"
+                return Exception("error returning response from llm: ", str(e))
+
             
     
 if __name__ == "__main__":

@@ -60,6 +60,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
         alignItems: 'center',
         p: 1,
         width: '90%',
+        border: '1px solid #E0E0E0',
         minWidth: '600px',
         boxShadow: theme.shadows[2],
         backgroundColor: theme.palette.primary.contrastText,

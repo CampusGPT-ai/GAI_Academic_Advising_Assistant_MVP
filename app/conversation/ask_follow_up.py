@@ -20,10 +20,9 @@ import logging
 logger = logging.getLogger(__name__)
 settings = Settings()
 
-USER_QUESTION = "What types of courses should I take to gain more knowledge in robotics"
+USER_QUESTION = "Yes I do prefer having flexible options"
 USER_ID = "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I"
 #will just proxy this for testing (this will be a route)
-
 class FollowUp:
     def __init__(self, user_question, user_session: UserSession, conversation: Conversation):
         self.mongo_client = MongoConnection().connect()
@@ -47,10 +46,10 @@ class FollowUp:
         self.rag = []
         self.rag_links = []
         self.missing_considerations = []
-        self.retry_count = 0
         self.user = self.user_info.user_profile
         self.thread_pool = {}
         self.response_pool = Queue()
+        self.error_q = Queue()
         self.rag_response = None
         self.topic = ''
         self.set_user_considerations()
@@ -139,12 +138,14 @@ class FollowUp:
         try:
             data = self.conversation._data
             history = data.get('history')
+            history = history[1:] if history[0].get('role') == 'system' else history
             if history is None:
                 history = []
             if len(history) < 5:
                 return history
             else:
                 return history[-5:]
+            
         except Exception as e:
             logger.error(f"Error getting conversation history: {e}")
             return []
@@ -153,7 +154,7 @@ class FollowUp:
 
         self.missing_considerations = self.user_considerations
         consideration_dictionary = {}
-        for consideration in new_considerations['new_considerations'].get('considerations'):
+        for consideration in new_considerations.get('considerations'):
             self.missing_considerations.append({consideration.get('name'): consideration.get('user information')})
 
         list_tuples = {tuple(d.items())[0] for d in self.missing_considerations}
@@ -202,26 +203,20 @@ class FollowUp:
             
     def run_llm(self, prompt, expected_json = [], name = None):
         try:
-            formatted_response = self.llm_query.run_llm(prompt, expected_json)
-            self.response_pool.put({name:formatted_response})
+            formatted_response = self.llm_query.run_llm(prompt, self.error_q, expected_json)
+            if self.error_q.empty():
+                logger.info(f"formatted response: {formatted_response}")
+                self.response_pool.put({name:formatted_response}) 
         except Exception as e:
             raise e
 
-    def check_considerations(self):
-        # first check the users answer to see if any new considerations are revealed
-        self.thread_pool['all_consideration_thread'].join()
-        classification_prompt, classification_json = self.llm_query.create_prompt_template(
-            get_gpt_classification_prompt(self.all_considerations, json.dumps(self.user_considerations)),history=[], user_question=self.user_question)
-        new_considerations_thread = Thread(target=self.run_llm, args=(classification_prompt, classification_json,"new_considerations"))
-        new_considerations_thread.start()
-        self.thread_pool['new_considerations_thread'] = new_considerations_thread
-        return 
 
 
-    def full_response(self):
+    def full_response(self, topic):
+        from conversation.retrieve_messages import get_history_as_messages
         try:
-            conversation_history = self.get_conversation_history()
-
+            conversation_history = get_history_as_messages(self.conversation.id)
+            
             user_context = self.get_user_context()
             yield {"event": "notification", "data": json.dumps({'message': 'got user context from backend'})}
 
@@ -232,15 +227,17 @@ class FollowUp:
             self.get_initial_graph()
             self.thread_pool['topic_thread'].join()
 
-            yield {"event": "conversation", "data": json.dumps({'message': self.return_conversation_reference()})}
-            yield {"event": "notification", "data": json.dumps({'message': 'querying graph for related topics'})}
-
             self.run_graph_info()
-        
-            self.check_considerations()
-            self.thread_pool['new_considerations_thread'].join()
+    
 
-            considerations_response = self.response_pool.get()
+            if not self.error_q.empty():
+                yield {"event": "error_message", "data": json.dumps({'message': 'Error getting considerations response'})}
+                raise (self.error_q.get())
+            
+            if considerations_response:
+                considerations_response = considerations_response.get('new_considerations')
+
+
             yield {"event": "notification", "data": json.dumps({'message': f'received considerations response {considerations_response}'})}
 
             if considerations_response.get('contains considerations') == 'yes':
@@ -260,7 +257,7 @@ class FollowUp:
             self.thread_pool['graph_consideration_thread'].join()
             self.match_profile_to_graph()
 
-            rag_prompt, _ = self.llm_query.create_prompt_template(
+            rag_prompt, rag_json = self.llm_query.create_prompt_template(
                 gpt_qa_prompt(user_context,json_string),conversation_history, self.user_question)
             kickback_prompt, kickback_json = self.llm_query.create_prompt_template(
                 kick_back_prompt(self.user_question, user_context, self.missing_considerations), conversation_history)
@@ -268,7 +265,7 @@ class FollowUp:
 
             
             # process rag and follow up question in parallel
-            rag_thread = Thread(target=self.run_llm, args=(rag_prompt,[],"rag_response"))
+            rag_thread = Thread(target=self.run_llm, args=(rag_prompt, rag_json,"rag_response"))
             kickback_thread = Thread(target=self.run_llm, args=(kickback_prompt,kickback_json,"kickback_response"))
             rag_thread.start()
             kickback_thread.start()
@@ -287,22 +284,26 @@ class FollowUp:
             if self.opportunities:
                 yield {"event": "opportunities", "data": json.dumps({'message': self.opportunities})}
             
-            while not self.response_pool.empty() and not isError:
+            while not self.response_pool.empty() and not isError and self.error_q.empty():
                 item = self.response_pool.get_nowait()
                 item_key = None
                 if type(item) == dict:
                     item_key = next(iter(item))  # Or q.get(block=False)
                 if item_key == 'rag_response':
-                    self.topic = item[item_key]['topic']
-                    responses.append(item)
-                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
-                    print(f'got to kickback response.  Len responses {len(responses)}.  Queue size {self.response_pool.qsize()}. IsError {isError}')
+                    try:
+                        item = item[item_key]
+                        self.topic = item['topic']
+                        responses.append(item)
+                        yield {"event": item_key, "data": json.dumps({'message' : item})}
+                    except Exception as e:
+                        logger.error(f"Error processing rag response: {str(e)}")
+                        yield {"event": "error_message", "data": json.dumps({'message': f'Error processing rag response {str(e)}'})}
+                        isError = True
                 if item_key == 'kickback_response':
+                    item = item[item_key]
                     responses.append(item)
-                    yield {"event": item_key, "data": json.dumps({'message' : item[item_key]})}
-                    print(f'got to kickback response.  Len responses {len(responses)}.  Queue size {self.response_pool.qsize()}. IsError {isError}')
-                if len(responses) == 2:
-                    break
+                    yield {"event": item_key, "data": json.dumps({'message' : item})}
+                    #mprint(f'got to kickback response.  Len responses {len(responses)}.  Queue size {self.response_pool.qsize()}. IsError {isError}')
             print('got to break')
             if responses and len(responses) > 0:
                 logger.info('updating conversation history with responses')
@@ -313,6 +314,9 @@ class FollowUp:
             logger.error(f"Error processing responses: {str(e)}")
             yield {"event": "error_message", "data": json.dumps({'message': f'Error processing responses {str(e)}'})}
             isError = True
+        except GeneratorExit:
+            logger.info("Generator clean-up on closure")
+            raise
         finally:
             print('finally block')
             yield {"event": "stream-ended", "data": json.dumps({'stream-ended': 'true'})}
@@ -342,7 +346,7 @@ if __name__ == "__main__":
     
     # mock_conversation = Conversation(id="65cd0b42372b404efb9805f6", user_id=USER_ID)
 
-    mock_conversation = Conversation.objects(id="66198dc3b13545c2ee78f190").select_related(max_depth=5)
+    mock_conversation = Conversation.objects(id="661aa0de5d7fa5744cf4392e").select_related(max_depth=5)
 
     follow_up = FollowUp(USER_QUESTION, mock_user_session, mock_conversation[0])
     try:

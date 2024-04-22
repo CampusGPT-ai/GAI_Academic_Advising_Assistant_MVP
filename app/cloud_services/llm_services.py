@@ -123,25 +123,30 @@ class AzureLLMClients(AILLMClients):
         except Exception as e:
             raise e
         
-    def validate_json(self, dict, string_list):
+    def validate_json(self, string_response, string_list):
         output = None
-
+        try:
+            dict = json.loads(string_response)
+            if not dict or dict == {}:
+                raise Exception(f"input dictionary is not valid JSON: {dict} ")
+        except Exception as e:
+            raise e
         for l in string_list:
             logger.info(f"checking for {l}")
             try: 
                 output = dict.get(l)
-                logger.info(f"output is {output}")
-                if output:
-                    return output
-            except:
-                continue
-        return output
+                if not output:
+                    raise Exception(f"key {l} not found in response {dict}")
+            except Exception as e:
+                logger.error(f'error parsing json from LLM response: {str(e)}')
+                raise e
+        return dict
     
     @staticmethod
     def _format_json(gpt_response):
         response = gpt_response.choices[0].message.content
         formatted_response = response.replace("\n", "").replace(r"```", "").replace("json", "")   
-        return json.loads(formatted_response)
+        return formatted_response
 
 
     def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:

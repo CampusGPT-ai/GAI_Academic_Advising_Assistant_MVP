@@ -66,6 +66,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   };
 
   const getSampleQuestions = async () => {
+    setSampleQuestions(undefined);
     setAppStatus(AppStatus.GettingQuestions)
       try {
         setSampleQuestions(

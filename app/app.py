@@ -3,32 +3,32 @@ import contextvars
 import uuid
 import time
 
+    
+from conversation.retrieve_messages import get_history_as_messages
+from conversation.retrieve_conversations import get_conversation, conversation_to_dict, get_all_conversations
+from conversation.return_questions import get_questions
 from typing import List
 from dotenv import load_dotenv
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends, BackgroundTasks, HTTPException
-from sse_starlette.sse import EventSourceResponse
+from fastapi import FastAPI, Depends
 from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from conversation.ask_follow_up import FollowUp
-from conversation.retrieve_messages import get_message_history
-from azure.identity import DefaultAzureCredential
-from data.models import Conversation, UserSession
+from conversation.answer_user_question import QnAResponse
+from conversation.retrieve_messages import get_message_history,get_history_as_messages
+from data.models import UserSession
 from settings.settings import Settings
-from cloud_services.llm_services import get_llm_client
-
+from conversation.check_considerations import Considerations
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
 from app_auth import authorize_user
 from app_auth.authorize_user import get_session_from_session
-
-from user.get_user_info import UserInfo
-import logging, sys
-from conversation.retrieve_docs import SearchRetriever
+from threading import Thread
+from conversation.run_graph import GraphFinder
+import logging
+from conversation.update_conversation import update_conversation_history
 from data.models import ConversationSimple
 import asyncio
 load_dotenv()
@@ -168,53 +168,6 @@ async def add_code_version(request: Request, call_next):
     response = await call_next(request)
     response.headers["x-code-version"] = os.getenv("GIT_SHA", "unknown")
     return response
-
-
-def get_conversation(conversation_id, session_data):
-    try:
-        if conversation_id == "0":
-                logger.info(
-                    "saving new conversation",
-                )
-                conversation = ConversationSimple(user_id=session_data.user_id)
-
-                conversation.save()
-                logger.info(
-                    f"got conversation information {conversation.id}",
-                )
-        else:
-            conversation = ConversationSimple.objects(id=conversation_id).select_related(max_depth=5)
-            conversation = conversation[0]
-
-        if conversation is None:
-            raise Exception("unable to create conversation for user chat.")
-        return conversation
-    except Exception as e:
-        raise e
-
-    
-def get_conversation_topics(session_data):
-    try:
-        conversations: List[ConversationSimple] = ConversationSimple.objects(
-                user_id=session_data.user_id
-            )
-        if not conversations:
-            return False
-        conversation_topics = []
-        if conversations:
-            for c in conversations:
-                c_dict = {
-                    "topic": c.topic if c.topic else "No topic",
-                    "id": str(c.id),
-                    "start_time": c.start_time.isoformat() if c.start_time else None,
-                    "end_time": c.end_time.isoformat() if c.end_time else None,
-                }
-                conversation_topics.append(c_dict)
-        else:
-            raise
-        return conversation_topics
-    except Exception as e:
-        raise e
     
 
 # all validations return 401 unauthorized if no user session.  {"detail":"Invalid or expired session"}
@@ -222,11 +175,10 @@ def get_conversation_topics(session_data):
 async def get_sample_questions(
     session_data: UserSession = Depends(get_session_from_session),
 ):
-    from conversation.return_questions import get_questions
-    conversation_topics = get_conversation_topics(session_data)
+    conversations = get_all_conversations(session_data)
     try:
         
-        questions = get_questions(conversation_topics,session_data)
+        questions = get_questions(conversations,session_data)
         return JSONResponse(content={"data": questions}, status_code=200)
     except Exception as e:
         logger.error(
@@ -237,67 +189,84 @@ async def get_sample_questions(
             status_code=404,
         )
 
-# Keeping track of operations
-operations = {}
 
-async def start_query_process(task_id, cancellation_event, user_question, conversation_id, session_data):
-        # First, send the task_id back to the client
-    logger.info(f'yeilding task_id: {task_id}')
-    yield f"event: task_id\ndata: {json.dumps({'task_id': task_id})}\n\n"
-    logger.info('starting conversation')
-    try:
-        set_context_from_session_data
-        conversation = get_conversation(conversation_id, session_data)
-        logger.info(f'starting chain for question')
-        chain = FollowUp(user_question, session_data, conversation)
-        result = chain.full_response()
-        logger.info(f'chain started')
-        while True:
-            r = next(result)
-            if cancellation_event.is_set():
-                logger.info(f"task_id: {task_id} cancelled")
-                break
-            event = r.get('event')
-            data = r.get('data')
-            logger.info(f"Sending event: {event}, data: {data} with type {type(data)}")
-            yield f"event: {event}\ndata: {data}\n\n"
-            if event == 'stream-ended':
-                break
-    except Exception as e:
-        error_message = f"event: error_message\ndata: {json.dumps({'message': f'Error processing responses: {str(e)}'})}\n\n"
-        yield error_message
-        logger.error(f"Error processing responses: {str(e)}")
-
-
-@app.post("/cancel-operation/{task_id}")
-async def cancel_operation(task_id: str):
-    cancellation_event = operations.get(task_id)
-    if cancellation_event:
-        cancellation_event.set()
-        return {"status": "Cancellation requested", "task_id": task_id}
-    else:
-        logger.error(f"Failed to cancel task {task_id}")
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-# TESTING OUT FOLLOW UP QUESTIONS
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
 async def chat_new(
     user_question,
     conversation_id,
     session_data: UserSession = Depends(get_session_from_session),
 ):
-    logger.info(f"chat_new: {user_question}, {conversation_id}")
-    task_id = str(uuid.uuid4())
-    cancellation_event = asyncio.Event()
-    logger.info(f"task_id: {task_id}")
-    operations[task_id] = cancellation_event
+    try:
+        conversation = get_conversation(conversation_id, session_data)
+        if conversation_id==0 or conversation_id=="0":
+            conversation_id = conversation.id
 
-    logger.info(f"starting streaming response for task_id: {task_id}")
-    
-    return StreamingResponse(
-        start_query_process(task_id, cancellation_event, user_question, conversation_id, session_data),
-        media_type="text/event-stream"
-    )
+        history = get_history_as_messages(conversation_id)
+        graph = GraphFinder(session_data, user_question)
+        topic = graph.get_topic_from_question()
+        all_considerations = graph.get_relationships('Consideration',topic)
+        
+        c = Considerations(session_data, user_question)
+
+        try:
+            await c.run_all_async(history, all_considerations, conversation)
+        except Exception as e:
+            logger.error(
+                f"failed to run_all_async with error {str(e)}",
+            )
+            raise e
+
+        responder = QnAResponse(user_question, session_data, conversation)
+        missing_considerations = c.match_profile_to_graph(all_considerations)
+        kickback_response = await responder.kickback_response_async(missing_considerations, history)
+        rag_response = await responder.rag_response_async(history)
+
+        final_response = {
+            "conversation_reference": conversation_to_dict(conversation),
+            "kickback_response": kickback_response,
+            "rag_response": rag_response
+        }
+        try:
+            update_conversation_history(final_response, conversation, session_data, user_question)
+        except Exception as e:
+            logger.error(
+                f"failed to update_conversation_history with error {str(e)}",
+            )
+            raise e
+
+        return JSONResponse(content=final_response, status_code=200)
+    except Exception as e:
+        logger.error(
+            f"failed to chat_new with error {str(e)}",
+        )
+        return JSONResponse(
+            content={"message": f"failed to return chat response with error {str(e)}"},
+            status_code=404,
+        )
+
+@app.get("/users/{session_guid}/outcomes/{user_question}")
+async def get_outcomes(
+    user_question,
+    session_data: UserSession = Depends(get_session_from_session),
+):
+    finder = GraphFinder(session_data, user_question)
+    try:
+        topic = finder.get_topic_from_question()
+        risks, opportunities = finder.get_relationships('Outcome',topic)
+
+        final_response = {
+            "risks": risks,
+            "opportunities": opportunities
+        }
+        return JSONResponse(content=final_response, status_code=200)
+    except Exception as e:
+        logger.error(
+            f"failed to get outcomes with error {str(e)}",
+        )
+        return JSONResponse(
+            content={"message": f"failed to get outcomes with error {str(e)}"},
+            status_code=404,
+        )
 
 
 # return list of user conversation ids
@@ -314,7 +283,7 @@ async def get_conversations(
             logger.info(
                 f"finding conversations for user: {session_data.user_id}",
             )
-            conversation_topics = get_conversation_topics(session_data)
+            conversation_topics = get_all_conversations(session_data)
 
         if not conversation_topics:
             return JSONResponse(

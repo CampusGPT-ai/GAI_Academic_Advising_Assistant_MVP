@@ -1,14 +1,17 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
-import React, { FC } from "react";
+import React, { FC, useEffect, useRef, Component } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
 import ParentMessage, { Citation, MessageContent, Timestamp } from "../../../model/messages/messages";
 import ChatBotChat from "./chatMessageElements/chatBotChat";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
 import ChatUserChat from "./chatMessageElements/chatUserChat";
+import ChatFollowUp from "./chatMessageElements/chatResponse/chatResponseElements/chatFollowUp";
 import { MessageSimple } from "../../../model/messages/messages";
 import AppStatus from "../../../model/conversation/statusMessages";
 import ChatBotChatError from "./chatMessageElements/chatResponse/chatResponseElements/chatBotChatError";
+import { useTheme } from "@emotion/react";
+import { Outcomes } from "../../../api/fetchOutcomes";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
@@ -27,9 +30,11 @@ interface ChatMessagesProps {
   chatResponse?: string;
   isError?: boolean;
   currentAnswerRef: React.MutableRefObject<any>;
+  opportunities?: Outcomes[];
 
   /** A function to call when the component should retry loading. */
   onRetry?: () => void;
+  onFollowUpClicked: (text: string) => void;
 
   /**An array of messages to display as history */
   messageHistory?: MessageSimple[];
@@ -37,6 +42,7 @@ interface ChatMessagesProps {
 }
 
 function getCurrentTimestamp(): Timestamp {
+  const theme = useTheme();
   return {
     $date: Date.now() // Current time in milliseconds
   };
@@ -45,12 +51,18 @@ function getCurrentTimestamp(): Timestamp {
 const ChatMessages: FC<ChatMessagesProps> = ({
   appStatus,
   errMessage,
-  notifications,
   onRetry,
   isError,
   messageHistory, 
-  currentAnswerRef,
+  opportunities,
+  onFollowUpClicked,
+  
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" }  )
+  });
 
   // console.log(`testing app status: ${appStatus}`)
   return (
@@ -64,14 +76,31 @@ const ChatMessages: FC<ChatMessagesProps> = ({
         display: 'flex',
         justifyContent: 'center',
         flexDirection: 'column',
+        alignItems: 'center',
+        justifyItems: 'center',
       }}>
         {appStatus === AppStatus.GeneratingChatResponse && <CircularProgress />}
         {appStatus === AppStatus.GeneratingChatResponse &&
           <Typography variant="body1" color="textSecondary" align="center"> 
-            {notifications ? notifications : "Generating response..."}
+            Generating response...
           </Typography>}
         {appStatus === AppStatus.Error && <ChatBotChatError onRetry={onRetry} error={errMessage} />}
       </Box>
+      {opportunities &&
+        <Box ref={scrollRef} width='100%'>
+        <Typography variant="body1">Learn More About: </Typography>
+        {
+          opportunities && opportunities.map((opportunity, index) => {
+            return (
+              <Box key={index} p={1}>
+                <ChatFollowUp text={opportunity} onFollowUpClicked={onFollowUpClicked} />
+              </Box>
+            )
+          })
+        }
+
+      </Box>
+      }
      
 
   

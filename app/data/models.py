@@ -23,7 +23,7 @@ class Profile(Document):
     _auto_id_field = 'id'
     user_id = StringField(required=True, unique=True)
     first_name = StringField(required=False)
-    active_conversation = ReferenceField('Conversation', required=False)
+    active_conversation = ReferenceField('ConversationSimple', required=False)
     last_name = StringField(required=False)
     email = EmailField(required=False)
     created_at = DateTimeField(default=datetime.utcnow)

@@ -4,7 +4,7 @@ import Conversation from "../model/conversation/conversations";
 import ParentMessage, { Citation, MessageSimple}  from "../model/messages/messages";
 import ChatActive from "../components/chat/chatContainer";
 import AppStatus from "../model/conversation/statusMessages";
-
+import { Outcomes } from "../api/fetchOutcomes"
 /**
  * Props for the Chat component.
  * @interface
@@ -31,36 +31,36 @@ interface ChatProps {
   messageHistory?: MessageSimple[];
   currentAnswerRef: React.MutableRefObject<any>;
   chatWidth: string;
+  opportunities?: Outcomes[];
 }
 
 const Chat: FC<ChatProps> = ({
   appStatus,
   isError,
-  errMessage,
-  notifications,
   sampleQuestions,
-  chatResponse,
   sendChatClicked,
   messageHistory,
   currentAnswerRef,
-  chatWidth
+  chatWidth,
+  opportunities,
 }) => {
   //console.log(`current app status is ${appStatus}`)
   //console.log("loading chat page with ",JSON.stringify(messageHistory))
   
   return (
- 
+
+
+
+
       <Box height={"100%"} display="flex" justifyContent={"center"} width={chatWidth}>
           <ChatActive //src/sections/chat/chatActive
-            errMessage={errMessage}
-            notifications={notifications}
-            chatResponse={chatResponse}
             messageHistory={messageHistory}
             sendChatClicked={sendChatClicked}
             appStatus={appStatus}
             sampleQuestions={sampleQuestions}
             isError={isError}
             currentAnswerRef={currentAnswerRef}
+            opportunities={opportunities}
 
           />
       </Box>
