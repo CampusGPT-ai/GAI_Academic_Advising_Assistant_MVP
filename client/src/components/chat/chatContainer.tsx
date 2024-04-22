@@ -7,7 +7,7 @@ import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
 import ChatSampleQuestion from "./chatElements/chatSampleQuestion";
 import AppStatus from "../../model/conversation/statusMessages";
-
+import { Outcomes } from "../../api/fetchOutcomes";
 /**
  * this component is the active chat component that is displayed when the user is in a chat.
  * it renders chat messages based on conversation history, and sends new questions back to the post request, 
@@ -38,19 +38,18 @@ interface ChatActiveProps {
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
+  opportunities?: Outcomes[];
 }[]
 
 const ChatActive: FC<ChatActiveProps> = ({
-  chatResponse,
   appStatus,
   errMessage,
-  notifications,
   sampleQuestions,
   messageHistory,
   isError,
   sendChatClicked,
   currentAnswerRef,
-
+  opportunities,
 }) => {
   
   const [userQuestion, setUserQuestion] = useState('');
@@ -111,14 +110,14 @@ const ChatActive: FC<ChatActiveProps> = ({
         <>
           <ChatMessages
             userQuestion={userQuestion}
-            chatResponse={chatResponse}
             messageHistory={messageHistory}
             appStatus={appStatus}
             errMessage={errMessage}
-            notifications={notifications}
             onRetry={handleRetry}
             isError={isError}
             currentAnswerRef={currentAnswerRef}
+            opportunities={opportunities}
+            onFollowUpClicked={handleQuestionClick}
           />
         </>
       ) : (

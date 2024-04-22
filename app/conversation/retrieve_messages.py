@@ -56,6 +56,19 @@ def get_message_history(conversation_id, return_type = "json"):
     except Exception as e:
         raise Exception(f"failed to find conversation with error {str(e)}")
 
+def get_history_as_messages(conversation_id):
+    from cloud_services.openai_response_objects import Message
+
+    history = get_message_history(conversation_id,'none')
+    messages = []
+
+    if isinstance(history, list) and history != []:
+        for message in history:
+            if isinstance(message, dict):
+                message_data = message
+                messages.append(Message(role=message_data['role'], content=message_data['message']))
+    return messages
+
 if __name__=="__main__":
     from mongoengine import connect
 

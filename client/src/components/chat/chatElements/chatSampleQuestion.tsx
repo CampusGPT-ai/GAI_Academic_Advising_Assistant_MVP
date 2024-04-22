@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { Button, Typography } from "@mui/material";
+import { Button, Typography, Box, useTheme } from "@mui/material";
 import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import AppStatus from '../../../model/conversation/statusMessages';
@@ -23,7 +23,7 @@ interface ChatSampleQuestionsProps {
 }
 
 const ChatSampleQuestion: FC<ChatSampleQuestionsProps> = ({ text, appStatus, onSampleQuestionsClicked }) => {
-  
+  const theme = useTheme();
   const handleQuestionClick = () => {
     if (appStatus===AppStatus.Idle) {
       // console.log(`sample question clicked: ${text}`);
@@ -32,21 +32,27 @@ const ChatSampleQuestion: FC<ChatSampleQuestionsProps> = ({ text, appStatus, onS
   };
 
   return (
+    
     <Button 
       variant="outlined"
-      color='primary'
       sx={{ margin: "10px",
             width: "100%",
           display: "flex",
-          justifyContent: "space-between"
+          justifyContent: "space-between",
+          backgroundColor: theme.palette.primary.light,
+          textTransform: "none",
+          
         }} 
       onClick={handleQuestionClick} 
       disabled={appStatus!==AppStatus.Idle} // Button is disabled when isLoading is true
       startIcon={<TipsAndUpdatesOutlinedIcon />}
       endIcon={<ArrowRightAltIcon />}
     >
+      
       <Typography variant="body1" p={1} textAlign={"left"}>{text}</Typography>
+      
     </Button>
+   
   );
 };
 

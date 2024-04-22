@@ -12,6 +12,7 @@ import Conversation from '../../model/conversation/conversations';
 import conversationSample from '../../model/conversation/conversationSample.json';
 import QuestionAnswerOutlinedIcon from "@mui/icons-material/QuestionAnswerOutlined";
 import HistoryIcon from '@mui/icons-material/History';
+import Person2Icon from '@mui/icons-material/Person2';
 //for default props
 const jsonString = JSON.stringify(conversationSample);
 const sampleMessages = JSON.parse(jsonString) as Conversation[];
@@ -55,6 +56,15 @@ const DrawerContent: FC<Props> = ({
             <ListItemText disableTypography primary=
               {<Typography variant="h6" style={{ color: '#000' }}>New Chat</Typography>} />
           </ListItemButton>
+          {AUTH_TYPE!=='NONE' && 
+           <ListItemButton component="li" role="listitem" onClick={() => resetConversation()}>
+
+            <ListItemIcon >
+              <Person2Icon color="primary" fontSize="medium" />
+              </ListItemIcon>
+              <ListItemText disableTypography primary=
+                {<Typography variant="h6" style={{ color: '#000' }}>Your Profile</Typography>} />
+          </ListItemButton>}
 
 
         {AUTH_TYPE!=='NONE' && <ListItem>

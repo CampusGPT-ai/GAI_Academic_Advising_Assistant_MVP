@@ -177,6 +177,7 @@ class SyntheticQnA(FileLogger):
         document = kbDocument.objects(source=source, updated=updated).first()
         
         if document:
+            print(f"Document with source {source} and updated {updated} already exists in the database")
             return True
         else:
             return False

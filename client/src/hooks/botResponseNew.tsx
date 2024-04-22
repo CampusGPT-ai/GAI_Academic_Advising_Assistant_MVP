@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { Citation } from '../model/messages/messages';
 import { ConversationNew } from '../model/conversation/conversations';
 import AppStatus from '../model/conversation/statusMessages';
-import cancelConversations from '../api/cancelChatResponse';
+
 
 interface StreamData {
-  taskId?: string;
   message?: string;
   question?: string;
   risks: string[];
@@ -18,6 +17,8 @@ interface StreamData {
 
 function useStreamDataNew(
   setAppStatus: (appStatus: AppStatus) => void, 
+  setTaskId: (taskId: string) => void,
+  taskId?: string,
   apiUrl?: string, 
   setSelectedConversation?: (conversation: ConversationNew) => void,
   setIsError?: (isError: boolean) => void,
@@ -29,14 +30,14 @@ function useStreamDataNew(
   const [opportunities, setOpportunities] = useState<string[]>([]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string>();
-  const [taskId, setTaskId] = useState<string>();
+
 
   function processMessage(event: any) {
     let data = event.data;
     if (typeof data === 'string') {
       data = JSON.parse(data); 
     }
-    console.log(`Received data from event.  Data is ${JSON.stringify(data)}`)
+    // console.log(`Received data from event.  Data is ${JSON.stringify(data)}`)
     return data;
   }
 
@@ -47,6 +48,7 @@ function useStreamDataNew(
 
   useEffect(() => {
     if (apiUrl) {
+      setError(undefined);
       console.log(`starting stream with url ${apiUrl}`)
       let isMounted=true;
       !isStreaming && setIsStreaming(true);
@@ -57,7 +59,7 @@ function useStreamDataNew(
 
         source.addEventListener('task_id', event => {
           const data = processMessage(event);
-          setTaskId(data.task_id);
+          setTaskId && setTaskId(data.task_id);
         });
 
         source.addEventListener('conversation', event => {
@@ -79,26 +81,42 @@ function useStreamDataNew(
 
         source.addEventListener('rag_response', event => {
           const data = processMessage(event);
-          setMessage(data.message.response);
+          try {
+              setMessage(data.message.response);
+              console.log(`updated message to ${data.message.response}`)
+          }
+          catch (error) {
+            setError("error parsing response");
+            setIsError && setIsError(true);
+            console.error(`error parsing rag response ${error}`)
+          }
           
         });
 
         source.addEventListener('notification', event => {
           const data = processMessage(event);
+          setNotification && setNotification(data.message);
         });
 
         source.addEventListener('error_message', event => {
           const data = processMessage(event);
           console.error(`got error from event source ${data.message}`)
-          cancelConversations({task_id: taskId})
+
           setError(data.message);
           return;
         });
 
         source.addEventListener('kickback_response', event => {
           const data = processMessage(event);
-          if (data.message.follow_up_question) {
-          setQuestion(data.message.follow_up_question);
+          try {
+            if (data.message.follow_up_question) {
+            setQuestion(data.message.follow_up_question);
+            }
+          }
+          catch (error) {
+            setError("error parsing kickback response");
+            setIsError && setIsError(true);
+            console.error(`error parsing kickback response ${error}`)
           }
           
         });
@@ -114,7 +132,7 @@ function useStreamDataNew(
           setIsError && setIsError(true);
           setAppStatus(AppStatus.Error)
           setNotification && setNotification('An error occurred. Please try again later.')
-          cancelConversations({task_id: taskId})
+
           source.close();
         }
 
@@ -151,7 +169,7 @@ function useStreamDataNew(
   }, [apiUrl]);
 
 
-  return {taskId, message, question, risks, opportunities, isStreaming, streamingError: error
+  return {message, question, risks, opportunities, isStreaming, streamingError: error
    };
 }
 

@@ -8,6 +8,7 @@ def get_gpt_system_prompt(input_q,user_info, considirations):
     Choose that one consideration that will be most helpful in answering the student's question for your follow up question's context. \n
     your follow up question should be in a friendly tone, and include an explanation of why this consideration will be helpful in answering the student's question. \n
     only ask one follow up question at a time.  do not combine multiple considerations, instead assume that the student will provide the information additional prompting. \n
+    do not preface your question with statements or comments about the student's input.  the question should be the first sentence of your response. \n
     keep your question short and simple.  Avoid jargon or technical terms. \n
     Your response should be in JSON format and include the following fields: \n
     - "response": "yes" or "no" \n
@@ -29,4 +30,4 @@ def get_gpt_system_prompt(input_q,user_info, considirations):
     [YOUR RESPOSNE]:\n
 """
     
-    return system_instructions, ['response', 'search_query', 'consideration to follow up on', 'follow_up_question']
+    return system_instructions, ['response']

@@ -52,10 +52,14 @@ class MongoConnection():
     def delete_docs(self):
         from data.models import ConversationSimple
         ConversationSimple.objects().delete()
+    
+    def delete_docs_by_user(self, user):
+        from data.models import ConversationSimple
+        ConversationSimple.objects(user_id=user).delete()
 
 if __name__ == "__main__":
     mongo = MongoConnection()
     mongo.connect()
-    mongo.delete_docs()
+    mongo.delete_docs_by_user("A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I")
 
         

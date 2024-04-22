@@ -7,11 +7,11 @@ from user.get_user_info import UserInfo
 def get_questions(conversation_topics, user_session):
    
     user_info = UserInfo(user_session.user_id).get_user_info()
-    user_info = json.dumps(user_info.to_json())
-    chatter = run_chat.QueryLLM( user_session, user_info)
+    user_info = user_info.to_json()
+    chatter = run_chat.QueryLLM( user_session)
     topics = json.dumps(conversation_topics)
-    prompt, validation_keys = refine_questions_prompt.get_questions_prompt(user_info,topics)
-    messages, validation_keys = chatter.create_prompt_template((prompt,validation_keys))
+    prompt = refine_questions_prompt.get_questions_prompt(user_info,topics)
+    messages, validation_keys = chatter.create_prompt_template(prompt,[],None)
     return chatter.run_llm(messages, validation_keys)
 
 if __name__ == "__main__":
@@ -32,5 +32,6 @@ if __name__ == "__main__":
         mock_user_session : UserSession = UserSession(**json.load(file))
 
     conversation_topics = ["college admissions", "financial aid", "course selection"]
+    mock_conversation = ConversationSimple.objects(id="661066e1e6a80ce1f8c03546").select_related(max_depth=5)
 
-    print(get_questions(conversation_topics,mock_user_session))
+    print(get_questions(conversation_topics, mock_user_session))
