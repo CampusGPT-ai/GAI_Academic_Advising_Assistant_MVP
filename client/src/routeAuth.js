@@ -3,8 +3,22 @@ import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { InteractionStatus } from "@azure/msal-browser";
 import { EventType } from "@azure/msal-browser";
 import { useEffect } from "react";
+import useSamlAuth from "./hooks/useSamlAuth";
 
+export function SAMLProtectedRoute({ children }) {
+    let isAuthenticated = false; // Replace with your auth logic
+    if (localStorage.getItem("authToken")) {
+        isAuthenticated = true; // Replace with your auth logic
+    }
+    const samlLoginUrl = "https://letmein.com/saml/login"; // THIS WILL BE UPDATED WITH THE ACTUAL SAML LOGIN URL
 
+    if (!isAuthenticated) {
+        window.location.href = samlLoginUrl;
+        return null;
+    }
+
+    return children;
+}
 
 export default function ProtectedRoute({children}) {
     const { instance, inProgress } = useMsal();
