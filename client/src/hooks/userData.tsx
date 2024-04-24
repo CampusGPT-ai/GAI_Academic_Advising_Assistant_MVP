@@ -65,19 +65,6 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
       }
   };
 
-  const fetchUserSaml = async () => {
-    setAppStatus(AppStatus.LoggingIn)
-    priorStatus.current = AppStatus.LoggingIn;
-    try {
-    const authToken = localStorage.getItem('authToken');
-    authToken && setUserSession(authToken)
-    }
-    catch (error) {
-      setAppStatus(AppStatus.Error)
-      setInitDataError(`Error fetching user token: ${error}`);
-    }
-  }
-
   const getSampleQuestions = async () => {
     setSampleQuestions(undefined);
     setAppStatus(AppStatus.GettingQuestions)
@@ -139,15 +126,8 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   useEffect(() => {
     // retrieve token with user id from backend
     // .log(`fetching session data for Auth type: ${AUTH_TYPE}`)
-    if (!userSession) {
-      if (AUTH_TYPE === 'SAML') {
-        fetchUserSaml();
-      } else {
-        fetchUser();
-      }
-    }
-
-  }, [AUTH_TYPE, userSession]
+    !userSession && fetchUser();
+  }, [isAuthenticated, inProgress, AUTH_TYPE, userSession]
   )
 
 
