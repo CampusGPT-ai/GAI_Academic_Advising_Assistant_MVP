@@ -6,14 +6,18 @@ import { PublicClientApplication } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { msalConfig } from './authConfig';
 
+const authType = process.env.REACT_APP_AUTH_TYPE;
 const msalInstance = new PublicClientApplication(msalConfig);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-  <MsalProvider instance={msalInstance}>
+
+  {authType === "MSAL" && <MsalProvider instance={msalInstance}>
     <App />
-    </MsalProvider>
+    </MsalProvider>}
+  {authType === "SAML" && <App />}
+
   </React.StrictMode>
 );
 
