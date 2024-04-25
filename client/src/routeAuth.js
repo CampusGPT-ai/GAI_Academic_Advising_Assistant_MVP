@@ -6,11 +6,16 @@ import { useEffect } from "react";
 import useSamlAuth from "./hooks/useSamlAuth";
 
 export function SAMLProtectedRoute({ children }) {
+
     let isAuthenticated = false; // Replace with your auth logic
     if (localStorage.getItem("authToken")) {
         isAuthenticated = true; // Replace with your auth logic
     }
-    const samlLoginUrl = "https://letmein.com/saml/login"; // THIS WILL BE UPDATED WITH THE ACTUAL SAML LOGIN URL
+    console.log(`checking SAML login status for user.  user is authenticated? ${isAuthenticated}`)
+    
+    const samlLoginUrl = process.env.REACT_APP_LOGIN_URL; // THIS WILL BE UPDATED WITH THE ACTUAL SAML LOGIN URL
+    console.log(`saml login url: ${samlLoginUrl}`);
+    debugger;
 
     if (!isAuthenticated) {
         window.location.href = samlLoginUrl;
