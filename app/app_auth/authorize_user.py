@@ -107,7 +107,7 @@ saml_settings = {
   "sp": {
     "entityId": "test-saml-client",
     "assertionConsumerService": {
-      "url": f"{settings.BASE_URL}/saml/callback",
+      "url": f"{settings.BASE_URL}/validate_token_saml",
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
     },
     "x509cert": settings.SAML_CERT
@@ -126,7 +126,7 @@ async def saml_login(request: Request):
     response = RedirectResponse(url=callback_url)
     return response
 
-@router.post("/saml/callback")
+@router.post("/validate_token_saml")
 async def saml_login_callback(request: Request):
     req = await prepare_from_fastapi_request(request)
 
@@ -186,73 +186,13 @@ async def saml_login_callback(request: Request):
 
             logger.debug("Redirecting back to client")
             if 'RelayState' in req['post_data'] and OneLogin_Saml2_Utils.get_self_url(req) != req['post_data']['RelayState']:
-                response = RedirectResponse(url=auth.redirect_to(f"{req['post_data']['RelayState']}#{user_session.session_id}"), status_code=303)
+                response = RedirectResponse(url=auth.redirect_to(f"{req['post_data']['RelayState']}?token={user_session.session_id}"), status_code=303)
                 return response
 
             return {"user_id": user_session.user_id, "session_id": user_session.session_id}
     else:
         logger.error(f"Errors in SAML response: {errors}")
         raise credentials_exception
-
-
-@router.get("/validate_token_saml")
-async def validate_and_create_session_saml():
-    token = Request.headers.get("X-MS-TOKEN-AAD-ID-TOKEN")
-    logger.info(f"Received token: {token}")
-    if not token or token == None:
-        logger.info("No token found in request")
-        raise credentials_exception
-    try:
-        # Validate the token
-        user_info = verify_token(token)
-        logger.info(f"Token valid for user: {user_info}")
-    except HTTPException as e:
-        logger.error(f"Token validation error: {e.detail}")
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error in token validation: {e}")
-        raise Exception(f"Unexpected token validation exception: {str(e)}")
-    if not user_info:
-        logger.error("No user info retrieved, token may be invalid")
-        raise credentials_exception
-
-
-    # Store session information
-    try:
-        user_session = get_session_from_user(user_info.user_id)
-        logger.info(f"got existing session for user: {user_session}")
-    except:
-        user_session = None
-    try:
-        if not user_session or user_session==None:
-                # Create a session ID
-            logger.info("No existing session found...creating new session")
-            session_guid = str(uuid4())
-            session_expiry = datetime.now() + timedelta(minutes=120)
-            user_session = UserSession(
-                                    user_id=user_info,
-                                    session_id=session_guid,
-                                    session_start=datetime.now(),
-                                    session_end=session_expiry
-                                    )
-
-
-            # ensure session is unique
-            try:
-                get_session_from_session(session_guid)
-                logger.info("No existing session found....saving")
-            except:
-                user_session.save()
-
-            logger.info(f"Session created with ID: {session_guid} for user: {user_info}")
-        else:
-            logger.info(f"user session already exists with session id {user_session.session_id}, {user_session.user_id}")
-    except Exception as e:
-        logger.error(f"Error saving session to the database: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-    return {"user_id": user_session.user_id, "session_id": user_session.session_id}
-
 
 @router.post("/validate_token")
 async def validate_and_create_session_msal(token: str = Depends(oauth2_scheme)):
