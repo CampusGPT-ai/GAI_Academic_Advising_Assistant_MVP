@@ -18,8 +18,8 @@ export function SAMLProtectedRoute({ children }) {
     debugger;
 
     if (!isAuthenticated) {
+        console.log("redirecting to SAML login page");
         window.location.href = samlLoginUrl;
-        return null;
     }
 
     return children;

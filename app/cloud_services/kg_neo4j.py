@@ -1,7 +1,6 @@
 from neo4j import GraphDatabase
 from neo4j.graph import Relationship
 import re
-import pandas as pd
 from evaluation_metrics.nlp import extract_keywords
 from settings.settings import Settings
 from cloud_services.llm_services import AzureLLMClients, get_llm_client
