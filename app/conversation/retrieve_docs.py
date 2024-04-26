@@ -85,7 +85,7 @@ class SearchRetriever:
          return content, refined_qs
     
     @classmethod           
-    def with_default_settings(cls, model_num='GPT35'):
+    def with_default_settings(cls, index_name=settings.SEARCH_INDEX_NAME, model_num='GPT35'):
         from cloud_services.llm_services import get_llm_client
         from cloud_services.azure_cog_service import AzureSearchService
         if model_num=='GPT35':
@@ -106,7 +106,7 @@ class SearchRetriever:
         return cls(
             llm_client=azure_llm,
             search_client=AzureSearchService(settings.SEARCH_ENDPOINT,
-                                                settings.SEARCH_INDEX_NAME,
+                                                index_name,
                                                 azure_llm,
                                                 settings.SEARCH_API_KEY),
         )

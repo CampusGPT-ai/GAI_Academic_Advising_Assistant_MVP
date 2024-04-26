@@ -27,7 +27,7 @@ interface ConversationData {
 
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 
-function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boolean)=>void, setAppStatus: (status: AppStatus) => void): ConversationData {
+function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boolean)=>void, appStatus : AppStatus, setAppStatus: (status: AppStatus) => void, setErrorMessage?: (error: string)=>void): ConversationData {
 
   const { inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
@@ -36,7 +36,6 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     isHistoryUpdated: false});
   const [sampleQuestions, setSampleQuestions] = useState<string[]>();
   const [conversations, setConversations] = useState<Conversation[]>();
-  const [initDataError, setInitDataError] = useState<string>();
   const priorStatus = useRef<AppStatus>(AppStatus.Idle);
   const sessionRef = useRef<string>();
   const conversationRef = useRef<Conversation[]>();
@@ -54,14 +53,15 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   const fetchUser = async () => {
     setAppStatus(AppStatus.LoggingIn)
     priorStatus.current = AppStatus.LoggingIn;
-    // console.log(`fetching user from backend`)
+    console.log(`fetching user from backend`)
       try {
         const userData = await sendTokenToBackend({accounts, isAuthenticated, inProgress, instance});
-        // console.log(`fetched user from backend ${userData}`)
+        console.log(`fetched user from backend ${userData}`)
         setUserSession(userData);
       } catch (error) {
         setAppStatus(AppStatus.Error)
-        setInitDataError(`Error fetching user token: ${error}`);
+        console.error(`Error fetching user token: ${error}`);
+        setErrorMessage && setErrorMessage(`Error fetching user token: ${error}`);
       }
   };
 
@@ -75,12 +75,12 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
       }
       catch (error) {
         setAppStatus(AppStatus.Error)
-        setInitDataError(`Error fetching sample questions: ${error}`);
+        setErrorMessage && setErrorMessage(`Error fetching sample questions: ${error}`);
       }
   };
 
   const getConversations = async () => {
-    setAppStatus(AppStatus.GettingConversations)
+    appStatus !== AppStatus.GeneratingChatResponse && setAppStatus(AppStatus.GettingConversations)
     console.log(`fetching conversations for user: ${userSession}`)
       try {
         const result = await fetchConversations({
@@ -94,7 +94,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
         result.data && setConversationHistoryFlag({userHasHistory: true, isHistoryUpdated: true})
       } catch (error) {
         setAppStatus(AppStatus.Error)
-        setInitDataError(`Error fetching conversation history: ${error}`);
+        setErrorMessage && setErrorMessage(`Error fetching conversation history: ${error}`);
     }
   };
 
@@ -111,27 +111,31 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
 
   useEffect(() => {
     if (userSession != undefined && sessionRef.current !== userSession) {
+      console.log(`user session updated to ${userSession}.  Refreshing conversation and questions`)
       sessionRef.current = userSession;
-      getConversations();
-      getSampleQuestions();
+      !(appStatus === AppStatus.Error) && getConversations();
+      !(appStatus === AppStatus.Error) && getSampleQuestions();
     }
-  }, [userSession]);
+  }, [userSession, appStatus]);
 
   useEffect(() => {
     if ((conversations || !conversationHistoryFlag.userHasHistory) && sampleQuestions) {
-      setAppStatus(AppStatus.Idle);
+      console.log(`conversations and questions updated.  Setting app status to idle`);
+      (appStatus === AppStatus.GettingConversations || appStatus === AppStatus.GettingQuestions) && setAppStatus(AppStatus.Idle);
     }
-  }, [conversations, sampleQuestions, conversationHistoryFlag])
+  }, [conversations, sampleQuestions, conversationHistoryFlag, appStatus])
 
   useEffect(() => {
     // retrieve token with user id from backend
     // .log(`fetching session data for Auth type: ${AUTH_TYPE}`)
-    !userSession && fetchUser();
-  }, [isAuthenticated, inProgress, AUTH_TYPE, userSession]
+
+    !userSession && appStatus === AppStatus.Idle && fetchUser();
+
+  }, [isAuthenticated, inProgress, AUTH_TYPE, userSession, appStatus]
   )
 
 
-  return { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag};
+  return { userSession, sampleQuestions, conversations, conversationHistoryFlag};
 }
 
  export default useAccountData;

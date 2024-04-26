@@ -63,8 +63,7 @@ const useQnAData = (
 
             console.log('Data fetched:', JSON.stringify(data));
         } catch (error) {
-            setAppStatus && setAppStatus(AppStatus.Error);
-            console.error('Failed to fetch data:', error);
+            throw error;
         }
 
     };
@@ -94,7 +93,14 @@ const useQnAData = (
         if (apiUrl && apiUrlRef.current !== apiUrl) {
             apiUrlRef.current = apiUrl;
             console.log('Fetching data...');
-            fetchData();
+            try {
+                fetchData();
+            }
+            catch (error) {
+                console.error('Error fetching data for user question:', error);
+                setAppStatus && setAppStatus(AppStatus.Error);
+            }
+            
         }
     }, [apiUrl]);
 

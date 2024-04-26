@@ -12,7 +12,7 @@ import logging, sys, json
 from web_scraping.file_tracker import FileLogger
 from web_scraping.file_utilities import remove_duplicate_passages
 import time 
-from data.models import kbDocument, WebPageDocument
+from data.models import kbDocument, WebPageDocument, catalogDocument
 from settings.settings import Settings
 from mongoengine import connect
 from web_scraping.scraping_prompts import summarize_chunks, summarize_catalog
@@ -35,8 +35,8 @@ logging.basicConfig(
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
 OPENAI_ENDPOINT= os.getenv("AZURE_ENDPOINT")
-OPENAI_DEPLOYMENT = os.getenv("GPT4_DEPLOYMENT_NAME")
-OPENAI_MODEL = os.getenv("GPT4_MODEL_NAME")
+OPENAI_DEPLOYMENT = os.getenv("GPT35_DEPLOYMENT_NAME")
+OPENAI_MODEL = os.getenv("GPT35_MODEL_NAME")
 EMBEDDING = os.getenv("EMBEDDING")
 SEARCH_ENDPOINT = os.getenv("SEARCH_ENDPOINT")
 SEARCH_API_KEY= os.getenv("SEARCH_API_KEY")
@@ -101,13 +101,13 @@ class SyntheticQnA(FileLogger):
     def parse_json(self, json_data):
         output = []
 
-        for qna_item in json_data.get("qna", []):
-            dict_item = kbDocument(
-                source = json_data.get("metadata", {}).get("source", ""),
-                updated = json_data.get("metadata", {}).get("last_updated", ""),
-                text = qna_item
-            )
-            output.append(dict_item)
+        #for qna_item in json_data.get("qna", []):
+        dict_item = catalogDocument(
+            source = json_data.get("metadata", {}).get("source", ""),
+            updated = json_data.get("metadata", {}).get("last_updated", ""),
+            text = json_data.get("qna", {})
+        )
+        output.append(dict_item)
 
         return output
 
@@ -125,7 +125,7 @@ class SyntheticQnA(FileLogger):
                 result = self.generate_completion(content)
                 print(f"Completed QnA for {filename}")
                 result_content = result.content.replace(r"```","").replace("json","")
-                result_content = {"qna": re.split('\n\n---\n\n|\n\n', result_content)}
+                result_content = {"qna": result_content}
                 merged_data = {**docs, **result_content}
                 output = self.parse_json(merged_data)
                 for o in output:
@@ -187,6 +187,7 @@ class SyntheticQnA(FileLogger):
         
     def get_docs_from_mongo(self):
         documents = WebPageDocument.objects.all()
+        asyncio.sleep(5)
         for doc in documents:
             json_doc = doc._data
             metadata = json_doc.get('metadata')._data

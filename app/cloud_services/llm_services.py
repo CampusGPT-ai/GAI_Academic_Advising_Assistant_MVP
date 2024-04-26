@@ -146,6 +146,7 @@ class AzureLLMClients(AILLMClients):
     def _format_json(gpt_response):
         response = gpt_response.choices[0].message.content
         formatted_response = response.replace("\n", "").replace(r"```", "").replace("json", "")   
+        formatted_response = formatted_response.replace("</p><br>", "</p>").replace("<br><ul>", "<ul>")
         return formatted_response
 
 

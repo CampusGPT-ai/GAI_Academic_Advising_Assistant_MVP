@@ -9,10 +9,11 @@ from datetime import datetime
 from queue import Queue
 from unidecode import unidecode
 
-DOCUMENT_DIRECTORY = '/Users/marynelson/docs/ucf_catalog'
-VISITED_LOG = '/Users/marynelson/docs/ucf_catalog/logs/visited.txt'
-REJECTED_LOG = '/Users/marynelson/docs/ucf_catalog/logs/rejected.txt'
-SELECTOR = '.style__collapsibleBox___15waq'
+DOCUMENT_DIRECTORY = '/Users/marynelson/docs/itech_catalog'
+VISITED_LOG = '/Users/marynelson/docs/itech_catalog/logs/visited.txt'
+REJECTED_LOG = '/Users/marynelson/docs/itech_catalog/logs/rejected.txt'
+SELECTOR = '.acalog-course'
+# 'a[onclick*="showCatalogData"]'
 MAIN_PAGE = '#kuali-catalog-main'
 # <div name="ACG - Accounting General" class="style__collapsibleBox___15waq"><div class="style__header___2lB0y style__headerExpandable___2d4hu"><div style="flex: 2 1 0%;"><h2 class="style__title___3KgQi">ACG - Accounting General</h2><div class="style__subtitle___BSfwg"></div></div><a aria-hidden="true" target="_blank" tabindex="-1" class="style__linkButton___2NRHE" href="https://www.ucf.edu/catalog/undergraduate/#/courses?group=ACG%20-%20Accounting%20General"><button tabindex="-1" aria-label="Link to ACG - Accounting General" aria-hidden="true" type="button" class="md-btn md-btn--icon md-pointer--hover md-inline-block"><div class="md-ink-container"></div><i class="md-icon material-icons md-text--inherit">open_in_new</i></button></a><button aria-controls="ACG - Accounting General" aria-expanded="false" aria-label="show  ACG - Accounting General" type="button" class="md-btn md-btn--icon md-pointer--hover md-inline-block style__collapseButton___12yNL"><div class="md-ink-container"></div><i class="md-icon material-icons md-text--inherit">keyboard_arrow_down</i></button></div></div>
 class Crawler():
@@ -126,16 +127,21 @@ class Crawler():
                 page = await browser.new_page(user_agent=self.usera)
                 await page.set_viewport_size({"width": 1280, "height": 720}) #avoid hidden content with responsive design
                 
-                await page.goto(url, wait_until="domcontentloaded", timeout=5000) 
+                try:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=20000) 
+                except:
+                    print("failed to load page")
+                    self.rejected.add(url)
+                    return None, None
                 
 
                 metadata["last_updated"] = datetime.now().isoformat()
                 metadata["title"] = await page.title()
                 meta_description = await page.query_selector('meta[name="description"]')
 
-                selectors_list = await self.fetch_selector(SELECTOR, page)
+                #selectors_list = await self.fetch_selector(SELECTOR, page)
 
-                page = await self.expand_all_menus(selectors_list, page)   
+                #page = await self.expand_all_menus(selectors_list, page)   
 
                 content = await page.content()
 
@@ -153,7 +159,7 @@ class Crawler():
         except Exception as e:
             self.rejected.add(url)
             print(f"An error occurred: {e}")
-            return None
+            return None, None
 
     async def crawl_single_page(self, url, domain_sld_tld = None, same_domain = None, file_types = None):
         """
@@ -169,7 +175,7 @@ class Crawler():
             content, metadata = await self.fetch_content_playwright(url)
         except Exception as e:
             print(f"failed to get content from playwright with exception: {e}")
-            raise e
+            return None, None
 
         soup = BeautifulSoup(content, "html.parser")
 
@@ -194,6 +200,9 @@ class Crawler():
         """
         already_scraped = self.read_scraped_files()
         self.read_all_links()
+
+        for link in self.all_links:
+            self.links.put(link)
         
         try:    
             while not self.links.empty():
@@ -209,8 +218,12 @@ class Crawler():
                 self.visited.add(current_url)
                 
                 domain_sld_tld = self.extract_sld_tld(current_url)
-                content, metadata = await self.crawl_single_page(current_url, domain_sld_tld, same_domain, file_types)
-
+                try:
+                    content, metadata = await self.crawl_single_page(current_url, domain_sld_tld, same_domain, file_types)
+                except Exception as e:
+                    print(f"failed to crawl page {e}")
+                    continue
+                 
                 content = self.extract_text_from_html(content)
                 content = self.remove_extra_line_breaks(content)
                 content =  unidecode(content)
@@ -280,6 +293,8 @@ class Crawler():
         # Here we use `quote` which percent-encodes the string, and then replace '%' with '_' to make it more readable
         # This encodes everything except for letters, digits and '_-.'.
         filename = quote(url, safe='')
+        if len(filename) > 255:
+            filename = filename[:100] + filename[-25:]
         # Replace '%' to ensure the filename is filesystem-safe
         filename = filename.replace('%', '_')
 
@@ -287,7 +302,7 @@ class Crawler():
 
 # Example usage:
 if __name__ == '__main__':
-    url = '''https://www.ucf.edu/catalog/undergraduate/#/courses'''
+    url = '''https://catalog.indianatech.edu/index.php?'''
     crawler = Crawler(starting_url=url, directory=DOCUMENT_DIRECTORY, visited_log=VISITED_LOG)
     asyncio.run(crawler.crawl())
    

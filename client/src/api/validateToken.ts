@@ -48,18 +48,6 @@ const sendTokenToBackend = async( {accounts, isAuthenticated, inProgress, instan
                 });
             };
             }
-            else if (AUTH_TYPE === 'SAML')
-            {
-                // no need to get a token, it's passed in the headers using microsoft identity platform Easy Auth
-                // console.log('Using Easy Auth for token validation')
-                debugger;
-                backendResponse = await fetch(`${BaseUrl()}/validate_token_saml`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-            }
             else {
                 backendResponse = await fetch(`${BaseUrl()}/get_generic_token`, {
                     method: 'GET',
@@ -84,6 +72,7 @@ const sendTokenToBackend = async( {accounts, isAuthenticated, inProgress, instan
             }
         } catch (error: any) {
                 console.error(error);
+                throw error;
             }
         }
 ;

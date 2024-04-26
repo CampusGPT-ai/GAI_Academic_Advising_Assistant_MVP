@@ -75,7 +75,7 @@ const DrawerContent: FC<Props> = ({
             {<Typography variant="h6" style={{ color: '#000' }}>Chat History</Typography>} />
         </ListItem>}
 
-        { AUTH_TYPE!=='NONE' && conversationList && conversationList.map((conversation, index) => (
+        { AUTH_TYPE!=='NONE' && conversationList && [...conversationList].reverse().map((conversation, index) => (
           <ListItem key={index} disablePadding>
             <ListItemButton role="listitem" onClick={() => handleSelectConversation(conversation)}>
 

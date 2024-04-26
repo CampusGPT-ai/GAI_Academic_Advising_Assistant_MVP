@@ -20,3 +20,20 @@ r"""\n\n""")
             Message(role='user',content=c)
         ]
             )
+
+
+def summarize_catalog(c):
+    system_content = ('''
+Please summarize the catalog information provided. Include all essential details about the course or program, such as the course 
+                      title, course code, credit hours, prerequisites, description, and any logistical information (e.g., lab hours, 
+                      frequency of offering). Highlight any additional relevant information that pertains to the course or program 
+                      structure. \n\n''')
+
+    return (
+            [
+        Message(role='system', content=system_content),
+        Message(role='user',content=c)
+    ]
+        )
+
+ 

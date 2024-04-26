@@ -41,11 +41,10 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
     let cleanedText = text.replace(/\[\s*(Source|Links)?:?\s*\]|\(\s*(Source|Links)?:?\s*\)/gi, '');
 
     const urlRegex = /([^.?!]+\s?\b)\s\[(https?:\/\/\S+)\]/gi;
-    const replacement = cleanedText.replace(urlRegex, (match, precedingSentence, url) => {
+    let replacement = cleanedText.replace(urlRegex, (match, precedingSentence, url) => {
       // Replace the matched pattern with the preceding sentence wrapped in an anchor tag
       return `<a target="_blank" style="text-decoration: underline;" href="${url}">${precedingSentence}</a>`;
     });
-
     return replacement;
 }
   useEffect(() => {

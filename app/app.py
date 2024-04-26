@@ -204,6 +204,7 @@ async def chat_new(
         history = get_history_as_messages(conversation_id)
         graph = GraphFinder(session_data, user_question)
         topic = graph.get_topic_from_question()
+        logger.info("topic is " + topic)
         all_considerations = graph.get_relationships('Consideration',topic)
         
         c = Considerations(session_data, user_question)
@@ -217,7 +218,13 @@ async def chat_new(
             raise e
 
         responder = QnAResponse(user_question, session_data, conversation)
+
+        if 'course' in topic.lower() or 'graduation requirements' in topic.lower() or 'class' in user_question:
+            responder.retriever.search_client.index_name = app.state.settings.SEARCH_CATALOG_NAME
+   
         missing_considerations = c.match_profile_to_graph(all_considerations)
+
+        logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)
         rag_response = await responder.rag_response_async(history)
 

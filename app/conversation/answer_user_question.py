@@ -127,8 +127,9 @@ if __name__ == "__main__":
             f"failed to run_all_async with error {str(e)}",
         )
         raise e
-
     responder = QnAResponse(user_question, session_data, conversation)
+    if 'course' in topic:
+        responder.retriever = SearchRetriever.with_default_settings(index_name=settings.SEARCH_CATALOG_NAME)
     missing_considerations = c.match_profile_to_graph(all_considerations)
     kickback_response = event_loop.run_until_complete(responder.kickback_response_async(missing_considerations, history))
     rag_response = event_loop.run_until_complete(responder.rag_response_async(history))
