@@ -22,6 +22,7 @@ const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 import useQnAData from "../api/fetchQnA";
 import { Outcomes } from "../api/fetchOutcomes";
 import useGraphData from "../api/fetchOutcomes";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 
 const MainPage: FC = () => {
 
@@ -38,8 +39,8 @@ const MainPage: FC = () => {
   const messageHistoryRef = useRef<MessageSimple[]>();
   const responseRef = useRef<string>();
   const questionRef = useRef<string>();
+  const [errorMessage, setErrorMessage] = useState<string>(''); // Error message to display in case of an error
   const [outcomes, setOutcomes] = useState<Outcomes[]>();
-
   const currentAnswerRef = useRef<MessageSimple>();
 
 
@@ -54,13 +55,15 @@ const MainPage: FC = () => {
         }
       } catch (error) {
         setIsError(true)
+        setAppStatus(AppStatus.Error)
+        setErrorMessage(`${error}`)
         console.error(`An error occurred while fetching conversations ${error}`);
       }
     }
   };
 
-  const { userSession, sampleQuestions, conversations, initDataError, conversationHistoryFlag } = useAccountData(
-    refreshFlag, setRefreshFlag, setAppStatus)
+  const { userSession, sampleQuestions, conversations, conversationHistoryFlag } = useAccountData(
+    refreshFlag, setRefreshFlag, appStatus, setAppStatus, setErrorMessage)
 
   const theme = useTheme()
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -100,6 +103,13 @@ const MainPage: FC = () => {
     }
   };
 
+  const resetError = () => {
+    console.log(`resetting error on dialog click`)
+    setIsError(false);
+    setErrorMessage('');
+    setAppStatus(AppStatus.Idle);
+  };
+
   const handleUserQuestion = async (input: string) => {
     console.log(`handle user question with app Status: ${appStatus}`)
     const userMessage: MessageSimple = { role: "user", message: input, created_at: { $date: Date.now() } };
@@ -117,20 +127,22 @@ const MainPage: FC = () => {
   // 3.  If the app status is idle, it sets the api url to undefined
   useEffect(() => {
 
-    console.log(`app status use effect triggered with ${appStatus} 
+
+    if (appStatus !== statusRef.current) {
+      
+      console.log(`app status use effect triggered with ${appStatus} 
       and ref is ${statusRef.current} and user question is ${userQuestion} 
       and selected conversation is ${JSON.stringify(selectedConversation)} 
       and new conversation flag is ${newConversationFlag}`)
 
-    if (appStatus !== statusRef.current) {
       statusRef.current = appStatus;
-
-      if (appStatus !== AppStatus.Idle && appStatus !== AppStatus.Error) {
-        setIsError(false);
-      }
+      
+    if (appStatus === AppStatus.Error && errorMessage) {
+      setIsError(true);
+      console.error(`Error received in UI: ${errorMessage}`);
     }
 
-    if (appStatus === AppStatus.Idle || appStatus === AppStatus.Error) {
+    if (appStatus === AppStatus.Idle || appStatus !== AppStatus.Error) {
       if (newConversationFlag) {
         setNewConversationFlag(false)
         setRefreshFlag(true);
@@ -144,7 +156,7 @@ const MainPage: FC = () => {
         conversationRef.current = selectedConversation;
       }
     }
-  }, [appStatus, selectedConversation])
+  }}, [appStatus, selectedConversation])
 
   // reset status when questions load
   useEffect(() => {
@@ -168,12 +180,6 @@ const MainPage: FC = () => {
       setAppStatus(AppStatus.Idle)
     }
   }, [messageHistory, appStatus])
-
-  useEffect(() => {
-    (initDataError) && setIsError(true)
-    isError && setAppStatus(AppStatus.Error)
-
-  }, [isError, initDataError])
 
   const mainContentStyles = {
     flexGrow: 1,
@@ -210,6 +216,8 @@ const MainPage: FC = () => {
           backgroundColor: "#fff"
         }}
       >
+
+
         <Toolbar>
           <IconButton
             color="inherit"
@@ -244,8 +252,6 @@ const MainPage: FC = () => {
           resetConversation={resetConversation}
           account={accounts[0]} />
       }
-
-      {/**main page content here */}
       <Container component="main" sx={{
         display: "flex",
         flexGrow: 1,
@@ -254,6 +260,33 @@ const MainPage: FC = () => {
         width: { sm: `calc(100% - ${drawerWidth}px)`, xs: "100%" },
         marginRight: "0"
       }}>
+
+
+      {appStatus === AppStatus.Error && (
+
+      <Dialog
+        open={isError}
+        onClose={() => resetError()}
+      >
+        <DialogTitle>{"An Error Occurred"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            An unexpected Error has occurred.  Click close to reload the UI.  
+            <br></br>
+            If this error continues to happen, pease contact us at support@campusevolve.ai. 
+            <p></p> 
+            </DialogContentText>
+          <DialogContentText>
+            {errorMessage || "Unknown error"}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => resetError()}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    )}
+
+
         <Box
           display="flex"
           flexGrow={1}

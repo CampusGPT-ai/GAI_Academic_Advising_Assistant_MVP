@@ -48,6 +48,18 @@ class kbDocument(Document):
         ]
     }
 
+class catalogDocument(Document):
+    _auto_id_field = 'id'
+    source = StringField(required=True)
+    updated = StringField(required=True)
+    text = StringField(required=True)
+    meta = {
+        'collection': 'catalog_document',  # the name of your collection in the database
+        'indexes': [
+            'source'  # index this field for faster querying
+        ]
+    }
+
 class Metadata(EmbeddedDocument):
     source = StringField(required=True)
     last_updated = StringField(required=True)  # Consider using DateTimeField for real datetime management
@@ -71,6 +83,20 @@ class indexDocument(Document):
     content_vector = ListField(FloatField())
     meta = {
         'collection': 'index_document',  # the name of your collection in the database
+        'indexes': [
+            'source'  # index this field for faster querying
+        ]
+    }
+
+class indexCatalogDocument(Document):
+    _auto_id_field = 'id'
+    vector_id = StringField(required=True)
+    source = StringField(required=True)
+    last_updated = StringField(required=True)
+    content = StringField(required=True)
+    content_vector = ListField(FloatField())
+    meta = {
+        'collection': 'index_catalog_document',  # the name of your collection in the database
         'indexes': [
             'source'  # index this field for faster querying
         ]

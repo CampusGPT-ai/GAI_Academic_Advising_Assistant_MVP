@@ -12,6 +12,7 @@ import AppStatus from "../../../model/conversation/statusMessages";
 import ChatBotChatError from "./chatMessageElements/chatResponse/chatResponseElements/chatBotChatError";
 import { useTheme } from "@emotion/react";
 import { Outcomes } from "../../../api/fetchOutcomes";
+import { Apps } from "@mui/icons-material";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
@@ -70,7 +71,7 @@ const ChatMessages: FC<ChatMessagesProps> = ({
     height: "90%",
     overflowY: "auto",
     }}>
-      {messageHistory &&
+      {messageHistory && appStatus !== AppStatus.GettingMessageHistory &&
       <ChatMessageHistory messages={messageHistory} isLoading={appStatus===AppStatus.GeneratingChatResponse} isError={isError} onRetry={onRetry}/>}
       <Box sx={{
         display: 'flex',
@@ -79,14 +80,14 @@ const ChatMessages: FC<ChatMessagesProps> = ({
         alignItems: 'center',
         justifyItems: 'center',
       }}>
-        {appStatus === AppStatus.GeneratingChatResponse && <CircularProgress />}
+        {(appStatus === AppStatus.GeneratingChatResponse || appStatus === AppStatus.GettingMessageHistory) && <CircularProgress />}
         {appStatus === AppStatus.GeneratingChatResponse &&
           <Typography variant="body1" color="textSecondary" align="center"> 
             Generating response...
           </Typography>}
         {appStatus === AppStatus.Error && <ChatBotChatError onRetry={onRetry} error={errMessage} />}
       </Box>
-      {opportunities &&
+      {opportunities && appStatus === AppStatus.Idle &&
         <Box ref={scrollRef} width='100%'>
         <Typography variant="body1">Learn More About: </Typography>
         {

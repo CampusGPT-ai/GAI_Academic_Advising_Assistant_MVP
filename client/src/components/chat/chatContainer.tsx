@@ -130,7 +130,7 @@ const ChatActive: FC<ChatActiveProps> = ({
                 <ChatSampleQuestion onSampleQuestionsClicked={handleQuestionClick} text={question} appStatus={appStatus}/>
             </Grid>
             ))}
-            {!sampleQuestions && appStatus===AppStatus.GettingQuestions &&
+            {!sampleQuestions &&
             <Box width={'100%'} display={"flex"} justifyContent={"center"}>
               <CircularProgress
               size={20}

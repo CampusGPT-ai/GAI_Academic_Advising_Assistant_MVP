@@ -16,9 +16,9 @@ def get_gpt_system_prompt(user_info, rag):
 
     [RESPONSE INSTRUCTIONS]:\n
     - reply in a json string with attributes for topic and response. only include the JSON key value structure, without additional labels.\n
-    - if you use an item from the retrieval context in your answer, include the value of the source or link attribute from the context in brackets, next to the portion you are referencing.  
+    - if you use an item from the retrieval context in your answer, include the link name from the context in brackets, next to the portion you are referencing. If the source doesn't have a descriptive title, create a title.  do not use the word "source" or "links" as the link title. \n 
     - Provide concise answers.\n
-    - Write with an active voice. \n
+    - Write with an active voice and use simple language. \n
     - Write at a 9th grade level. \n
     - Include HTML tags for formatting including paragraph tags, bold, italics, lists, and line breaks. \n
     - Do not provide information about your thought processes or how you came to a response.  The student should not know you are a bot. \n

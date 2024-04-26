@@ -33,6 +33,7 @@ class Settings(BaseSettings):
      SEARCH_ENDPOINT: str
      SEARCH_API_KEY: str
      SEARCH_INDEX_NAME: str
+     SEARCH_CATALOG_NAME: str
      KB_FIELDS_SOURCEPAGE: str
      KB_FIELDS_CONTENT: str
      

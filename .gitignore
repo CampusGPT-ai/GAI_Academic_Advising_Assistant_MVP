@@ -159,3 +159,7 @@ topic_model.model.id2word
 topic_model.model.state
 .coverage
 app/env.it.local
+all_links.txt
+app/web_scraping/all_links.txt
+app/web_scraping/all_links.txt
+all_links.txt

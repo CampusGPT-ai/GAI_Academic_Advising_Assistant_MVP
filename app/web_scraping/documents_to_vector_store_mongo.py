@@ -15,12 +15,13 @@ from settings.settings import Settings
 settings = Settings()
 from mongoengine import connect, disconnect
 import mongoengine.connection
-from data.models import kbDocument, indexDocument
+from data.models import kbDocument, indexDocument, catalogDocument, indexCatalogDocument
 
 db_name = settings.MONGO_DB
 db_conn = settings.MONGO_CONN_STR
 load_dotenv()
 
+#change indexes as needed
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
@@ -70,7 +71,7 @@ class VectorUploader():
         
     def check_upload_status(self):
         documents_already_processed = set()
-        for doc in indexDocument.objects():  # Query all documents
+        for doc in indexCatalogDocument.objects():  # Query all documents
             documents_already_processed.add(doc.content)
         return documents_already_processed
 
@@ -82,7 +83,7 @@ class VectorUploader():
         batch_size = BATCH_SIZE
         indexed_docs = self.check_upload_status()
         try:
-            for doc in kbDocument.objects():
+            for doc in catalogDocument.objects():
                 if doc.text in indexed_docs:
                     # print(f"Document already indexed: {doc.text}")
                     continue
@@ -127,7 +128,7 @@ class VectorUploader():
         output = []
 
         for item in json_data:
-            dict_item = indexDocument(
+            dict_item = indexCatalogDocument(
                 vector_id = item.get("id", str(uuid.uuid4())),
                 source = item.get("source", ""),
                 last_updated = item.get("last_updated", ""),
