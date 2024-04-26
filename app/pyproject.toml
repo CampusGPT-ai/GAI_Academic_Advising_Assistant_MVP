@@ -44,6 +44,8 @@ spacy = "^3.7.4"
 symspellpy = "^6.7.7"
 textblob = "^0.18.0.post0"
 pyspellchecker = "^0.8.1"
+python3-saml = "^1.16.0"
+python-multipart = "^0.0.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
