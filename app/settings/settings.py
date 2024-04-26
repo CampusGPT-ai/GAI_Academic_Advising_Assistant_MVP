@@ -54,3 +54,7 @@ class Settings(BaseSettings):
 
      UNIVERSITY_NAME: str
      
+     SAML_METADATA_URL: str
+     SAML_CERT: str
+     
+     BASE_URL: str
