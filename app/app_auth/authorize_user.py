@@ -122,7 +122,7 @@ async def saml_login(request: Request):
     req = await prepare_from_fastapi_request(request)
 
     auth = OneLogin_Saml2_Auth(req, saml_settings_obj)
-    callback_url = auth.login()
+    callback_url = auth.login(return_to=settings.CLIENT_BASE_URL)
     response = RedirectResponse(url=callback_url)
     return response
 
