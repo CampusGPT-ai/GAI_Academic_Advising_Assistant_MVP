@@ -58,3 +58,4 @@ class Settings(BaseSettings):
      SAML_CERT: str
      
      BASE_URL: str
+     CLIENT_BASE_URL: str
