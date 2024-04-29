@@ -4,7 +4,6 @@ import { InteractionStatus } from "@azure/msal-browser";
 import { EventType } from "@azure/msal-browser";
 import { useEffect } from "react";
 import useSamlAuth from "./hooks/useSamlAuth";
-import { useFetcher } from "react-router-dom";
 
 export function SAMLProtectedRoute({ children }) {
 
