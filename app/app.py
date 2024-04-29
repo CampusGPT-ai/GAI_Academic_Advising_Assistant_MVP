@@ -9,7 +9,7 @@ from conversation.retrieve_conversations import get_conversation, conversation_t
 from conversation.return_questions import get_questions
 from typing import List
 from dotenv import load_dotenv
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
@@ -114,6 +114,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5000",
     "http://localhost:5001",
+    "http://127.0.0.1:3000",
     "localhost:3000",
     f"https://node{os.getenv('APP_NAME')}-development.azurewebsites.net",
     f"https://node{os.getenv('APP_NAME')}.azurewebsites.net",
@@ -179,13 +180,15 @@ async def get_sample_questions(
     try:
         
         questions = get_questions(conversations,session_data)
+        logger.info(f'found questions from gpt: {questions}')
         return JSONResponse(content={"data": questions}, status_code=200)
     except Exception as e:
         logger.error(
             f"failed to load sample questions with error {str(e)}",
         )
+        message_content = {"message": f"failed to load sample questions with error {str(e)}"}
         return JSONResponse(
-            content={"message": f"failed to load sample questions with error {str(e)}"},
+            content=message_content,
             status_code=404,
         )
 
@@ -270,8 +273,9 @@ async def get_outcomes(
         logger.error(
             f"failed to get outcomes with error {str(e)}",
         )
+        message_content = {"message": f"failed to get outcomes with error {str(e)}"}
         return JSONResponse(
-            content={"message": f"failed to get outcomes with error {str(e)}"},
+            content=message_content,
             status_code=404,
         )
 
@@ -293,16 +297,17 @@ async def get_conversations(
             conversation_topics = get_all_conversations(session_data)
 
         if not conversation_topics:
-            return JSONResponse(
-                content={"message": f"no conversations found for {session_data.user_id}"},
-                status_code=204,
+            logger.info('no conversations found for user, returning 204')
+            message_content={'message':f"no conversations found for {session_data.user_id}"}
+            return Response(
+                status_code=204
             )
         else:
             logger.info(
                 f"got conversations from documents {conversation_topics}",
             )
             response = JSONResponse(
-                jsonable_encoder(conversation_topics), status_code=200
+                content=conversation_topics, status_code=200
             )
             logger.info(
                 f"response serialized to json: ${response}",

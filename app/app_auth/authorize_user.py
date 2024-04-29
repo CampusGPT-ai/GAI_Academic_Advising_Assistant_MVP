@@ -11,6 +11,11 @@ from datetime import datetime, timedelta
 from data.models import UserSession, Profile
 import logging
 from settings.settings import Settings
+from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from onelogin.saml2.settings import OneLogin_Saml2_Settings
+from onelogin.saml2.utils import OneLogin_Saml2_Utils
+from starlette.responses import RedirectResponse
 
 settings = Settings()
 
@@ -76,66 +81,118 @@ def create_user_if_not_exist(payload):
         raise HTTPException(status_code=500, detail="Internal server error")
     return user
 
+async def prepare_from_fastapi_request(request, debug=False):
+  form_data = await request.form()
+  rv = {
+    "http_host": request.client.host,
+    "server_port": request.url.port,
+    "script_name": request.url.path,
+    "post_data": { },
+    "get_data": { },
+  }
+  if (request.query_params):
+    rv["get_data"] = request.query_params,
+  if "SAMLResponse" in form_data:
+    SAMLResponse = form_data["SAMLResponse"]
+    rv["post_data"]["SAMLResponse"] = SAMLResponse
+  if "RelayState" in form_data:
+    RelayState = form_data["RelayState"]
+    rv["post_data"]["RelayState"] = RelayState
+  return rv
 
-@router.get("/validate_token_saml")
-async def validate_and_create_session_saml():
-    token = Request.headers.get("X-MS-TOKEN-AAD-ID-TOKEN")
-    logger.info(f"Received token: {token}")
-    if not token or token == None:
-        logger.info("No token found in request")
-        raise credentials_exception
-    try:
-        # Validate the token
-        user_info = verify_token(token)  
-        logger.info(f"Token valid for user: {user_info}")
-    except HTTPException as e:
-        logger.error(f"Token validation error: {e.detail}")
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error in token validation: {e}")
-        raise Exception(f"Unexpected token validation exception: {str(e)}")
+idp_settings = OneLogin_Saml2_IdPMetadataParser.parse_remote(settings.SAML_METADATA_URL)
+saml_settings = {
+  "strict": True,
+  "debug": True,
+  "sp": {
+    "entityId": "test-saml-client",
+    "assertionConsumerService": {
+      "url": f"{settings.BASE_URL}/validate_token_saml",
+      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+    },
+    "x509cert": settings.SAML_CERT
+  }
+}
+idp_settings.update(saml_settings)
+saml_settings_obj = OneLogin_Saml2_Settings(idp_settings)
 
-    if not user_info:
-        logger.error("No user info retrieved, token may be invalid")
-        raise credentials_exception
+@router.get("/saml/login")
+async def saml_login(request: Request):
+    logger.info(f"SAML Settings: {idp_settings}")
+    req = await prepare_from_fastapi_request(request)
 
+    auth = OneLogin_Saml2_Auth(req, saml_settings_obj)
+    callback_url = auth.login(return_to=settings.CLIENT_BASE_URL)
+    response = RedirectResponse(url=callback_url)
+    return response
 
-    # Store session information
-    try:
-        user_session = get_session_from_user(user_info.user_id)
-        logger.info(f"got existing session for user: {user_session}")
-    except:
-        user_session = None
-    try:
-        if not user_session or user_session==None:
-                # Create a session ID
-            logger.info("No existing session found...creating new session")
-            session_guid = str(uuid4())
-            session_expiry = datetime.now() + timedelta(minutes=120)
-            user_session = UserSession(
-                                    user_id=user_info,
-                                    session_id=session_guid,
-                                    session_start=datetime.now(),
-                                    session_end=session_expiry
-                                    )
-            
+@router.post("/validate_token_saml")
+async def saml_login_callback(request: Request):
+    req = await prepare_from_fastapi_request(request)
 
-            # ensure session is unique 
+    auth = OneLogin_Saml2_Auth(req, saml_settings_obj)
+    auth.process_response()
+    errors = auth.get_errors()
+    if len(errors) == 0:
+
+        if not auth.is_authenticated():
+            logger.error("No user info retrieved, authentication information may be invalid")
+            raise credentials_exception
+        else:
+            attrs = auth.get_attributes()
+            # TODO: update this to correct values or define mapping via settings
+            payload = {
+                "sub": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"][0],
+                "first_name": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"][0].split(" ")[0],
+                "last_name": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"][0],
+                "email": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"][0],
+            }
+            logger.info(f"AUTH ATTRS: {payload}")
+            user_info = create_user_if_not_exist(payload)
+            logger.info(f"SAML USER INFO: {user_info}")
+            # Store session information
             try:
-                get_session_from_session(session_guid)
-                logger.info("No existing session found....saving")
+                user_session = get_session_from_user(user_info.user_id)
+                logger.info(f"got existing session for user: {user_session}")
             except:
-                user_session.save()
-                
-            logger.info(f"Session created with ID: {session_guid} for user: {user_info}")
-        else: 
-            logger.info(f"user session already exists with session id {user_session.session_id}, {user_session.user_id}")
-    except Exception as e:
-        logger.error(f"Error saving session to the database: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+                user_session = None
+            try:
+                if not user_session or user_session==None:
+                        # Create a session ID
+                    logger.info("No existing session found...creating new session")
+                    session_guid = str(uuid4())
+                    session_expiry = datetime.now() + timedelta(minutes=120)
+                    user_session = UserSession(
+                                            user_id=user_info.user_id,
+                                            session_id=session_guid,
+                                            session_start=datetime.now(),
+                                            session_end=session_expiry
+                                            )
 
-    return {"user_id": user_session.user_id, "session_id": user_session.session_id}
 
+                    # ensure session is unique
+                    try:
+                        get_session_from_session(session_guid)
+                        logger.info("No existing session found....saving")
+                    except:
+                        user_session.save()
+
+                    logger.info(f"Session created with ID: {session_guid} for user: {user_info}")
+                else:
+                    logger.info(f"user session already exists with session id {user_session.session_id}, {user_session.user_id}")
+            except Exception as e:
+                logger.error(f"Error saving session to the database: {e}")
+                raise HTTPException(status_code=500, detail="Internal server error")
+
+            logger.info(f"Redirecting back to client with {req['post_data']['RelayState']}?token=XXX")
+            if 'RelayState' in req['post_data'] and OneLogin_Saml2_Utils.get_self_url(req) != req['post_data']['RelayState']:
+                response = RedirectResponse(url=auth.redirect_to(f"{req['post_data']['RelayState']}?token={user_session.session_id}"), status_code=303)
+                return response
+
+            return {"user_id": user_session.user_id, "session_id": user_session.session_id}
+    else:
+        logger.error(f"Errors in SAML response: {errors}")
+        raise credentials_exception
 
 @router.post("/validate_token")
 async def validate_and_create_session_msal(token: str = Depends(oauth2_scheme)):

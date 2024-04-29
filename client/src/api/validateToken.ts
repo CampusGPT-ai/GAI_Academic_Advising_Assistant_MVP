@@ -25,7 +25,6 @@ const sendTokenToBackend = async( {accounts, isAuthenticated, inProgress, instan
         try {
             if (AUTH_TYPE === 'MSAL')
             { 
-                // console.log('Using MSAL for token validation')
                 const account = accounts[0];
         
                 if ( isAuthenticated && inProgress === 'none' && instance) {
