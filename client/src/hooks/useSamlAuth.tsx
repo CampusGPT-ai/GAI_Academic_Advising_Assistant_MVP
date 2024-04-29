@@ -17,6 +17,7 @@ export default function useSamlAuth() {
 
         if (token) {
             console.log('setting token to local storage', token)
+            debugger;
             localStorage.setItem('authToken', token);
         }
         navigate('/app'); // Redirect to the home page
