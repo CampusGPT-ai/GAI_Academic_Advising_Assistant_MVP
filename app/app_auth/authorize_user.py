@@ -184,7 +184,7 @@ async def saml_login_callback(request: Request):
                 logger.error(f"Error saving session to the database: {e}")
                 raise HTTPException(status_code=500, detail="Internal server error")
 
-            logger.debug("Redirecting back to client")
+            logger.info(f"Redirecting back to client with {req['post_data']['RelayState']}?token=XXX")
             if 'RelayState' in req['post_data'] and OneLogin_Saml2_Utils.get_self_url(req) != req['post_data']['RelayState']:
                 response = RedirectResponse(url=auth.redirect_to(f"{req['post_data']['RelayState']}?token={user_session.session_id}"), status_code=303)
                 return response
