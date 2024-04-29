@@ -41,9 +41,9 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   const sessionRef = useRef<string>();
   const conversationRef = useRef<Conversation[]>();
   const refreshRef = useRef<Boolean>();
-
+  
   const { instance, accounts } = useMsal();
-
+  const currentAccount = useRef(accounts[0]);
   
   /**
    * Fetches user data from the backend and updates the user session.
@@ -54,6 +54,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   const fetchUser = async () => {
     setAppStatus(AppStatus.LoggingIn)
     priorStatus.current = AppStatus.LoggingIn;
+    
     // console.log(`fetching user from backend`)
       try {
         const userData = await sendTokenToBackend({accounts, isAuthenticated, inProgress, instance});
@@ -143,11 +144,14 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
       if (AUTH_TYPE === 'SAML') {
         fetchUserSaml();
       } else {
+        if (accounts.length > 0 && accounts[0] !== undefined){
+          console.log(`fetching user data for user: ${accounts[0].username}`)
         fetchUser();
+        }
       }
     }
 
-  }, [AUTH_TYPE, userSession]
+  }, [AUTH_TYPE, userSession, accounts]
   )
 
 

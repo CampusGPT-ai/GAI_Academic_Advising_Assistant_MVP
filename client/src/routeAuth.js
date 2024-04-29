@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { InteractionStatus } from "@azure/msal-browser";
 import { EventType } from "@azure/msal-browser";
 import { useEffect } from "react";
 import useSamlAuth from "./hooks/useSamlAuth";
+import { useFetcher } from "react-router-dom";
 
 export function SAMLProtectedRoute({ children }) {
 
@@ -28,8 +29,8 @@ export function SAMLProtectedRoute({ children }) {
 export default function ProtectedRoute({children}) {
     const { instance, inProgress } = useMsal();
     const isAuthenticated = useIsAuthenticated();
-    // console.log(`checking login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`);
-    
+    const statusRef = useRef(inProgress);
+
 
 
 
@@ -44,24 +45,33 @@ export default function ProtectedRoute({children}) {
         console.log('error', error);
         });
 
-    // console.log(`checking login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`)
-
+    //console.log(`checking MSAL login status for user.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress} with instance ${JSON.stringify(instance)}`);
+    //debugger;
     useEffect(() => {
+        //console.log(`detected change to user login status.  user is authenticated? ${isAuthenticated} login in progress?  ${inProgress}}`);
+        //debugger;
         const authenticate = async () => {
             if (!isAuthenticated && inProgress === "none") {
-                // console.log(`in progress: ${inProgress}`);
-                // console.log(`is Authenticated: ${isAuthenticated}`);
+
                 try {
-                    // console.log(`initiating login for instance ${JSON.stringify(instance)}`);
+                    console.log(`initiating MSAL Login with redirect `);
+                   //debugger;
                     await instance.loginRedirect(); // or loginPopup
-                    // console.log(`checking state variables for isAuth: ${isAuthenticated} and inProgress: ${inProgress}`);
+                    console.log(`checking state variables for isAuth: ${isAuthenticated} and inProgress: ${inProgress}`);
+                    //debugger;
                 } catch (e) {
                     console.error("Login failed:", e);
+                    debugger;   
                 }
             }
         };
-    
-        authenticate();
+        
+        if (!isAuthenticated && inProgress === InteractionStatus.None && inProgress !== statusRef.current) {
+            console.log(`auth status changed from ${statusRef.current} to ${inProgress}, running authenticate function`)
+            //debugger;
+            statusRef.current = inProgress;
+            authenticate();
+        }
     
         return () => {
             // Cleanup if needed
@@ -72,7 +82,6 @@ export default function ProtectedRoute({children}) {
 
     // Render content conditionally based on the authentication status
     if (isAuthenticated) {
-        // console.log(`returning auth status: ${isAuthenticated}`)
     // User is authenticated, render the protected content
     return (
         <div>
@@ -81,11 +90,13 @@ export default function ProtectedRoute({children}) {
             );
     } else if (inProgress !== InteractionStatus.None) {
         // Authentication or token acquisition is in progress
+        //console.log(`returning auth status: ${isAuthenticated}`)
+        //debugger;
         return <div>Loading authentication...</div>;
     } else {
         // User is not authenticated, and no interaction is in progress
         // Optionally, render a message, a loading indicator or return null
-        return <div>error loading authentication: </div>;
+        return <div>Loading authentication...</div>;
     }
 
 }
