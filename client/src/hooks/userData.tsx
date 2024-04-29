@@ -120,7 +120,6 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
 
   useEffect(() => {
     if ((conversations || !conversationHistoryFlag.userHasHistory) && sampleQuestions) {
-      console.log(`conversations and questions updated.  Setting app status to idle`);
       (appStatus === AppStatus.GettingConversations || appStatus === AppStatus.GettingQuestions) && setAppStatus(AppStatus.Idle);
     }
   }, [conversations, sampleQuestions, conversationHistoryFlag, appStatus])
@@ -128,8 +127,10 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   useEffect(() => {
     // retrieve token with user id from backend
     // .log(`fetching session data for Auth type: ${AUTH_TYPE}`)
-
+    if (isAuthenticated && inProgress === 'none' && instance) {
+      console.log(`fetching user data for Auth type: ${AUTH_TYPE}`)
     !userSession && appStatus === AppStatus.Idle && fetchUser();
+    }
 
   }, [isAuthenticated, inProgress, AUTH_TYPE, userSession, appStatus]
   )
