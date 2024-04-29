@@ -105,6 +105,17 @@ This framework provides a flexible and consistent way to integrate and utilize t
 ###  UI/Client set up
 
 ## Environment Set Up
+### Configure for SAML Authorization
+app/.env
+```
+SAML_METADATA_URL=<METADATA_URL> # The metadata URL for your IDP
+SAML_CERT=<CERTIFICATE> # The x509 certificate for your IDP
+```
+client/.env
+```
+REACT_APP_AUTH_TYPE=SAML
+REACT_APP_LOGIN_URL=http://localhost:8000/saml/login # Replace with appropriate app login endpoint for your deployment
+```
 
 ## Running Locally
 

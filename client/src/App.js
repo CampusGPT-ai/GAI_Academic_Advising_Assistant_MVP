@@ -7,8 +7,10 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import MainPage from './pages/home.tsx'; // Make sure this is the correct import
-import ProtectedRoute from './routeAuth'; // Verify these imports
-
+import MainPageGraph from './pages/home'; // Verify this too
+import useSamlAuth from './hooks/useSamlAuth'; // Assuming this hook handles authentication logic
+import ProtectedRoute, { SAMLProtectedRoute } from './routeAuth'; // Verify these imports
+import LoginPage from './pages/login';
 
 const authType = process.env.REACT_APP_AUTH_TYPE;
 console.log(`auth type =`, authType);
@@ -20,11 +22,12 @@ function App() {
     <ThemeProvider theme={lightTheme}>
       <Router>
         <Routes>
-          <Route path="*" element={
+          <Route path="*" element={<LoginPage />} />
+          <Route path="app" element={
             authType === 'SAML' ? (
-         
+              <SAMLProtectedRoute>
                 <MainPage />
-
+              </SAMLProtectedRoute>
             ) : authType === 'MSAL' ? (
               <ProtectedRoute>
                 <MainPage />
