@@ -15,7 +15,7 @@ export function SAMLProtectedRoute({ children }) {
     
     const samlLoginUrl = process.env.REACT_APP_LOGIN_URL; // THIS WILL BE UPDATED WITH THE ACTUAL SAML LOGIN URL
     console.log(`saml login url: ${samlLoginUrl}`);
-    debugger;
+    //debugger;
 
     if (!isAuthenticated) {
         console.log("redirecting to SAML login page");
