@@ -12,6 +12,7 @@ export default function useSamlAuth() {
             console.log('auth type is not SAML, redirecting to /app')
             navigate('/app');
         }
+        else {
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token'); // Assuming token is passed as a query parameter
 
@@ -21,5 +22,6 @@ export default function useSamlAuth() {
             localStorage.setItem('authToken', token);
         }
         navigate('/app'); // Redirect to the home page
+    }
     },);
 }

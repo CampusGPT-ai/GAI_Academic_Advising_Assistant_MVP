@@ -22,8 +22,8 @@ function App() {
     <ThemeProvider theme={lightTheme}>
       <Router>
         <Routes>
-          <Route path="*" element={<LoginPage />} />
-          <Route path="app" element={
+          <Route path="login" element={<LoginPage />} />
+          <Route path="*" element={
             authType === 'SAML' ? (
               <SAMLProtectedRoute>
                 <MainPage />

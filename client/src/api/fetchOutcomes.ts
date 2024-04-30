@@ -15,6 +15,8 @@ export interface GraphInsights {
 
  
  const useGraphData = (
+    setErrorMessage: (error: string) => void,
+    setIsError: (isError: boolean) => void,
      messageText?: string, 
      user_id?: string,
      ) => {
@@ -23,6 +25,7 @@ export interface GraphInsights {
     const userQuestionRef = useRef<string | null>(null);
      const [apiUrl, setApiUrl] = useState<string>('');
      const apiUrlRef = useRef<string | null>(null);
+
  
      const fetchData = async () => {
          try {
@@ -35,11 +38,26 @@ export interface GraphInsights {
             setOpportunities(data.opportunities);
  
              console.log('Data fetched:', JSON.stringify(data));
-         } catch (error) {
-             console.error('Failed to fetch data:', error);
-         }
- 
-     };
+         } catch (error: any) {
+            if (axios.isAxiosError(error)) {
+              console.error('API error:', error.response?.status, error.response?.data);
+              if (error.response?.status === 401) {
+                setIsError(true);
+                setErrorMessage('Unauthorized'); // Specific handling for 401 error
+              } else {
+                // Optional: Handle other specific status codes if necessary
+                console.error('Unhandled API error', error.response?.status);
+                setIsError(true);
+                setErrorMessage('Error fetching outcome data from API.  check the API URL');
+              }
+            } else {
+              // Non-Axios error
+              console.error('Error:', error.message);
+              setIsError(true);
+              setErrorMessage('An unexplained error occurred');
+            }
+          }
+        };
  
      useEffect(() => {
          if (messageText) {
@@ -47,7 +65,10 @@ export interface GraphInsights {
                  return;
              }
              else {
-                  setApiUrl(`${BaseUrl()}/users/${user_id}/outcomes/${messageText}`)   
+              const safeMessageText = messageText.replace(/\//g, '-');
+              const encodedMessageText = encodeURIComponent(safeMessageText);
+              setApiUrl(`${BaseUrl()}/users/${user_id}/outcomes/${encodedMessageText}`);   
+        
                  }
  
                  userQuestionRef.current = messageText;
@@ -57,9 +78,8 @@ export interface GraphInsights {
      useEffect(() => {
          if (apiUrl && apiUrlRef.current !== apiUrl) {
              apiUrlRef.current = apiUrl;
-             console.log('Fetching outcomes from graph...');
-             fetchData();
-         }
+             console.log('Fetching outcomes from graph with url ', apiUrl);
+             fetchData();}
      }, [apiUrl]);
  
      return { risks, opportunities};

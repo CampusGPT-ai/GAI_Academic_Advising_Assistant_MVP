@@ -118,10 +118,8 @@ if __name__ == "__main__":
     
     c = Considerations(session_data, user_question)
 
-    event_loop = asyncio.get_event_loop()
-
     try:
-        event_loop.run_until_complete(c.run_all_async(history, all_considerations, conversation))
+        asyncio.run(c.run_all_async(history, all_considerations, conversation))
     except Exception as e:
         logger.error(
             f"failed to run_all_async with error {str(e)}",
@@ -131,8 +129,8 @@ if __name__ == "__main__":
     if 'course' in topic:
         responder.retriever = SearchRetriever.with_default_settings(index_name=settings.SEARCH_CATALOG_NAME)
     missing_considerations = c.match_profile_to_graph(all_considerations)
-    kickback_response = event_loop.run_until_complete(responder.kickback_response_async(missing_considerations, history))
-    rag_response = event_loop.run_until_complete(responder.rag_response_async(history))
+    kickback_response = asyncio.run(responder.kickback_response_async(missing_considerations, history))
+    rag_response = asyncio.run(responder.rag_response_async(history))
 
     final_response = {
         "conversation_reference": conversation_to_dict(conversation),

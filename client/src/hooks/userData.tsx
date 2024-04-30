@@ -7,6 +7,7 @@ import AppStatus from "../model/conversation/statusMessages";
 
 import { useMsal, useIsAuthenticated} from "@azure/msal-react";
 import { setRef } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 
 interface conversationHistoryStatus {
@@ -27,8 +28,8 @@ interface ConversationData {
 
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 
-function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boolean)=>void, appStatus : AppStatus, setAppStatus: (status: AppStatus) => void, setErrorMessage?: (error: string)=>void): ConversationData {
-
+function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boolean)=>void, setAppStatus: (status: AppStatus) => void, appStatus? : AppStatus,  setErrorMessage?: (error: string)=>void): ConversationData {
+  let navigate = useNavigate();
   const { inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
   const [userSession, setUserSession] = useState<string>();
@@ -51,14 +52,17 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
    * If there is an error, sets the app status to Error and sets the error message.
    */
   const fetchUser = async () => {
+
     setAppStatus(AppStatus.LoggingIn)
     priorStatus.current = AppStatus.LoggingIn;
     
-    // console.log(`fetching user from backend`)
+    console.log(`fetching user from backend`)
       try {
         const userData = await sendTokenToBackend({accounts, isAuthenticated, inProgress, instance});
         console.log(`fetched user from backend ${userData}`)
+        
         setUserSession(userData);
+        setAppStatus(AppStatus.Idle);
       } catch (error) {
         setAppStatus(AppStatus.Error)
         console.error(`Error fetching user token: ${error}`);
@@ -73,6 +77,8 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     try {
     const authToken = localStorage.getItem('authToken');
     authToken && setUserSession(authToken)
+    console.log(`fetched user from SAML ${authToken}, resetting app status to idle`)
+    setAppStatus(AppStatus.Idle);
     }
     catch (error) {
       setAppStatus(AppStatus.Error)
@@ -85,13 +91,19 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     setAppStatus(AppStatus.GettingQuestions)
       try {
         setSampleQuestions(
-          await fetchSampleQuestions({user: userSession})
+          (await fetchSampleQuestions({user: userSession})).messages
         );
       }
-      catch (error) {
+      catch (error: any) {
+        if (error.toString().includes('Unauthorized')) {
+          localStorage.setItem('authToken', '');
+          setUserSession(undefined);
+        }
+        else {
         setAppStatus(AppStatus.Error)
         setErrorMessage && setErrorMessage(`Error fetching sample questions: ${error}`);
       }
+    }
   };
 
   const getConversations = async () => {
@@ -107,10 +119,16 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
         result.data && setConversations(result.data);
         conversationRef.current = result.data;
         result.data && setConversationHistoryFlag({userHasHistory: true, isHistoryUpdated: true})
-      } catch (error) {
+      } catch (error: any) {
+        if (error.toString().includes('Unauthorized')) {
+          localStorage.setItem('authToken', '');
+          setUserSession(undefined);
+        }
+        else {
         setAppStatus(AppStatus.Error)
         setErrorMessage && setErrorMessage(`Error fetching conversation history: ${error}`);
     }
+  }
   };
 
   useEffect(() => {
@@ -131,18 +149,27 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
       !(appStatus === AppStatus.Error) && getConversations();
       !(appStatus === AppStatus.Error) && getSampleQuestions();
     }
+    if (userSession === undefined && localStorage.getItem('authToken') === '' && AUTH_TYPE === 'SAML') {
+      console.log(`user session cleared.  retry login`)
+      
+      navigate('/login');  
+    }
   }, [userSession, appStatus]);
 
   useEffect(() => {
+    
     if ((conversations || !conversationHistoryFlag.userHasHistory) && sampleQuestions) {
-      (appStatus === AppStatus.GettingConversations || appStatus === AppStatus.GettingQuestions) && setAppStatus(AppStatus.Idle);
+      if (appStatus === AppStatus.GettingConversations || appStatus === AppStatus.GettingQuestions) {
+        console.log(`conversations and sample questions updated.  Resetting app status to idle`)
+        setAppStatus(AppStatus.Idle)
+      }
     }
   }, [conversations, sampleQuestions, conversationHistoryFlag, appStatus])
 
   useEffect(() => {
     // retrieve token with user id from backend
     // .log(`fetching session data for Auth type: ${AUTH_TYPE}`)
-    if (AUTH_TYPE === 'SAML') {fetchUserSaml() }
+    if (AUTH_TYPE === 'SAML' && !userSession) {fetchUserSaml() }
     else
     if (isAuthenticated && inProgress === 'none' && instance) {
       console.log(`fetching user data for Auth type: ${AUTH_TYPE}`)
