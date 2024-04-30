@@ -10,7 +10,6 @@ from conversation.return_questions import get_questions
 from typing import List
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse, Response
-from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
 from mongoengine import connect, disconnect
@@ -298,7 +297,6 @@ async def get_conversations(
 
         if not conversation_topics:
             logger.info('no conversations found for user, returning 204')
-            message_content={'message':f"no conversations found for {session_data.user_id}"}
             return Response(
                 status_code=204
             )

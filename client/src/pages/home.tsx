@@ -6,7 +6,7 @@ import Conversation from "../model/conversation/conversations";
 import { MessageSimple } from "../model/messages/messages";
 import Footer from "../components/footer/footer";
 import Chat from "./chat";
-import { Box, Container, } from "@mui/material";
+import { Box, Container, setRef, } from "@mui/material";
 import { useMsal } from "@azure/msal-react";
 import useAccountData from "../hooks/userData";
 import AppBar from '@mui/material/AppBar';
@@ -25,16 +25,16 @@ import useGraphData from "../api/fetchOutcomes";
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 
 const MainPage: FC = () => {
+  
 
   const { accounts } = useMsal();
   const [messageHistory, setMessageHistory] = useState<MessageSimple[]>();
   const [isError, setIsError] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [refreshFlag, setRefreshFlag] = useState<Boolean>(false);
-  const [newConversationFlag, setNewConversationFlag] = useState<Boolean>(false);
   const [userQuestion, setUserQuestion] = useState<string>();
-  const [appStatus, setAppStatus] = useState<AppStatus>(AppStatus.Idle);
-  const statusRef = useRef<AppStatus>(appStatus);
+  const [appStatus, setAppStatus] = useState<AppStatus>();
+  const statusRef = useRef<AppStatus>();
   const conversationRef = useRef<Conversation>();
   const messageHistoryRef = useRef<MessageSimple[]>();
   const responseRef = useRef<string>();
@@ -42,7 +42,7 @@ const MainPage: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>(''); // Error message to display in case of an error
   const [outcomes, setOutcomes] = useState<Outcomes[]>();
   const currentAnswerRef = useRef<MessageSimple>();
-
+  // console.log(`reloading main page with app status ${appStatus} and auth type ${AUTH_TYPE}`)
 
   const getMessageHistory = async () => {
     if (userSession && selectedConversation && selectedConversation.id) {
@@ -51,6 +51,10 @@ const MainPage: FC = () => {
         if (result.type === 'messages') {
           setMessageHistory(result.data);
         } else if (result.type === 'info') {
+          if (result.error === 'Unauthorized') {
+            console.error(`Unauthorized access to conversation ${selectedConversation.id}`);
+            setRefreshFlag(true);
+          }
           console.info("no conversations created yet")
         }
       } catch (error) {
@@ -63,7 +67,7 @@ const MainPage: FC = () => {
   };
 
   const { userSession, sampleQuestions, conversations, conversationHistoryFlag } = useAccountData(
-    refreshFlag, setRefreshFlag, appStatus, setAppStatus, setErrorMessage)
+    refreshFlag, setRefreshFlag, setAppStatus, appStatus, setErrorMessage)
 
   const theme = useTheme()
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -80,6 +84,7 @@ const MainPage: FC = () => {
    * Resets the selected conversation state if the new chat button is clicked
    */
   const resetConversation = () => {
+    console.log(`resetting conversation on dialog click`)
     setRefreshFlag(false);
     setUserQuestion(undefined);
     setSelectedConversation(undefined);
@@ -119,8 +124,17 @@ const MainPage: FC = () => {
     }
   };
 
-  useQnAData(userQuestion, userSession, selectedConversation?.id, setSelectedConversation, updateHistory, setAppStatus, setNewConversationFlag);
-  const {risks, opportunities} = useGraphData(selectedConversation?.topic, userSession)
+  useQnAData(userQuestion, 
+    userSession, 
+    selectedConversation?.id, 
+    setSelectedConversation, 
+    updateHistory, 
+    setAppStatus, 
+    setIsError, 
+    setErrorMessage, 
+    setRefreshFlag);
+
+  const {risks, opportunities} = useGraphData( setErrorMessage, setIsError, selectedConversation?.topic, userSession)
   // this effect should only run if there is a change in the app status.  It does the following:
   // 1.  If the app status is generating chat response, it sets the api url to the appropriate value
   // 2.  If the app status is getting message history, it fetches the message history
@@ -133,7 +147,7 @@ const MainPage: FC = () => {
       console.log(`app status use effect triggered with ${appStatus} 
       and ref is ${statusRef.current} and user question is ${userQuestion} 
       and selected conversation is ${JSON.stringify(selectedConversation)} 
-      and new conversation flag is ${newConversationFlag}`)
+      and refresh flag is ${refreshFlag}`)
 
       statusRef.current = appStatus;
       
@@ -142,12 +156,6 @@ const MainPage: FC = () => {
       console.error(`Error received in UI: ${errorMessage}`);
     }
 
-    if (appStatus === AppStatus.Idle || appStatus !== AppStatus.Error) {
-      if (newConversationFlag) {
-        setNewConversationFlag(false)
-        setRefreshFlag(true);
-      }
-    }
     if (selectedConversation
       && userSession
       && appStatus === AppStatus.GettingMessageHistory) {
@@ -160,7 +168,10 @@ const MainPage: FC = () => {
 
   // reset status when questions load
   useEffect(() => {
-    if (sampleQuestions && appStatus === AppStatus.GettingQuestions) { setAppStatus(AppStatus.Idle) }
+    
+    if (sampleQuestions && appStatus === AppStatus.GettingQuestions) { 
+      console.log(`resetting app status on sample questions load`)
+      setAppStatus(AppStatus.Idle) }
   }, [sampleQuestions])
 
   // this effect sets the app status to get message history if the conversation changes and app status is currently idle (only runs when idle)
@@ -173,9 +184,25 @@ const MainPage: FC = () => {
     }
   }, [selectedConversation])
 
+
+// refresh login status if user session changes
+  useEffect(() => {
+    console.log(`error change detected with error: ${isError} and message: ${errorMessage}`)
+    if (isError && errorMessage!=="Unauthorized") {
+      setAppStatus(AppStatus.Error)
+    }
+    if (isError && errorMessage==="Unauthorized") {
+      console.error(`Unauthorized access to conversation ${selectedConversation?.id}`);
+      setRefreshFlag(true);
+      resetError();
+    }
+  },[isError, errorMessage])
+
   // this effect sets the app status to idle when the message history is updated (Idle is the default status when no other status is set, and indicates the app is ready to process new requests)
   useEffect(() => {
+    
     if (messageHistory && appStatus === AppStatus.GettingMessageHistory && messageHistory !== messageHistoryRef.current) {
+      console.log(`updating app status on message history change`)
       messageHistoryRef.current = messageHistory;
       setAppStatus(AppStatus.Idle)
     }
@@ -293,7 +320,7 @@ const MainPage: FC = () => {
           maxHeight={"100%"}
         >
           <Chat
-            appStatus={appStatus}
+            appStatus={appStatus? appStatus : AppStatus.Idle}
             isError={isError}
             sampleQuestions={sampleQuestions}
             sendChatClicked={handleUserQuestion}
