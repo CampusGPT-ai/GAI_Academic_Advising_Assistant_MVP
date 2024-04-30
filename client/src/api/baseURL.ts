@@ -12,7 +12,11 @@ export const BaseUrl = () => {
     }  else {
       if (ENV === 'production') {
         BASE_URL = `https://${APP_BASE}.azurewebsites.net`;
-      } else {
+      } else 
+      if (ENV === 'staging') {
+        BASE_URL = `https://${APP_BASE}-staging.azurewebsites.net`;
+      } else
+      if (ENV === 'development') {
         BASE_URL = `https://${APP_BASE}-development.azurewebsites.net`;
       }
     }
@@ -28,7 +32,11 @@ export const RedirectUrl = () => {
     } else {
       if (ENV === 'production') {
         BASE_URL = `https://${CLIENT_BASE}.azurewebsites.net`;
-      } else {
+      } else 
+      if (ENV === 'staging') {
+        BASE_URL = `https://${CLIENT_BASE}-staging.azurewebsites.net`;
+      } else
+      if (ENV === 'development') {
         BASE_URL = `https://${CLIENT_BASE}-development.azurewebsites.net`;
       }
     }

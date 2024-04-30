@@ -143,6 +143,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
 },[refreshFlag])
 
   useEffect(() => {
+    //console.log(`user session updated to ${userSession} with app status ${appStatus}`)
     if (userSession != undefined && sessionRef.current !== userSession) {
       console.log(`user session updated to ${userSession}.  Refreshing conversation and questions`)
       sessionRef.current = userSession;
@@ -172,8 +173,8 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     if (AUTH_TYPE === 'SAML' && !userSession) {fetchUserSaml() }
     else
     if (isAuthenticated && inProgress === 'none' && instance) {
-      console.log(`fetching user data for Auth type: ${AUTH_TYPE}`)
-    !userSession && appStatus === AppStatus.Idle && fetchUser();
+    //onsole.log(`fetching user data for Auth type: ${AUTH_TYPE}, user session: ${userSession}, app status: ${appStatus}`)
+    !userSession && (appStatus === AppStatus.Idle || !appStatus) && fetchUser();
     }
 
   }, [isAuthenticated, inProgress, AUTH_TYPE, userSession, appStatus]
