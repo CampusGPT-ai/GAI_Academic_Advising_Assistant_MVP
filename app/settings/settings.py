@@ -19,6 +19,8 @@ class Settings(BaseSettings):
      OPENAI_API_VERSION: str
      AZURE_OPENAI_ENDPOINT: str
      AZURE_OPENAI_API_KEY: str
+     OPENAI_API_KEY: str
+     OPENAI_DIRECT_MODEL: str
      GPT4_DEPLOYMENT_NAME: str
      GPT4_MODEL_NAME: str
      GPT35_DEPLOYMENT_NAME: str
