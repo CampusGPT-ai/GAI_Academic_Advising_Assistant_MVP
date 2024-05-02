@@ -53,7 +53,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
         options={"verify_signature": True, "verify_aud": True, "verify_iss": True}
         )
         
-        # logger.info("got token payload", str(payload))
+        logger.info("got token payload %s", payload)
         try:
             user = create_user_if_not_exist(payload)
             return user
@@ -66,9 +66,9 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
 def create_user_if_not_exist(payload):
     try:
         user_id: str = payload.get("sub")
-        first_name: str = payload.get("first_name")
+        first_name: str = payload.get("name")
         last_name: str = payload.get("last_name")
-        email: str = payload.get("email")
+        email: str = payload.get("preferred_username")
         created_at =datetime.utcnow
         updated_at = datetime.utcnow
         considerations = []

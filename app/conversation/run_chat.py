@@ -27,6 +27,10 @@ class QueryLLM:
         self.user_session = user_session
         self.user_id = user_session.user_id
 
+        self.openai_llm_client : AzureLLMClients = get_llm_client(api_type='openai',
+                                                                  api_key=settings.OPENAI_API_KEY,
+                                                                  model=settings.OPENAI_DIRECT_MODEL)
+
 
         self.azure_llm_client : AzureLLMClients = get_llm_client(api_type='azure',
                                                 api_version=settings.OPENAI_API_VERSION,
@@ -70,7 +74,8 @@ class QueryLLM:
             
     def run_llm(self, prompt, expected_json = []):
         try:
-            chat = self.azure_llm_client.chat(prompt, True)
+            #$chat = self.azure_llm_client.chat(prompt, True)
+            chat = self.openai_llm_client.chat(prompt, True)
             formatted_response = self.azure_llm_client._format_json(chat)
             final_out = self.azure_llm_client.validate_json(formatted_response, expected_json)
             return final_out
