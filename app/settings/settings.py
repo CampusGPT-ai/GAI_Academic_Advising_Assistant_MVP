@@ -38,6 +38,7 @@ class Settings(BaseSettings):
      SEARCH_CATALOG_NAME: str
      KB_FIELDS_SOURCEPAGE: str
      KB_FIELDS_CONTENT: str
+     KB_FIELDS_TEXT: str
      
      AZURE_STORAGE_ACCOUNT: str
      AZURE_STORAGE_ACCOUNT_CRED: str

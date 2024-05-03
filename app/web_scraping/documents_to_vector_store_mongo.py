@@ -31,7 +31,7 @@ OPENAI_MODEL = os.getenv("MODEL_NAME")
 EMBEDDING = os.getenv("EMBEDDING")
 SEARCH_ENDPOINT = os.getenv("SEARCH_ENDPOINT")
 SEARCH_API_KEY= os.getenv("SEARCH_API_KEY")
-SEARCH_INDEX_NAME=os.getenv("SEARCH_INDEX_NAME")
+SEARCH_INDEX_NAME=os.getenv("SEARCH_CATALOG_NAME")
 SYSTEM_TEXT = '''You are an academic advisor creating an FAQ from your university's website'''
 EMBEDDING_DEPLOYMENT = os.getenv("EMBEDDING")
 MAX_TOKEN_LENGTH = 6000
@@ -89,6 +89,7 @@ class VectorUploader():
                     continue
                 try:
                     doc_processed = self.json_to_index(doc)
+                    # when batch is greater than 100, upload to azure search and save to mongo.
                     if len(docs_to_upload) >= batch_size:
                         results = self.search_client.upload(docs_to_upload)
                         is_error = False
@@ -97,9 +98,17 @@ class VectorUploader():
                                 print(f"Failed to upload document: {result.key}")
                                 is_error = True
                         if not is_error: 
-                            #update list of processed docs
-                            processed_docs.extend(docs_to_upload) #make copy of search index offline
                             print(f"Document uploaded successfully: {len(docs_to_upload)}")
+                        
+                        # save processed documents to mongo db (faster if need to re-upload)
+                        processed_docs = self.index_to_doc(docs_to_upload)
+                        if processed_docs:
+                            for doc in processed_docs:
+                                doc.save()
+                            print("Documents saved to mongo: ", len(processed_docs))
+
+                        # reset batches for next iteration
+                        processed_docs = [] 
                         docs_to_upload = []
                     else:
                         docs_to_upload.append(doc_processed)
@@ -117,10 +126,6 @@ class VectorUploader():
         except Exception as e:
             print(f"exception logged for {str(e)}")
         finally:
-            processed_docs = self.index_to_doc(processed_docs)
-            if processed_docs:
-                for doc in processed_docs:
-                    doc.save() 
             disconnect()
     
     # convert list of json strings to mongo documents
