@@ -50,11 +50,13 @@ class AzureSearchService(VectorSearchService):
         result = self.azure_search_client.upload_documents(text)
         return result
     
-    def text_search(self, text):
+    def text_search(self, text, n=3):
         results = []
-        result = self.azure_search_client.search(text)
-        for res in result:
-            results.append(res["content"])
+        result = self.azure_search_client.search(
+            search_text=text,
+            top=n,
+            select=["content","source"])
+        results = self.dedup_results(result,"content")
         return results
     
     @staticmethod
@@ -106,6 +108,8 @@ class AzureSearchService(VectorSearchService):
         return results
 
 if __name__ == "__main__":
+    from settings.settings import Settings
+    settings = Settings()
     AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_API_KEY")
     OPENAI_API_KEY = os.getenv
     OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
@@ -126,14 +130,14 @@ if __name__ == "__main__":
                                 embedding_deployment=EMBEDDING_DEPLOYMENT)
 
     search_client = AzureSearchService(search_endpoint=SEARCH_ENDPOINT,
-                                       index_name=SEARCH_INDEX_NAME,
+                                       index_name=settings.SEARCH_CATALOG_NAME,
                                        llm_client=llm_client,
                                        search_api_key=SEARCH_API_KEY)
-    QUERY_TEXT = "what courses are required for a physics degree?"
+    QUERY_TEXT = "when is course ENC4290 offered and is it required for computer science majors?"
     VECTOR_FIELD ='content_vector'
-    VECTOR_FIELDS  = ['content_vector','questions_vector']
+    VECTOR_FIELDS  = ['content_vector']
     
     # lanchain cognitive search connector is incompatible with production version of azure search
     # langchain_result = search_client.doc_search(QUERY_TEXT)
-    azure_result = search_client.hybrid_search(QUERY_TEXT,VECTOR_FIELDS,1)
-    print(azure_result[:2])
+    keyword_result = search_client.search(QUERY_TEXT)
+    print(keyword_result)
