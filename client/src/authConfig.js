@@ -1,5 +1,6 @@
 import React from "react";
 import { RedirectUrl } from "./api/baseURL";
+import { redirect } from "react-router-dom";
 
 
 // console.log(`redirect url: ${RedirectUrl()}, tenant: ${process.env.REACT_APP_MSAL_TENANT}, client: ${process.env.REACT_APP_MSAL_CLIENT}`);
