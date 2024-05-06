@@ -3,32 +3,33 @@ import contextvars
 import uuid
 import time
 
+    
+from conversation.retrieve_messages import get_history_as_messages
+from conversation.retrieve_conversations import get_conversation, conversation_to_dict, get_all_conversations
+from conversation.return_questions import get_questions
 from typing import List
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse, Response
-from fastapi.encoders import jsonable_encoder
-
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
-from sse_starlette.sse import EventSourceResponse
 from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from conversation.user_conversation import UserConversation
-from conversation.retrieve_messages import get_message_history
-from azure.identity import DefaultAzureCredential
-from data.models import Conversation, UserSession
+from conversation.answer_user_question import QnAResponse
+from conversation.retrieve_messages import get_message_history,get_history_as_messages
+from data.models import UserSession
 from settings.settings import Settings
-
+from conversation.check_considerations import Considerations
 from azure.storage.blob.aio import BlobServiceClient
 from fastapi.middleware.cors import CORSMiddleware
 from app_auth import authorize_user
 from app_auth.authorize_user import get_session_from_session
-
-from user.get_user_info import UserInfo
-import logging, sys
-from conversation.retrieve_docs import SearchRetriever
-
+from threading import Thread
+from conversation.run_graph import GraphFinder
+import logging
+from conversation.update_conversation import update_conversation_history
+from data.models import ConversationSimple
+import asyncio
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -112,9 +113,11 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5000",
     "http://localhost:5001",
+    "http://127.0.0.1:3000",
     "localhost:3000",
     f"https://node{os.getenv('APP_NAME')}-development.azurewebsites.net",
     f"https://node{os.getenv('APP_NAME')}.azurewebsites.net",
+    f"https://node{os.getenv('APP_NAME')}-staging.azurewebsites.net",
 ]
 
 
@@ -163,67 +166,113 @@ async def add_code_version(request: Request, call_next):
     response = await call_next(request)
     response.headers["x-code-version"] = os.getenv("GIT_SHA", "unknown")
     return response
-
+    
 
 # all validations return 401 unauthorized if no user session.  {"detail":"Invalid or expired session"}
 @app.get("/users/{session_guid}/questions")
 async def get_sample_questions(
     session_data: UserSession = Depends(get_session_from_session),
 ):
-    user = UserInfo(session_data)
+    conversations = get_all_conversations(session_data)
     try:
-        retriever: SearchRetriever = SearchRetriever.with_default_settings()
-        data = retriever.generate_questions(user.get_user_info())
-        return JSONResponse(content={"data": data}, status_code=200)
+        
+        questions = get_questions(conversations,session_data)
+        logger.info(f'found questions from gpt: {questions}')
+        return JSONResponse(content={"data": questions}, status_code=200)
     except Exception as e:
         logger.error(
             f"failed to load sample questions with error {str(e)}",
         )
+        message_content = {"message": f"failed to load sample questions with error {str(e)}"}
         return JSONResponse(
-            content={"message": f"failed to load sample questions with error {str(e)}"},
+            content=message_content,
             status_code=404,
         )
 
 
-# regular chat - main API.  creates new conversation is conversation doesn't exist.
-@app.get("/users/{session_guid}/conversations/{conversation_id}/chat/{user_question}")
-async def chat(
+@app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
+async def chat_new(
     user_question,
     conversation_id,
     session_data: UserSession = Depends(get_session_from_session),
 ):
-    set_context_from_session_data(session_data)
     try:
-        logger.info(
-            f"got data from api call: {user_question}, {conversation_id}",
-        )
-        if conversation_id == "0":
-            logger.info(
-                "saving new conversation",
-            )
-            conversation = Conversation(user_id=session_data.user_id)
-            conversation.save()
-            logger.info(
-                f"got conversation information {conversation.id}",
-            )
-        else:
-            conversation = Conversation.objects(id=conversation_id).first()
-        if conversation is None:
-            raise Exception("unable to create conversation for user chat.")
+        conversation = get_conversation(conversation_id, session_data)
+        if conversation_id==0 or conversation_id=="0":
+            conversation_id = conversation.id
 
-        chain = UserConversation.with_default_settings(
-            session_data,
-            conversation,
-            model_num="GPT4",
-        )
-        generator = chain.send_message(user_question, conversation)
-        return EventSourceResponse(generator, media_type="text/event-stream")
+        history = get_history_as_messages(conversation_id)
+        graph = GraphFinder(session_data, user_question)
+        topic = graph.get_topic_from_question()
+        logger.info("topic is " + topic)
+        all_considerations = graph.get_relationships('Consideration',topic)
+        
+        c = Considerations(session_data, user_question)
+
+        try:
+            await c.run_all_async(history, all_considerations, conversation)
+        except Exception as e:
+            logger.error(
+                f"failed to run_all_async with error {str(e)}",
+            )
+            raise e
+
+        responder = QnAResponse(user_question, session_data, conversation)
+
+        if 'course' in topic.lower() or 'graduation requirements' in topic.lower() or 'class' in user_question:
+            responder.retriever.search_client.index_name = app.state.settings.SEARCH_CATALOG_NAME
+   
+        missing_considerations = c.match_profile_to_graph(all_considerations)
+
+        logger.info(f"missing_considerations: {missing_considerations}")
+        kickback_response = await responder.kickback_response_async(missing_considerations, history)
+        rag_response = await responder.rag_response_async(history)
+
+        final_response = {
+            "conversation_reference": conversation_to_dict(conversation),
+            "kickback_response": kickback_response,
+            "rag_response": rag_response
+        }
+        try:
+            update_conversation_history(final_response, conversation, session_data, user_question)
+        except Exception as e:
+            logger.error(
+                f"failed to update_conversation_history with error {str(e)}",
+            )
+            raise e
+
+        return JSONResponse(content=final_response, status_code=200)
     except Exception as e:
         logger.error(
-            f"Conversation not found with {str(e)}",
+            f"failed to chat_new with error {str(e)}",
         )
         return JSONResponse(
-            content={"message": f"Conversation not found with {str(e)}"},
+            content={"message": f"failed to return chat response with error {str(e)}"},
+            status_code=404,
+        )
+
+@app.get("/users/{session_guid}/outcomes/{user_question}")
+async def get_outcomes(
+    user_question,
+    session_data: UserSession = Depends(get_session_from_session),
+):
+    finder = GraphFinder(session_data, user_question)
+    try:
+        topic = finder.get_topic_from_question()
+        risks, opportunities = finder.get_relationships('Outcome',topic)
+
+        final_response = {
+            "risks": risks,
+            "opportunities": opportunities
+        }
+        return JSONResponse(content=final_response, status_code=200)
+    except Exception as e:
+        logger.error(
+            f"failed to get outcomes with error {str(e)}",
+        )
+        message_content = {"message": f"failed to get outcomes with error {str(e)}"}
+        return JSONResponse(
+            content=message_content,
             status_code=404,
         )
 
@@ -242,32 +291,19 @@ async def get_conversations(
             logger.info(
                 f"finding conversations for user: {session_data.user_id}",
             )
-            conversations: List[Conversation] = Conversation.objects(
-                user_id=session_data.user_id
+            conversation_topics = get_all_conversations(session_data)
+
+        if not conversation_topics:
+            logger.info('no conversations found for user, returning 204')
+            return Response(
+                status_code=204
             )
-        if not conversations:
-            logger.info("conversation not found in db")
-            return Response(status_code=204)
         else:
-            conversation_topics = []
-            if conversations:
-                for c in conversations:
-                    c_dict = {
-                        "topic": c.topic,
-                        "id": str(c.id),
-                        "start_time": (
-                            c.start_time.isoformat() if c.start_time else None
-                        ),
-                        "end_time": c.end_time.isoformat() if c.end_time else None,
-                    }
-                    conversation_topics.append(c_dict)
-            else:
-                raise
             logger.info(
                 f"got conversations from documents {conversation_topics}",
             )
             response = JSONResponse(
-                jsonable_encoder(conversation_topics), status_code=200
+                content=conversation_topics, status_code=200
             )
             logger.info(
                 f"response serialized to json: ${response}",

@@ -5,9 +5,9 @@ import messageSample from "../../model/messages/messageSample.json";
 import ParentMessage, {Citation, MessageSimple} from "../../model/messages/messages";
 import ChatInput from "./chatElements/chatInput";
 import ChatMessages from "./chatElements/chatMessageContainer";
-import ChatSampleQuestion from "./chatElements/chatMessageElements/chatSampleQuestion";
+import ChatSampleQuestion from "./chatElements/chatSampleQuestion";
 import AppStatus from "../../model/conversation/statusMessages";
-
+import { Outcomes } from "../../api/fetchOutcomes";
 /**
  * this component is the active chat component that is displayed when the user is in a chat.
  * it renders chat messages based on conversation history, and sends new questions back to the post request, 
@@ -32,24 +32,28 @@ interface ChatActiveProps {
   citations?: Citation[];
   messageHistory?: MessageSimple[];  //optional history on selected conversation
   appStatus: AppStatus;
+  errMessage?: string;
+  isError?: boolean;
+  notifications?: string;
   sampleQuestions?: Array<string>;
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
+  opportunities?: Outcomes[];
 }[]
 
 const ChatActive: FC<ChatActiveProps> = ({
-  chatResponse,
-  follow_up_questions,
-  citations,
   appStatus,
+  errMessage,
   sampleQuestions,
   messageHistory,
+  isError,
   sendChatClicked,
   currentAnswerRef,
-
+  opportunities,
 }) => {
   
   const [userQuestion, setUserQuestion] = useState('');
+  const questionRef = React.useRef(userQuestion);
   const theme = useTheme()
   //console.log(`user questions is set to ${userQuestion} with ${appStatus}`);
   /**
@@ -57,6 +61,7 @@ const ChatActive: FC<ChatActiveProps> = ({
    * @param inputText - The text to set as the message state.
    */
   const handleSendClick = (inputText: string) => {
+    console.log(`sending chat from send clicked with ${inputText}`);
     setUserQuestion(inputText);
   };
 
@@ -65,10 +70,12 @@ const ChatActive: FC<ChatActiveProps> = ({
    * @param questionText - The text of the question to set as the message.
    */
   const handleQuestionClick = (questionText: string) => {
+    console.log(`sample question clicked: ${questionText}`);
     setUserQuestion(questionText)
   };
 
   const handleRetry = () => {
+    console.log(`retrying chat due to error`)
     userQuestion != '' && userQuestion && sendChatClicked(userQuestion)
   }
 
@@ -76,13 +83,17 @@ const ChatActive: FC<ChatActiveProps> = ({
    * activates the call back function when the message state is changed.
    */
   useEffect(() => {
-    if (userQuestion.trim() !== '' && userQuestion !== undefined) {
-      sendChatClicked(userQuestion);
+    if (questionRef.current !== userQuestion) {
+      console.log(`user question changed to ${userQuestion}`);
+      questionRef.current = userQuestion;
+    
+      if (userQuestion.trim() !== '' && userQuestion !== undefined) {
+        appStatus === AppStatus.Idle && sendChatClicked(userQuestion);
+      }
     }
-  },[userQuestion])
+  },[userQuestion, appStatus])
 
-
-  //console.log(`passing loading and error states.  loading: ${isLoading} error: ${isError}`)
+  // console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
   return (
     
     <Box sx={{alignItems: "center", 
@@ -95,18 +106,18 @@ const ChatActive: FC<ChatActiveProps> = ({
     borderRadius: 1, 
     justifyContent: "space-between"
     }}>
-      {((messageHistory && messageHistory.length>0) || appStatus === AppStatus.GeneratingChatResponse ) ? (
+      {(messageHistory && messageHistory.length>0) ? (
         <>
           <ChatMessages
             userQuestion={userQuestion}
-            chatResponse={chatResponse}
-            follow_up_questions={follow_up_questions}
-            citations={citations}
             messageHistory={messageHistory}
             appStatus={appStatus}
-            onFollowupClicked={handleQuestionClick}
+            errMessage={errMessage}
             onRetry={handleRetry}
+            isError={isError}
             currentAnswerRef={currentAnswerRef}
+            opportunities={opportunities}
+            onFollowUpClicked={handleQuestionClick}
           />
         </>
       ) : (
@@ -119,7 +130,7 @@ const ChatActive: FC<ChatActiveProps> = ({
                 <ChatSampleQuestion onSampleQuestionsClicked={handleQuestionClick} text={question} appStatus={appStatus}/>
             </Grid>
             ))}
-            {!sampleQuestions && appStatus===AppStatus.InitializingData &&
+            {!sampleQuestions &&
             <Box width={'100%'} display={"flex"} justifyContent={"center"}>
               <CircularProgress
               size={20}

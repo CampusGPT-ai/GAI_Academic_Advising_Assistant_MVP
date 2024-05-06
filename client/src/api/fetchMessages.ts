@@ -9,14 +9,12 @@ interface fetchMessagesParams {
   conversationId: string;
 }
 
-type FetchMessageHistoryResult = {
-  type: 'messages';
-  data: MessageSimple[];
-} | {
-  type: 'info';
-  message: string;
-};
-
+interface FetchMessageHistoryResult {
+  type: 'info' | 'messages';
+  message?: string;
+  data?: MessageSimple[];
+  error?: string;
+}
 
 
 const fetchMessageHistory = async ({
@@ -48,11 +46,22 @@ const fetchMessageHistory = async ({
       //console.log(`returning list of parent messages ${JSON.stringify(chats)}`)
       return { type: 'messages', data: chats };
 
-  } catch (error) {
-    console.error(error);
-    throw error;
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      console.error('API error:', error.response?.status, error.response?.data);
+      if (error.response?.status === 401) {
+        return { type: 'info', message: 'Unauthorized access', error: 'Unauthorized' }; // Specific handling for 401 error
+      } else {
+        // Optional: Handle other specific status codes if necessary
+        console.error('Unhandled API error', error.response?.status);
+        return { type: 'info', message: 'Error fetching messages', error: 'API Error' };
+      }
+    } else {
+      // Non-Axios error
+      console.error('Error:', error.message);
+      return { type: 'info', message: 'Failed to fetch messages', error: error.message };
+    }
   }
-
 };
 
 export default fetchMessageHistory;

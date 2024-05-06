@@ -10,12 +10,22 @@ import ChatUserChat from "./chatUserChat";
 interface ChatHistoryProps {
   /** An array of messages to display in the chat. */
   messages: MessageSimple[];
-  onFollowupClicked: (message: string) => void;
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
-const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollowupClicked }) => {
+
+const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ 
+  messages,
+  isLoading,
+  isError,
+  onRetry
+}) => {
+  //console.log(`chat message history set to: ${JSON.stringify(messages)}`)
+
   return (
-    <div>
+    <Box>
       {messages.map((m, index) => {
         return (
           <React.Fragment key={index}>
@@ -23,19 +33,16 @@ const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollo
             {m.role === "user" && (
               <>
                 <ChatUserChat text={m.message} />
-                <Box sx={{ height: "50px" }} />
+                <Box sx={{ height: "20px" }} />
               </>
             )
             }
 
 
-            {m.role === "assistant" && (
+            {m.role === "system" && (
               <>
-                <ChatBotChat message={m.message}
-                  follow_up_questions={m.followups}
-                  citations={m.citations}
-                  onFollowupClicked={onFollowupClicked} />
-                <Box sx={{ height: "50px" }} />
+                <ChatBotChat message={m.message} isLoading={isLoading} onRetry={onRetry} isError={isError} />
+                <Box sx={{ height: "20px" }} />
               </>
             )
             }
@@ -43,7 +50,8 @@ const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({ messages, onFollo
           </React.Fragment>
         )
       })}
-    </div>)
+    </Box>
+  )
 })
 
 export default ChatMessageHistory;

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
      OPENAI_API_VERSION: str
      AZURE_OPENAI_ENDPOINT: str
      AZURE_OPENAI_API_KEY: str
+     OPENAI_API_KEY: str
+     OPENAI_DIRECT_MODEL: str
      GPT4_DEPLOYMENT_NAME: str
      GPT4_MODEL_NAME: str
      GPT35_DEPLOYMENT_NAME: str
@@ -33,8 +35,10 @@ class Settings(BaseSettings):
      SEARCH_ENDPOINT: str
      SEARCH_API_KEY: str
      SEARCH_INDEX_NAME: str
+     SEARCH_CATALOG_NAME: str
      KB_FIELDS_SOURCEPAGE: str
      KB_FIELDS_CONTENT: str
+     KB_FIELDS_TEXT: str
      
      AZURE_STORAGE_ACCOUNT: str
      AZURE_STORAGE_ACCOUNT_CRED: str
@@ -45,3 +49,17 @@ class Settings(BaseSettings):
      AZURE_CLIENT_ID: str
      AZURE_TENANT_ID: str
      AZURE_CLIENT_SECRET: str
+
+     NON_SESSION_ID: str
+
+     N4J_URI: str
+     N4J_USERNAME: str
+     N4J_PASSWORD: str
+
+     UNIVERSITY_NAME: str
+     
+     SAML_METADATA_URL: str
+     SAML_CERT: str
+     
+     BASE_URL: str
+     CLIENT_BASE_URL: str

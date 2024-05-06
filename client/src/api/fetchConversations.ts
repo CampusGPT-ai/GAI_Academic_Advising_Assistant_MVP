@@ -9,6 +9,7 @@ interface fetchConversationsParams {
 interface ConversationsApiResponse {
   message: string;
   data?: Conversation[];
+  error?: string;
 }
 
 const fetchConversations = async ({
@@ -16,14 +17,15 @@ const fetchConversations = async ({
 }: fetchConversationsParams): Promise<ConversationsApiResponse> => {
   const apiUrl = `${BaseUrl()}/users/${user}/conversations`;
 
-  console.log("pinging for conversations API: ",apiUrl)
+  // console.log("pinging for conversations API: ",apiUrl)
 
   try {
     const response = await axios.get(apiUrl, {});
 
     if (response.status === 204)
     {
-      return {message: 'info'}
+      console.log(`no history found for user ${user}`)
+      return {message: 'no history found'}
     }
     
     if (response.data && Array.isArray(response.data)) {
@@ -39,10 +41,20 @@ const fetchConversations = async ({
       console.error('Unexpected response format:', response);
       throw new Error('Unexpected response format');
     }
-  } catch (error) {
-    console.error(error);
-    throw error;
+  } catch (error: any) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('API error:', error.response.status, error.response.data);
+      if (error.response.status === 401) {
+        throw new Error('Unauthorized'); // Specific handling for 401 error
+      } else {
+        // Generic error handling
+        throw new Error('Failed to fetch conversations');
+      }
+    } else {
+      // Handling non-Axios errors
+      console.error('Unexpected Error in response');
+      throw new Error('An unexplained error occurred');
+    }
   }
 };
-
 export default fetchConversations;

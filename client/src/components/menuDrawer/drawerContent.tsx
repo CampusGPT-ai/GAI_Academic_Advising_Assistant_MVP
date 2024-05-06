@@ -12,11 +12,14 @@ import Conversation from '../../model/conversation/conversations';
 import conversationSample from '../../model/conversation/conversationSample.json';
 import QuestionAnswerOutlinedIcon from "@mui/icons-material/QuestionAnswerOutlined";
 import HistoryIcon from '@mui/icons-material/History';
+import Person2Icon from '@mui/icons-material/Person2';
 //for default props
 const jsonString = JSON.stringify(conversationSample);
 const sampleMessages = JSON.parse(jsonString) as Conversation[];
 
 const drawerWidth = 240;
+
+const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
 
 interface Props {
   conversationList?: Conversation[];
@@ -38,7 +41,7 @@ const DrawerContent: FC<Props> = ({
 * Handles the selection of a conversation and updates the state accordingly.
 * @param conversation - The conversation object that was selected.
 */
-
+  //console.log(`conversationList is ${conversationList} and conversationFlag is ${conversationFlag}`)
 
   return (
     <Box flexGrow="1" sx={{overflowY: "auto"}}>
@@ -53,16 +56,26 @@ const DrawerContent: FC<Props> = ({
             <ListItemText disableTypography primary=
               {<Typography variant="h6" style={{ color: '#000' }}>New Chat</Typography>} />
           </ListItemButton>
+          {AUTH_TYPE!=='NONE' && 
+           <ListItemButton component="li" role="listitem" onClick={() => resetConversation()}>
+
+            <ListItemIcon >
+              <Person2Icon color="primary" fontSize="medium" />
+              </ListItemIcon>
+              <ListItemText disableTypography primary=
+                {<Typography variant="h6" style={{ color: '#000' }}>Your Profile</Typography>} />
+          </ListItemButton>}
 
 
-        <ListItem>
+        {AUTH_TYPE!=='NONE' && <ListItem>
           <ListItemIcon >
             <HistoryIcon color="primary" fontSize="medium" />
           </ListItemIcon>
           <ListItemText disableTypography primary=
             {<Typography variant="h6" style={{ color: '#000' }}>Chat History</Typography>} />
-        </ListItem>
-        { conversationList && conversationList.map((conversation, index) => (
+        </ListItem>}
+
+        { AUTH_TYPE!=='NONE' && conversationList && [...conversationList].reverse().map((conversation, index) => (
           <ListItem key={index} disablePadding>
             <ListItemButton role="listitem" onClick={() => handleSelectConversation(conversation)}>
 
@@ -72,13 +85,15 @@ const DrawerContent: FC<Props> = ({
           </ListItem>
         ))}
       </List>
-      {!conversationList && conversationFlag && <Box m={2}><CircularProgress
+      {AUTH_TYPE!=='NONE' && !conversationList && conversationFlag && <Box m={2}><CircularProgress
             size={20}
             thickness={5}
             style={{ marginLeft: 10 }}
             aria-label="loading conversation"
           /> </Box>}
-      {!conversationFlag && <Box m={2}>You haven't started any conversations yet.  Ask a question to begin!</Box>}
+      {AUTH_TYPE!=='NONE' && !conversationFlag && <Box m={2}>You haven't started any conversations yet.  Ask a question to begin!</Box>}
+        
+
     </Box>
   );
 }

@@ -1,7 +1,7 @@
 import { Warning } from "@mui/icons-material";
 import { Box, Button, Grid, Typography } from "@mui/material";
 import React, { FC } from "react";
-import "../../../assets/styles.css";
+import "../../../../../../assets/styles.css";
 
 
 
