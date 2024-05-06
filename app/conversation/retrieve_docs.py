@@ -23,6 +23,11 @@ class SearchRetriever:
         output = self.transpose_dict(results)
         return output
     
+    def retrieve_keyword_content(self, query: str, n=3) -> list:
+        results = self.search_client.text_search(query, n)
+        output = self.transpose_dict(results)
+        return output
+    
     @staticmethod
     def parse_questions(string):
           questions =  re.findall(r'Question: (.*?)\n', string)
@@ -59,29 +64,35 @@ class SearchRetriever:
         result : ChatCompletion = self.azure_llm.chat(default_messages)
         return result.choices[0].message.content
     
-    def refine_questions(self, user_info, input):
-        prompt = get_questions_prompt(user_info, input)
+    def refine_questions(self, user_info):
+        prompt = get_questions_prompt(user_info)
         default_messages = [
             Message(role='system', content=prompt),
             ]
-        result : ChatCompletion = self.azure_llm.chat(default_messages)
-        result_split = self.split_questions(result.choices[0].message.content)
-        return result_split
+        result : ChatCompletion = self.azure_llm.chat(default_messages, True)
+        #  logger.info(f"Refine questions result: {result}")
+        result = self.azure_llm._format_json(result)
+
+        result = self.azure_llm.validate_json(result, ['questions'])
+
+        return result
     
     def generate_questions(self, user_info):
          #search_string = self.get_search_string(user_info)
-         results = self.retrieve_content(user_info, n=10)
-         result = self.refine_questions(user_info, results['questions'])
+         result = self.refine_questions(user_info)
+         logger.info(f"Refined questions: {result}")
          return result
     
     def generate_content_and_questions(self, query, user_info):
          search_string = self.get_keyword_string(query, user_info)
-         content = self.retrieve_content(search_string, n=10)
-         refined_qs = self.refine_questions(user_info, content['followups'])
-         return content, refined_qs
+         print('generated search string for keyword search: ', search_string)
+         vector_content = self.retrieve_content(search_string, n=10)
+
+         refined_qs = self.refine_questions(user_info, vector_content['followups'])
+         return vector_content, refined_qs
     
     @classmethod           
-    def with_default_settings(cls, model_num='GPT35'):
+    def with_default_settings(cls, index_name=settings.SEARCH_INDEX_NAME, model_num='GPT35'):
         from cloud_services.llm_services import get_llm_client
         from cloud_services.azure_cog_service import AzureSearchService
         if model_num=='GPT35':
@@ -102,7 +113,7 @@ class SearchRetriever:
         return cls(
             llm_client=azure_llm,
             search_client=AzureSearchService(settings.SEARCH_ENDPOINT,
-                                                settings.SEARCH_INDEX_NAME,
+                                                index_name,
                                                 azure_llm,
                                                 settings.SEARCH_API_KEY),
         )
@@ -110,13 +121,30 @@ class SearchRetriever:
     
 if __name__ == "__main__":
     retriever = SearchRetriever.with_default_settings()
-    retriever4= SearchRetriever.with_default_settings()
+    retriever_catalog = SearchRetriever.with_default_settings(index_name=settings.SEARCH_CATALOG_NAME)
     from pathlib import Path
+    from mongoengine import connect
+    from data.models import UserSession
 
-    file_path = Path('app/data/test_user.json')
-    with open(file_path, 'r') as f:
-        data = json.load(f)
+    USER_QUESTION = 'when is course ENC4290 offered and is it required for computer science majors?'
+    relative_path = Path('./app/data/mock_user_session.json')
+    with relative_path.open(mode='r') as file:
+        mock_user_session : UserSession = UserSession(**json.load(file))
 
-    user_info = json.dumps(data)
-    logger.info(retriever.generate_content_and_questions("what classes do I need to graduate?", user_info))
-    logger.info(retriever.generate_questions(user_info))
+    db_name = os.getenv("MONGO_DB")
+    db_conn = os.getenv("MONGO_CONN_STR")
+    _mongo_conn = connect(db=db_name, host=db_conn)
+
+    from user.get_user_info import UserInfo
+    user_info = json.dumps(UserInfo(mock_user_session.user_id).user_profile.considerations)
+    keyword_string = retriever_catalog.get_keyword_string(USER_QUESTION, user_info)
+    #print("KEYWORD STRING:", keyword_string)
+    #vector_result = retriever_catalog.retrieve_content(USER_QUESTION, n=3)
+    #print("NONKEYWORD VECTOR SEARCH:", vector_result.get("content"))
+    #vector_keyword_result = retriever_catalog.retrieve_content(keyword_string, n=3)
+    #print("KEYWORD VECTOR SEARCH:", vector_keyword_result.get("content"))
+    keyword_search = retriever_catalog.retrieve_keyword_content(USER_QUESTION)
+    print("TEXT SEARCH:", keyword_search)
+    ##keyword_keyword_search = retriever_catalog.retrieve_keyword_content(keyword_string)
+    #print("TEXT KEYWORD SEARCH:", keyword_keyword_search)
+

@@ -1,39 +1,45 @@
-// src/App.js
 import React from 'react';
-import { ThemeProvider } from '@mui/material/styles'; // Import ThemeProvider and createTheme
-import ProtectedRoute from './routeAuth';
+import { ThemeProvider } from '@mui/material/styles';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { lightTheme } from './assets/theme';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
-import MainPage from './pages/home.tsx';
+import MainPage from './pages/home.tsx'; // Make sure this is the correct import
+import MainPageGraph from './pages/home'; // Verify this too
+import useSamlAuth from './hooks/useSamlAuth'; // Assuming this hook handles authentication logic
+import ProtectedRoute, { SAMLProtectedRoute } from './routeAuth'; // Verify these imports
+import LoginPage from './pages/login';
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { MsalProvider } from '@azure/msal-react';
-import { msalConfig } from './authConfig';
-import { PublicClientApplication } from '@azure/msal-browser';
+const authType = process.env.REACT_APP_AUTH_TYPE;
+console.log(`auth type =`, authType);
 
-const msalInstance = new PublicClientApplication(msalConfig);
+function App() {
+  
 
-console.log(`got msal config for url: ${msalConfig.auth.redirectUri}`)
-
-//<Navigate to="/index/chat" />
-//<Route path="/index/*" element={<MainPage />} />
-// add back <protected route>
-const App = () => (
-<MsalProvider instance={msalInstance}>
+  return (
     <ThemeProvider theme={lightTheme}>
-        <Router>
-          <Routes>
-            <Route path="*" element={
+      <Router>
+        <Routes>
+          <Route path="login" element={<LoginPage />} />
+          <Route path="*" element={
+            authType === 'SAML' ? (
+              <SAMLProtectedRoute>
+                <MainPage />
+              </SAMLProtectedRoute>
+            ) : authType === 'MSAL' ? (
               <ProtectedRoute>
-              <MainPage /></ProtectedRoute>} />
-          </Routes>
-        </Router>
+                <MainPage />
+              </ProtectedRoute>
+            ) : (
+              <MainPage />
+            )
+          } />
+        </Routes>
+      </Router>
     </ThemeProvider>
-</MsalProvider>
-);
+  );
+}
 
 export default App;
-

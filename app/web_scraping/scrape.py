@@ -9,9 +9,11 @@ from datetime import datetime
 from queue import Queue
 from unidecode import unidecode
 
-DOCUMENT_DIRECTORY = 'C:\\repos\\isupportu-\\docs2'
-VISITED_LOG = 'C:\\repos\\isupportu-\\docs2\\logs\\visited.txt'
-REJECTED_LOG = 'C:\\repos\\isupportu-\\docs2\\logs\\rejected.txt'
+DOCUMENT_DIRECTORY = '/Users/marynelson/docs/ucf_catalog'
+VISITED_LOG = '/Users/marynelson/docs/ucf_catalog/logs/visited.txt'
+REJECTED_LOG = '/Users/marynelson/docs/ucf_catalog/logs/rejected.txt'
+SELECTOR = '.style__navListItem___20sM3'
+MAIN_PAGE = '#kuali-catalog-main' 
 
 class Crawler():
     def __init__(
@@ -32,6 +34,12 @@ class Crawler():
 
         # initialize list to last visited if it exists
         self.visited = self.read_visited_urls()
+
+    def read_all_links(self):
+        with open('all_links.txt', 'r') as file:
+            for line in file:
+                self.links.put(line.strip())
+
         
     def read_visited_urls(self):
         visited = set()
@@ -65,6 +73,17 @@ class Crawler():
         if len(domain_parts) >= 2:
             return '.'.join(domain_parts[-2:])
         return ''
+    
+        
+    async def fetch_selector(self, selector, page):
+        selectors = await page.query_selector_all(selector)
+        return selectors
+
+    async def expand_menus(self, selectors, page):
+        for selector in selectors:
+            await selector.click()
+            asyncio.sleep(1)
+            self.links.put(page.url)
  
     async def fetch_content_playwright(self, url):
         metadata = {"source": url}
@@ -76,11 +95,23 @@ class Crawler():
                 await page.set_viewport_size({"width": 1280, "height": 720}) #avoid hidden content with responsive design
                 
                 await page.goto(url, wait_until="domcontentloaded", timeout=5000) 
+
+                main_page = await page.wait_for_selector(MAIN_PAGE)
+                main_page = await page.query_selector_all(MAIN_PAGE)
+                #if main_page:
+                #    for elements in main_page:
+                #        html_content = await elements.inner_html()
+                
                 content = await page.content()
 
                 metadata["last_updated"] = datetime.now().isoformat()
                 metadata["title"] = await page.title()
                 meta_description = await page.query_selector('meta[name="description"]')
+
+                #selectors_list = await self.fetch_selector(SELECTOR, page)
+
+                #page = await self.expand_menus(selectors_list, page)   
+
                 if meta_description:
                     metadata["description"] = await meta_description.get_attribute('content')
                         
@@ -106,6 +137,7 @@ class Crawler():
         except requests.RequestException as e:
             print(f"Error fetching content with Requests: {e}")
             return ""
+    
 
     async def filter_links(self, links, file_types, domain_sld_tld, same_domain):
         """
@@ -178,44 +210,6 @@ class Crawler():
                 
         return filtered_links, content, metadata
 
-    async def crawl(self, file_types=None, same_domain=True):
-        """
-        Start crawling from the given URL. Main method for class. 
-
-        Args:
-            file_types (list, optional): List of file types to filter the crawled URLs. Defaults to None.
-            same_domain (bool, optional): Flag to indicate whether to crawl only within the same domain. Defaults to True.
-        """
-        already_scraped = self.read_scraped_files()
-        
-        try:    
-            while not self.links.empty():
-                current_url = self.links.get()
-                filename = f"{self.url_to_filename(current_url)}.json"
-                
-                if current_url in self.visited or filename in already_scraped:
-                    print("skipping file for ", filename)
-                    if self.links.qsize()!=0: 
-                        continue
-                
-                self.visited.add(current_url)
-                
-                domain_sld_tld = self.extract_sld_tld(current_url)
-                urls, content, metadata = await self.crawl_single_page(current_url, domain_sld_tld, same_domain, file_types)
-                content = self.extract_text_from_html(content)
-                content = self.remove_extra_line_breaks(content)
-                content =  unidecode(content)
-                content = content.replace('\n', ' ').replace('\t',' ').replace('\'',' ').replace('\"',' ')
-                self.save_to_file(current_url, content, metadata)
-                
-                for url in urls:
-                    if url not in self.visited:
-                        self.links.put(url)
-                self.save_visited_urls()
-        except KeyboardInterrupt:  
-            print("program interrupted, saving urls")  
-            self.save_visited_urls()
-
     
     def remove_extra_line_breaks(self, markdown_content: str) -> str:
         """
@@ -279,9 +273,49 @@ class Crawler():
 
         return filename
 
+    async def crawl(self, file_types=None, same_domain=True):
+        """
+        Start crawling from the given URL. Main method for class. 
+
+        Args:
+            file_types (list, optional): List of file types to filter the crawled URLs. Defaults to None.
+            same_domain (bool, optional): Flag to indicate whether to crawl only within the same domain. Defaults to True.
+        """
+        already_scraped = self.read_scraped_files()
+        self.read_all_links()
+        
+        try:    
+            while not self.links.empty():
+                current_url = self.links.get()
+                filename = f"{self.url_to_filename(current_url)}.json"
+                
+                if current_url in self.visited or filename in already_scraped:
+                    print("skipping file for ", filename)
+                    if self.links.qsize()!=0: 
+                        continue
+                
+                self.visited.add(current_url)
+                
+                domain_sld_tld = self.extract_sld_tld(current_url)
+                urls, content, metadata = await self.crawl_single_page(current_url, domain_sld_tld, same_domain, file_types)
+
+                content = self.extract_text_from_html(content)
+                content = self.remove_extra_line_breaks(content)
+                content =  unidecode(content)
+                content = content.replace('\n', ' ').replace('\t',' ').replace('\'',' ').replace('\"',' ')
+                self.save_to_file(current_url, content, metadata)
+                
+               # for url in urls:
+                 #   if url not in self.visited:
+                 #       self.links.put(url)
+                self.save_visited_urls()
+        except KeyboardInterrupt:  
+            print("program interrupted, saving urls")  
+            self.save_visited_urls()
+
 # Example usage:
 if __name__ == '__main__':
-    url = '''https://www.ucf.edu/degree/physics-bs/#content'''
+    url = '''https://www.ucf.edu/catalog/undergraduate/'''
     crawler = Crawler(starting_url=url, directory=DOCUMENT_DIRECTORY, visited_log=VISITED_LOG)
     asyncio.run(crawler.crawl())
    

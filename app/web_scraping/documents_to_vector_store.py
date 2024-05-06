@@ -3,21 +3,21 @@ import os, time, threading
 from dotenv import load_dotenv
 import openai
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from web_scraping.file_tracker import FileLogger
-import cloud_services.llm_services as llm
-from cloud_services.azure_cog_service import AzureSearchService
+from file_tracker import FileLogger
+import llm_services as llm
+from azure_cog_service import AzureSearchService
 from datetime import datetime
 import pytz
 from azure.storage.blob.aio import BlobServiceClient
-from web_scraping.file_utilities import remove_duplicate_passages
+from file_utilities import remove_duplicate_passages
 import copy
-from joblib import load
+
 load_dotenv()
 
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
-OPENAI_ENDPOINT= os.getenv("OPENAI_ENDPOINT")
+OPENAI_ENDPOINT= os.getenv("AZURE_ENDPOINT")
 OPENAI_DEPLOYMENT = os.getenv("DEPLOYMENT_NAME")
 OPENAI_MODEL = os.getenv("MODEL_NAME")
 EMBEDDING = os.getenv("EMBEDDING")
@@ -48,19 +48,15 @@ class VectorUploader(FileLogger):
                                                 SEARCH_INDEX_NAME,
                                                 self.azure_llm,
                                                 SEARCH_API_KEY)
-        self.tokenizer = self.create_simple_tokenizer()
-        
-    def create_simple_tokenizer(self):
-        def simple_tokenizer(text):
-            # Split the text into tokens based on spaces
-            tokens = text.split()
-            return tokens
-        
-        return simple_tokenizer
+
+    @staticmethod   
+    def simple_tokenizer(text):
+        # Split the text into tokens based on spaces
+        tokens = text.split()
+        return tokens
     
     def split_texts(self, doc):
-        tokenizer = self.tokenizer
-        tokens = tokenizer(doc["page_content"])
+        tokens = self.simple_tokenizer(doc["page_content"])
         length = len(tokens)
         if length > MAX_TOKEN_LENGTH:
             raise Exception("document anomaly detected")
@@ -140,7 +136,7 @@ class VectorUploader(FileLogger):
     async def upload_files(self):
         self.threads = []
         max_threads = 15  # be careful of rate limiting and CPU usage
-        await self.get_docs_to_process("index-upload")
+        await self.get_docs_to_process("index-processed")
         
         #start consumer thread production
         for _ in range(max_threads):
@@ -149,7 +145,7 @@ class VectorUploader(FileLogger):
             self.threads.append(thread)
 
         # start producing docs in the queue
-        await self.read_page_content_and_enqueue("index-upload")
+        await self.read_page_content_and_enqueue("index-processed")
 
         for _ in self.threads: 
             self.docs.put((None,None))

@@ -2,8 +2,8 @@
 az login
 
 # Define the Azure Web App name and resource group
-WEB_APP_NAME="pythongnoba4quzzn5u"
-RESOURCE_GROUP="ce-advisor-poc"
+WEB_APP_NAME="pythone6xms76htorcw"
+RESOURCE_GROUP="ai-advisor"
 
 # Log in to Azure (Uncomment this line if you're not already logged in)
 # az login

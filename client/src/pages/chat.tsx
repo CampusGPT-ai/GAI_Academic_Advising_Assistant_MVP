@@ -4,7 +4,7 @@ import Conversation from "../model/conversation/conversations";
 import ParentMessage, { Citation, MessageSimple}  from "../model/messages/messages";
 import ChatActive from "../components/chat/chatContainer";
 import AppStatus from "../model/conversation/statusMessages";
-
+import { Outcomes } from "../api/fetchOutcomes"
 /**
  * Props for the Chat component.
  * @interface
@@ -22,42 +22,45 @@ import AppStatus from "../model/conversation/statusMessages";
  */
 interface ChatProps {
   sampleQuestions?: string[];
+  isError: boolean;
   chatResponse?: string;
-  follow_up_questions?: string[];
-  citations?: Citation[];
   appStatus: AppStatus;
+  errMessage?: string;
+  notifications?: string;
   sendChatClicked: (messageText: string) => void;
   messageHistory?: MessageSimple[];
   currentAnswerRef: React.MutableRefObject<any>;
   chatWidth: string;
+  opportunities?: Outcomes[];
 }
 
 const Chat: FC<ChatProps> = ({
   appStatus,
+  isError,
   sampleQuestions,
-  chatResponse,
-  follow_up_questions,
-  citations,
   sendChatClicked,
   messageHistory,
   currentAnswerRef,
-  chatWidth
+  chatWidth,
+  opportunities,
 }) => {
   //console.log(`current app status is ${appStatus}`)
   //console.log("loading chat page with ",JSON.stringify(messageHistory))
   
   return (
- 
+
+
+
+
       <Box height={"100%"} display="flex" justifyContent={"center"} width={chatWidth}>
           <ChatActive //src/sections/chat/chatActive
-            chatResponse={chatResponse}
-            follow_up_questions={follow_up_questions}
-            citations={citations}
             messageHistory={messageHistory}
             sendChatClicked={sendChatClicked}
             appStatus={appStatus}
             sampleQuestions={sampleQuestions}
+            isError={isError}
             currentAnswerRef={currentAnswerRef}
+            opportunities={opportunities}
 
           />
       </Box>

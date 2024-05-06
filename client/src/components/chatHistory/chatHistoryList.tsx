@@ -49,7 +49,7 @@ const ChatHistory: FC<ChatHistoryProps> = ({
   return (
     <Grid container direction={"column"} spacing={2} padding={2}>
       {conversations.length > 0 ? (
-        conversations.map((conversation, index) => (
+        conversations.reverse().map((conversation, index) => (
           <Grid item key={index}>
             <Button
               variant="text"

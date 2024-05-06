@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from openai import AzureOpenAI, OpenAI
-import openai
+import openai, json
 from azure.identity import DefaultAzureCredential
 import logging, sys, os
 import cloud_services.openai_response_objects as openai_response_objects
@@ -68,8 +68,35 @@ class AILLMClients(ABC):
     
     def embed_to_array(self):
         pass
-    
-    
+
+class OpenAIClients(AILLMClients):
+    def __init__(self, model: str, api_key: str):
+        os.environ["OPENAI_API_KEY"] = api_key
+
+        self.client = OpenAI(api_key=api_key)
+        self.model = model
+
+    def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:
+        # Convert messages to the format expected by OpenAI
+        prompts = [msg.model_dump() for msg in messages]
+        
+        try:
+            if json_mode:
+                result = self.client.chat.completions.create(
+                    model=self.model,
+                    response_format={ "type": "json_object" },
+                    messages=prompts
+                )
+            else:
+                result = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=prompts,
+                    max_tokens=250
+                )
+            return openai_response_objects.parse_completion_object(False,result)
+        except Exception as e:
+            raise e
+        
 class AzureLLMClients(AILLMClients):
     """
     A class representing Azure Language Model (LLM) clients.
@@ -122,6 +149,33 @@ class AzureLLMClients(AILLMClients):
                 yield openai_response_objects.parse_completion_object(True,chunk)
         except Exception as e:
             raise e
+        
+    def validate_json(self, string_response, string_list):
+        output = None
+        try:
+            dict = json.loads(string_response)
+            if not dict or dict == {}:
+                raise Exception(f"input dictionary is not valid JSON: {dict} ")
+        except Exception as e:
+            raise e
+        for l in string_list:
+            logger.info(f"checking for {l}")
+            try: 
+                output = dict.get(l)
+                if not output:
+                    raise Exception(f"key {l} not found in response {dict}")
+            except Exception as e:
+                logger.error(f'error parsing json from LLM response: {str(e)}')
+                raise e
+        return dict
+    
+    @staticmethod
+    def _format_json(gpt_response):
+        response = gpt_response.choices[0].message.content
+        formatted_response = response.replace("\n", "").replace(r"```", "").replace("json", "").replace("{ ","{")
+        formatted_response = formatted_response.replace("</p><br>", "</p>").replace("<br><ul>", "<ul>")
+        return formatted_response
+
 
     def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:
         """
@@ -244,14 +298,24 @@ Returns:
                 deployment=deployment,
                 embedding_deployment=embedding_deployment
         )
+    
+    if api_type == "openai":
+        return OpenAIClients(
+                model=model,
+                api_key=api_key
+        )
 
 
 if __name__ == "__main__":
     import dotenv, os
     dotenv.load_dotenv()
 
+    from settings.settings import Settings
+    settings = Settings()
+
     AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-    OPENAI_API_KEY = os.getenv
+    OPENAI_API_KEY = settings.OPENAI_API_KEY
+    OPENAI_DIRECT_MODEL = settings.OPENAI_DIRECT_MODEL
     OPENAI_VERSION = os.getenv("OPENAI_API_VERSION")
     OPENAI_ENDPOINT= os.getenv("AZURE_OPENAI_ENDPOINT")
     OPENAI_DEPLOYMENT = os.getenv("DEPLOYMENT_NAME")
@@ -270,6 +334,9 @@ if __name__ == "__main__":
                                                         deployment=OPENAI_DEPLOYMENT,
                                                         embedding_deployment=EMBEDDING_DEPLOYMENT)
 
+    openai_client : OpenAIClients = get_llm_client(api_type='openai',
+                                                    model=OPENAI_DIRECT_MODEL,
+                                                    api_key=OPENAI_API_KEY)
     
     QUERY_TEXT = "what dining services are available on UCF campus"
     SYSTEM_TEXT = "You are an academic advising assistant.  Answer your students questions"
@@ -284,19 +351,19 @@ if __name__ == "__main__":
     # langchain_result = langchain_client.chat(langchain_messages)
     # azure_result = azure_llm_client.chat(default_messages)
     azure_streaming_result = azure_llm_client.stream(default_messages)
-    # openai_result = openai_client.chat(is_streaming=False, messages=default_messages)
+    openai_result = openai_client.chat(messages=default_messages)
     # langchain_embedding = langchain_client.embed("some text to embed")
     # azure_embedding = azure_llm_client.embed("some text to embed")
     
     # streaming access
-    finished = False
-    while not finished:
-        output : StreamingChatCompletion = next(azure_streaming_result)
-        if output:
-            output_text = output.choices[0].delta.content
-            if output_text != None:
-                logger.info(output_text)
-            if output.choices[0].finish_reason == 'stop':
-                finished = True
+    #finished = False
+    #while not finished:
+    #    output : StreamingChatCompletion = next(azure_streaming_result)
+    #    if output:
+    #        output_text = output.choices[0].delta.content
+    #        if output_text != None:
+    #            logger.info(output_text)
+    #        if output.choices[0].finish_reason == 'stop':
+    #            finished = True
         
 

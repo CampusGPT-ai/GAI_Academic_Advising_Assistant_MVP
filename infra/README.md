@@ -26,6 +26,7 @@
 ### app/server build and test
 3. run setup_env_[linux or windows].ps1/sh to propogate environment variables for local testing
 4. check environment variables and ensure they are correct for your development environment (localhost, ports, etc)
+    - .env files will need to be changed to indicate "production, staging etc".  Base URLS and Client URLS will need to be updated to reflect proper URI for environment
 5. run curl commands in postman or cmd, check api results
 6. build docker container (build.ps1)
 
