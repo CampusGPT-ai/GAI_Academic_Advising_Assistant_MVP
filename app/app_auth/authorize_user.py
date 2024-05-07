@@ -140,12 +140,11 @@ async def saml_login_callback(request: Request):
             raise credentials_exception
         else:
             attrs = auth.get_attributes()
-            # TODO: update this to correct values or define mapping via settings
             payload = {
-                "sub": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"][0],
-                "first_name": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"][0].split(" ")[0],
-                "last_name": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"][0],
-                "email": attrs["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"][0],
+                "sub": auth.get_nameid(),
+                "first_name": attrs[f"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/{settings.SAML_FIRST_NAME_ATTR}"][0],
+                "last_name": attrs[f"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/{settings.SAML_LAST_NAME_ATTR}"][0],
+                "email": attrs.get(f"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/{settings.SAML_EMAIL_ATTR}", [auth.get_nameid()])[0],
             }
             logger.info(f"AUTH ATTRS: {payload}")
             user_info = create_user_if_not_exist(payload)
