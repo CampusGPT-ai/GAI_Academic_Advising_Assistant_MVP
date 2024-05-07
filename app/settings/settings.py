@@ -60,6 +60,9 @@ class Settings(BaseSettings):
      
      SAML_METADATA_URL: str
      SAML_CERT: str
+     SAML_FIRST_NAME_ATTR: str
+     SAML_LAST_NAME_ATTR: str
+     SAML_EMAIL_ATTR: str
      
      BASE_URL: str
      CLIENT_BASE_URL: str
