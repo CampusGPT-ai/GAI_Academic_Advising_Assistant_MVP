@@ -26,6 +26,22 @@ TEST_ENV = dict(
     AZURE_CLIENT_ID="test",
     AZURE_TENANT_ID="test",
     AZURE_CLIENT_SECRET="test",
+    OPENAI_API_KEY="test",
+    OPENAI_DIRECT_MODEL="test",
+    SEARCH_CATALOG_NAME="test",
+    KB_FIELDS_TEXT="test",
+    NON_SESSION_ID="test",
+    N4J_URI="test",
+    N4J_USERNAME="test",
+    N4J_PASSWORD="test",
+    UNIVERSITY_NAME="test",
+    SAML_METADATA_URL="http://test.com/metadata",
+    SAML_CERT="test",
+    SAML_FIRST_NAME_ATTR="test",
+    SAML_LAST_NAME_ATTR="test",
+    SAML_EMAIL_ATTR="test",
+    BASE_URL="http://test.com:8000",
+    CLIENT_BASE_URL="http://test.com:3000"
 )
 
 
