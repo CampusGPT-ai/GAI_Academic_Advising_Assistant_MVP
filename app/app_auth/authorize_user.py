@@ -100,28 +100,29 @@ async def prepare_from_fastapi_request(request, debug=False):
     rv["post_data"]["RelayState"] = RelayState
   return rv
 
-idp_settings = OneLogin_Saml2_IdPMetadataParser.parse_remote(settings.SAML_METADATA_URL)
-saml_settings = {
-  "strict": True,
-  "debug": True,
-  "sp": {
-    "entityId": "test-saml-client",
-    "assertionConsumerService": {
-      "url": f"{settings.BASE_URL}/validate_token_saml",
-      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
-    },
-    "x509cert": settings.SAML_CERT
-  }
-}
-idp_settings.update(saml_settings)
-saml_settings_obj = OneLogin_Saml2_Settings(idp_settings)
+def get_saml_settings():
+    idp_settings = OneLogin_Saml2_IdPMetadataParser.parse_remote(settings.SAML_METADATA_URL)
+    saml_settings = {
+      "strict": True,
+      "debug": True,
+      "sp": {
+        "entityId": "test-saml-client",
+        "assertionConsumerService": {
+          "url": f"{settings.BASE_URL}/validate_token_saml",
+          "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+        },
+        "x509cert": settings.SAML_CERT
+      }
+    }
+    idp_settings.update(saml_settings)
+    saml_settings_obj = OneLogin_Saml2_Settings(idp_settings)
+    return saml_settings_obj
 
 @router.get("/saml/login")
 async def saml_login(request: Request):
-    logger.info(f"SAML Settings: {idp_settings}")
     req = await prepare_from_fastapi_request(request)
 
-    auth = OneLogin_Saml2_Auth(req, saml_settings_obj)
+    auth = OneLogin_Saml2_Auth(req, get_saml_settings())
     callback_url = auth.login(return_to=settings.CLIENT_BASE_URL)
     response = RedirectResponse(url=callback_url)
     return response
@@ -130,7 +131,7 @@ async def saml_login(request: Request):
 async def saml_login_callback(request: Request):
     req = await prepare_from_fastapi_request(request)
 
-    auth = OneLogin_Saml2_Auth(req, saml_settings_obj)
+    auth = OneLogin_Saml2_Auth(req, get_saml_settings())
     auth.process_response()
     errors = auth.get_errors()
     if len(errors) == 0:
