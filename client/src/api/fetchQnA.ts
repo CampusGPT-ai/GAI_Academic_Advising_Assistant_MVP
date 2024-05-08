@@ -59,8 +59,8 @@ const useQnAData = (
             const data = response.data;
 
             // Update state variables with the data from the API
-            setKickbackResponse(data.kickback_response);
             setRagResponse(data.rag_response);
+            setKickbackResponse(data.kickback_response);
             setConversationReference(data.conversation_reference);
 
             console.log('Data fetched:', JSON.stringify(data));
@@ -136,17 +136,18 @@ const useQnAData = (
 
 
     useEffect(() => {
-        if (updateHistory && kickbackResponse && kickbackRef.current !== kickbackResponse.follow_up_question) {
-            console.log(`kickbackResponse: ${kickbackResponse.follow_up_question}`)
-            const followUpQuestion: MessageSimple = { role: "system", message: kickbackResponse.follow_up_question, created_at: { $date: Date.now() } };
-            updateHistory && updateHistory(followUpQuestion);
-        }
 
         if (updateHistory && ragResponse && ragRef.current !== ragResponse.response) {
             console.log(`ragResponse: ${ragResponse.response}`)
             const ru: MessageSimple = { role: "system", message: ragResponse.response, created_at: { $date: Date.now() } };
             updateHistory && updateHistory(ru);
         }
+        if (updateHistory && kickbackResponse && kickbackRef.current !== kickbackResponse.follow_up_question) {
+            console.log(`kickbackResponse: ${kickbackResponse.follow_up_question}`)
+            const followUpQuestion: MessageSimple = { role: "system", message: kickbackResponse.follow_up_question, created_at: { $date: Date.now() } };
+            updateHistory && updateHistory(followUpQuestion);
+        }
+
 
         if (setAppStatus && 
             kickbackResponse &&

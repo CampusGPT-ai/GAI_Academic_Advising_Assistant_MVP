@@ -30,12 +30,31 @@ class Neo4jSession:
         with self.driver.session() as session:
  
             result = session.run("""
-                CALL db.index.vector.queryNodes('topic_index', 1, $queryVector)
+                CALL db.index.vector.queryNodes($queryVector)
                 YIELD node AS similarDescription, score
             """, parameters={'queryVector': query_vector})
 
             for record in result:
                 return record['similarDescription']['name']
+            
+    
+    def find_similar_nodes_with_score(self, text, top_k=3, index='topic_index'):
+        query_vector = azure_llm_client.embed_to_array(text)
+
+        with self.driver.session() as session:
+            result = session.run("""
+                CALL db.index.vector.queryNodes('topic_index', 3, $queryVector)
+                YIELD node AS similarNode, score
+                RETURN similarNode.name AS name, similarNode.description AS description, similarNode.tags AS tags, score
+                ORDER BY score DESC
+            """, parameters={'queryVector': query_vector})
+
+            # Collect all records into a list
+            similar_nodes = []
+            for record in result:
+                similar_nodes.append({'name': record['name'], 'description': record['description'], 'tags': record['tags'], 'score': record['score']})
+
+            return similar_nodes
     
     def find_all_nodes(self, index='Consideration'):
         record_list = []
@@ -86,12 +105,60 @@ class Neo4jSession:
         RETURN c
         """
         return self.run_query(query)
+    
+    def add_node(self, name, description, tags, label):
+        query = f"""
+        CREATE (n:`{label}` {{name: $name, description: $description, tags: $tags}})
+        RETURN n
+        """
+        parameters = {
+            'name': name,
+            'description': description,
+            'tags': tags
+        }
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, parameters)
+                node = result.single()
+                if node:
+                    print(f"Node created")
+                else:
+                    print(f"Node {name} not created")
+        except Exception as e:
+            print(e)
+            raise e
+
+    def add_relationship(self, from_node, to_node, relationship_type):
+        query = f"""
+        MATCH (a), (b)
+        WHERE a.name = $from_node AND b.name = $to_node
+        CREATE (a)-[r:`{relationship_type}`]->(b)
+        RETURN r
+        """
+        parameters = {
+            'from_node': from_node,
+            'to_node': to_node,
+            'relationship_type': relationship_type
+        }
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, parameters)
+                node = result.single()
+                if node:
+                    node = node['r']
+                    print(f"Relationship created")
+                else:
+                    print(f"Relationship {from_node} to {to_node} not created")
+        except Exception as e:
+            print(e)    
+            raise e
+
 
     
 if __name__ == "__main__":
     finder = Neo4jSession(uri, username, password)
     user_question = "What interships should I apply for?"
-    related_topic = finder.find_similar_nodes(user_question)
+    related_topic = finder.find_similar_nodes_with_score(user_question)
     print(related_topic)
     print(finder.query_outcomes('IS_OPPORTUNITY_FOR', related_topic))
     # frame = finder.query_terms(user_question, "Topic")
