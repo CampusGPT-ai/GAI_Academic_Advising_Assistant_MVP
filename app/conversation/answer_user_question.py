@@ -8,7 +8,7 @@ from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt as
 
 import asyncio
 from cloud_services.connect_mongo import MongoConnection
-
+from graph_update.graph_eval_and_update import NodeEditor
 
 from conversation.run_chat import QueryLLM
 import json
@@ -99,10 +99,20 @@ if __name__ == "__main__":
 
     mock_conversation = Conversation.objects(id="6622fed0fcda8e6d6c33fb04").select_related(max_depth=5)
 
-    finder = GraphFinder(mock_user_session, USER_QUESTION)
+    graph = GraphFinder(mock_user_session, USER_QUESTION)
+
+    topics = graph.get_topic_list_from_question()
+    if topics[0].get('score') < 0.9:
+        print('adding new topics and relationships for low scoring match')
+        finder = NodeEditor(mock_user_session, USER_QUESTION)
+        finder.init_neo4j()
+        finder.orchestrate_graph_update_async(topics)
+    
+    #TODO: need to figure out how to handle low scoring topics without waiting for new considerations - maybe just blank it out? multiple topics
+    topic = topics[0].get('name')
+
     c = Considerations(mock_user_session, USER_QUESTION)
-    topic = finder.get_topic_from_question()
-    all_considerations = finder.get_relationships('Consideration',topic)
+    all_considerations = graph.get_relationships('Consideration',topic)
 
     missing_considerations = c.match_profile_to_graph(all_considerations)
 
@@ -117,8 +127,6 @@ if __name__ == "__main__":
         conversation_id = conversation.id
 
     history = get_history_as_messages(conversation_id)
-    graph = GraphFinder(session_data, user_question)
-    topic = graph.get_topic_from_question()
     all_considerations = graph.get_relationships('Consideration',topic)
     
     c = Considerations(session_data, user_question)
@@ -136,6 +144,9 @@ if __name__ == "__main__":
     missing_considerations = c.match_profile_to_graph(all_considerations)
     kickback_response = asyncio.run(responder.kickback_response_async(missing_considerations, history))
     rag_response = asyncio.run(responder.rag_response_async(history))
+
+    if topics[0].get('score') < 0.9:
+        kickback_response = ""
 
     final_response = {
         "conversation_reference": conversation_to_dict(conversation),

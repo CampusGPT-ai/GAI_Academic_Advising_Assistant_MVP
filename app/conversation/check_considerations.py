@@ -22,7 +22,10 @@ class Considerations:
     def _set_user_considerations(self):
         if self.user:
             user_info = self.user.get_user_info()
-            considerations = user_info.considerations
+            if isinstance(user_info, str):
+                considerations = ""
+            else:
+                considerations = user_info.considerations
             return considerations
         else: 
             return []

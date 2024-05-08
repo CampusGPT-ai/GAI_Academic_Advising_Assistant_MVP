@@ -28,6 +28,7 @@ from threading import Thread
 from conversation.run_graph import GraphFinder
 import logging
 from conversation.update_conversation import update_conversation_history
+from graph_update.graph_eval_and_update import NodeEditor
 from data.models import ConversationSimple
 import asyncio
 load_dotenv()
@@ -203,7 +204,17 @@ async def chat_new(
 
         history = get_history_as_messages(conversation_id)
         graph = GraphFinder(session_data, user_question)
-        topic = graph.get_topic_from_question()
+
+        topics = graph.get_topic_list_from_question()
+        if topics[0].get('score') < 0.9:
+            print('adding new topics and relationships for low scoring match')
+            finder = NodeEditor(session_data, user_question)
+            finder.init_neo4j()
+            finder.orchestrate_graph_update_async(topics)
+        
+        #TODO: need to figure out how to handle low scoring topics without waiting for new considerations - maybe just blank it out? multiple topics
+        topic = topics[0].get('name')
+
         logger.info("topic is " + topic)
         all_considerations = graph.get_relationships('Consideration',topic)
         
@@ -227,6 +238,9 @@ async def chat_new(
         logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)
         rag_response = await responder.rag_response_async(history)
+
+        if topics[0].get('score') < 0.9:
+            kickback_response = ""
 
         final_response = {
             "conversation_reference": conversation_to_dict(conversation),
@@ -258,13 +272,21 @@ async def get_outcomes(
 ):
     finder = GraphFinder(session_data, user_question)
     try:
-        topic = finder.get_topic_from_question()
-        risks, opportunities = finder.get_relationships('Outcome',topic)
+        topics = finder.get_topic_list_from_question()
 
-        final_response = {
+        if topics[0].get('score') < 0.9:
+            final_response = {
+            "risks": '',
+            "opportunities": ''
+        }
+        else:
+            topic = topics[0].get('name')
+            risks, opportunities = finder.get_relationships('Outcome',topic)
+            final_response = {
             "risks": risks,
             "opportunities": opportunities
         }
+
         return JSONResponse(content=final_response, status_code=200)
     except Exception as e:
         logger.error(
