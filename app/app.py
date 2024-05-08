@@ -226,7 +226,7 @@ async def chat_new(
 
         logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)
-        rag_response = await responder.rag_response_async(history)
+        rag_response, rag_content = await responder.rag_response_async(history)
 
         final_response = {
             "conversation_reference": conversation_to_dict(conversation),
@@ -234,7 +234,7 @@ async def chat_new(
             "rag_response": rag_response
         }
         try:
-            update_conversation_history(final_response, conversation, session_data, user_question)
+            update_conversation_history(final_response, conversation, rag_content, session_data, user_question)
         except Exception as e:
             logger.error(
                 f"failed to update_conversation_history with error {str(e)}",

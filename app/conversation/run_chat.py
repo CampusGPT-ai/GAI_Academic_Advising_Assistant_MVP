@@ -90,4 +90,17 @@ class QueryLLM:
             
     
 if __name__ == "__main__":
-    pass
+    from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt 
+    from pathlib import Path
+
+
+    relative_path = Path('./app/data/mock_user_session.json')
+    with relative_path.open(mode='r') as file:
+        mock_user_session : UserSession = UserSession(**json.load(file))
+    
+
+    prompt = get_gpt_system_prompt(USER_QUESTION,'')
+    llm = QueryLLM(mock_user_session)
+    template, _ = llm.create_prompt_template(prompt)
+    response = llm.run_llm(template)
+    print(response)

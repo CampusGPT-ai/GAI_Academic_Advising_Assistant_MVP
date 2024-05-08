@@ -11,11 +11,11 @@ def update_conversation_topic(user_session, user_question, conversation):
     conversation.save()
     return
 
-def update_conversation_history(responses, conversation, rag_results, keyword_search, user_session, user_question):
+def update_conversation_history(responses, conversation, rag_results, user_session, user_question):
 
         def create_message_content(role, message):
             if role == 'system':
-                return MessageContent(role=role, message=message, rag_results=rag_results, keywords=keyword_search)
+                return MessageContent(role=role, message=message, rag_results=rag_results)
             else:
                 return MessageContent(role=role, message=message)
         
