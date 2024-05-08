@@ -110,7 +110,6 @@ class MessageContent(EmbeddedDocument):
     role = StringField(required=True)
     message = StringField(required=True)
     created_at = DateTimeField(default=datetime.utcnow)
-    keywords = StringField(required=False)
     rag_results = StringField(required=False)
 
 class RawChatMessage(Document):

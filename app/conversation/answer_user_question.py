@@ -62,7 +62,7 @@ class QnAResponse:
     
     async def rag_response_async(self, conversation_history):
         result = await asyncio.to_thread(self.rag_response, conversation_history)
-        return result
+        return result, self.rag_results
 
     def kickback_response(self, missing_considerations, conversation_history):
         kickback_prompt, kickback_json = self.llm_query.create_prompt_template(
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     }
     
     try:
-        update_conversation_history(final_response, conversation, responder.rag_results, responder.get_user_context(), session_data, user_question)
+        update_conversation_history(final_response, conversation, responder.rag_results, session_data, user_question)
     except Exception as e:
         logger.error(
             f"failed to update_conversation_history with error {str(e)}",
