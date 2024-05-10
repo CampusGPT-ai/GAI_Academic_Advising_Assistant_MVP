@@ -78,7 +78,7 @@ class OpenAIClients(AILLMClients):
 
     def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:
         # Convert messages to the format expected by OpenAI
-        prompts = [msg.model_dump() for msg in messages]
+        prompts = [msg.model_dump_json() for msg in messages]
         
         try:
             if json_mode:
