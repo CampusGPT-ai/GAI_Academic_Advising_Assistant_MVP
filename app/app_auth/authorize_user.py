@@ -83,8 +83,16 @@ def create_user_if_not_exist(payload):
 
 async def prepare_from_fastapi_request(request, debug=False):
   form_data = await request.form()
+ # Use `disguised-host` or fallback to `was-default-hostname` to get the original host
+  host = request.headers.get('disguised-host', request.headers.get('was-default-hostname', request.client.host))
+    # Use `x-forwarded-proto` to get the scheme
+  proto = request.headers.get('x-forwarded-proto', 'https')
+  logger.info(f"Request headers received: {request.headers}")
+  base_url = f"https://{host}"
+
   rv = {
-    "http_host": request.client.host,
+    "base_url": base_url,
+    "http_host": host,
     "server_port": request.url.port,
     "script_name": request.url.path,
     "post_data": { },
@@ -100,7 +108,7 @@ async def prepare_from_fastapi_request(request, debug=False):
     rv["post_data"]["RelayState"] = RelayState
   return rv
 
-def get_saml_settings():
+def get_saml_settings(base_url):
     idp_settings = OneLogin_Saml2_IdPMetadataParser.parse_remote(settings.SAML_METADATA_URL)
     saml_settings = {
       "strict": True,
@@ -108,7 +116,7 @@ def get_saml_settings():
       "sp": {
         "entityId": "test-saml-client",
         "assertionConsumerService": {
-          "url": f"{settings.BASE_URL}/validate_token_saml",
+          "url": f"{base_url}/validate_token_saml",
           "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
         },
         "x509cert": settings.SAML_CERT
@@ -121,8 +129,8 @@ def get_saml_settings():
 @router.get("/saml/login")
 async def saml_login(request: Request):
     req = await prepare_from_fastapi_request(request)
-
-    auth = OneLogin_Saml2_Auth(req, get_saml_settings())
+    saml_settings = get_saml_settings(req.get('base_url'))
+    auth = OneLogin_Saml2_Auth(req, saml_settings)
     callback_url = auth.login(return_to=settings.CLIENT_BASE_URL)
     response = RedirectResponse(url=callback_url)
     return response
@@ -130,8 +138,8 @@ async def saml_login(request: Request):
 @router.post("/validate_token_saml")
 async def saml_login_callback(request: Request):
     req = await prepare_from_fastapi_request(request)
-
-    auth = OneLogin_Saml2_Auth(req, get_saml_settings())
+    saml_settings = get_saml_settings(req.get('base_url'))
+    auth = OneLogin_Saml2_Auth(req, saml_settings)
     auth.process_response()
     errors = auth.get_errors()
     if len(errors) == 0:
