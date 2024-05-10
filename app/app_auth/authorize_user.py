@@ -191,7 +191,7 @@ async def saml_login_callback(request: Request):
 
             return {"user_id": user_session.user_id, "session_id": user_session.session_id}
     else:
-        logger.error(f"Errors in SAML response: {errors}")
+        logger.error(f"Errors in SAML response: {errors}. Last error reason: {auth.get_last_error_reason()}")
         raise credentials_exception
 
 @router.post("/validate_token")
