@@ -6,6 +6,8 @@ import messageSample from "../../../../model/messages/messageSample.json";
 import { MessageContent, Citation} from "../../../../model/messages/messages";
 import ChatBotChatResponse from "./chatResponse/chatBotChatResponse";
 import ChatBotChatError from "./chatResponse/chatResponseElements/chatBotChatError";
+import RateReviewIcon from '@mui/icons-material/RateReview';
+import FeedbackForm from "./chatResponse/chatResponseFeedbackForm";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 //const sampleMessages = JSON.parse(jsonString) as Message[];
@@ -37,6 +39,8 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
 }) => {
   const theme = useTheme();
   const [formatted_message, setFormattedMessage] = React.useState<string>('');
+  const [showFeedback, setFeedback] = React.useState<boolean>(false);
+  const [feedbackSent, setFeedbackSent] = React.useState<boolean>(false);
   function hyperlinkPreviousWord(text: string) {
     let cleanedText = text.replace(/\[\s*(Source|Links)?:?\s*\]|\(\s*(Source|Links)?:?\s*\)/gi, '');
 
@@ -56,6 +60,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
       
       <Box sx={{
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         p: 1,
         width: '90%',
@@ -75,6 +80,27 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
           <ChatBotChatResponse message={formatted_message}
              />)
       }
+<Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        flexDirection: 'column',
+        p: 1,
+        width: '100%'
+      }}>
+        {feedbackSent && <Box sx={{ display: 'flex', alignItems: 'flex-end',flexDirection:'row', width: '100%' }}>
+          <Typography variant="caption" sx={{ flexGrow: 1, textAlign: 'right' }}>Feedback Sent. Thank you!</Typography>
+          </Box>}
+        {!showFeedback && !feedbackSent && <Box sx={{ display: 'flex', alignItems: 'flex-end',flexDirection:'row', width: '100%' }}>
+        <Typography variant="caption" sx={{ flexGrow: 1, textAlign: 'right' }}>Review Response&nbsp;&nbsp;</Typography>
+        <RateReviewIcon onClick={() => setFeedback(true)} />
+        </Box>}
+        {showFeedback && !feedbackSent && (
+          <FeedbackForm onSubmit={(data) => {
+            setFeedback(false);
+            setFeedbackSent(true);
+          }} />
+        )}
+      </Box>
     </Box>
   );
 };
