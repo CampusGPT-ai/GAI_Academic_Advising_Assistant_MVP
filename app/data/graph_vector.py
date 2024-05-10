@@ -39,6 +39,29 @@ class GraphVector:
                                 , id=node_id, embedding=embedding)
     
         self.graph.driver.close()
+    
+    def add_single_vector(self, name):
+        with self.graph.driver.session() as session:
+            result = session.run(f'''
+                MATCH (n) 
+                WHERE n.name = $name
+                RETURN id(n) AS id, n.description AS description''', {'name': name})
+
+            for record in result:
+                node_id = record["id"]
+                description = record["description"]
+                
+                # Generate embedding
+                embedding = self._embed(description)
+                
+                # Update the node with the embedding (create a new property, e.g., 'embedding')
+                session.run('''
+                    MATCH (n) WHERE id(n) = $id 
+                    SET n.embedding = $embedding'''
+                                , id=node_id, embedding=embedding)
+    
+        self.graph.driver.close()
+
 
 if __name__ == "__main__":
     graph = GraphVector()
