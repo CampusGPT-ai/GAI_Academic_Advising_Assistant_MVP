@@ -7,13 +7,17 @@ import useSamlAuth from "./hooks/useSamlAuth";
 
 export function SAMLProtectedRoute({ children }) {
 
-    let isAuthenticated = false; // Replace with your auth logic
+    let isAuthenticated = false; 
     if (localStorage.getItem("authToken")) {
-        isAuthenticated = true; // Replace with your auth logic
+        isAuthenticated = true; 
     }
     console.log(`checking SAML login status for user.  user is authenticated? ${isAuthenticated}`)
     
-    const samlLoginUrl = process.env.REACT_APP_LOGIN_URL; // THIS WILL BE UPDATED WITH THE ACTUAL SAML LOGIN URL
+    const samlLoginUrl = 
+    process.env.REACT_APP_DOMAIN !== "development" ? 
+        `https://${process.env.REACT_APP_APP_NAME}-${process.env.REACT_APP_WEBENV}.azurewebsites.net/saml/login` : 
+        `http://localhost:8000/saml/login`;
+
     console.log(`saml login url: ${samlLoginUrl}`);
     //debugger;
 
