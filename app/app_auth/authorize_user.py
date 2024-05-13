@@ -91,6 +91,7 @@ async def prepare_from_fastapi_request(request, debug=False):
   base_url = f"https://{host}"
 
   rv = {
+    "https": "on" if proto == "https" else "off",
     "base_url": base_url,
     "http_host": host,
     "server_port": request.url.port,

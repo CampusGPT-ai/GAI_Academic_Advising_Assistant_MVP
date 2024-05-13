@@ -76,6 +76,9 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     priorStatus.current = AppStatus.LoggingIn;
     try {
     const authToken = localStorage.getItem('authToken');
+    if (authToken === '') {
+      console.log(`no token found.  Redirecting to login`)
+    }
     authToken && setUserSession(authToken)
     console.log(`fetched user from SAML ${authToken}, resetting app status to idle`)
     setAppStatus(AppStatus.Idle);
