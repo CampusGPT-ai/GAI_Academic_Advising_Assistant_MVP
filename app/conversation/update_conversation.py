@@ -11,7 +11,25 @@ def update_conversation_topic(user_session, user_question, conversation):
     conversation.save()
     return
 
+def update_conversation_history_with_feedback(feedback, conversation, message_id, user_session): 
+    raw_chat_messages = RawChatMessage.objects(user_session_id=user_session)
+    logger.info(f"RAW CHATS: {raw_chat_messages}")
+    for r in raw_chat_messages:
+        logger.info(f"Raw: {r}")
+        for m in r.message:
+            logger.info(f"Message: {m._id}, Looking for {message_id}")
+            if str(m._id) == message_id:
+                logger.info(f"Found target message {message_id}")
+                m.feedback = feedback.dict()
+                # Update feedback field
+                logger.info(f"Updating message with feedback: {feedback}")
+        r.save()
+
+    # Return
+    return
+
 def update_conversation_history(responses, conversation, rag_results, user_session, user_question):
+        logger.info(f"Updating conversation history with responses")
 
         def create_message_content(role, message):
             if role == 'system':
@@ -29,7 +47,10 @@ def update_conversation_history(responses, conversation, rag_results, user_sessi
             rag_response =  responses.get('rag_response')
             rag = rag_response.get('response')
             kickback_response = responses.get('kickback_response')
-            follow_up = kickback_response.get('follow_up_question')
+            if isinstance(kickback_response, dict):
+                follow_up = kickback_response.get('follow_up_question')
+            else:
+                follow_up = ""
             if rag != '':
                 full_response = rag + " " + follow_up 
             else:

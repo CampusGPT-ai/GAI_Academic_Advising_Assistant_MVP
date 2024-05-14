@@ -1,8 +1,9 @@
 import { Meta } from "@storybook/react";
 import ChatMessages from "../../../components/chat/chatElements/chatMessageContainer";
+import FeedbackForm from "../../../components/chat/chatElements/chatMessageElements/chatResponse/chatResponseFeedbackForm";
 
 export default {
-  component: ChatMessages,
+  component: FeedbackForm,
   title: "Elements/Chat/ChatMessages",
   parameters: {
     layout: "centered",
@@ -16,10 +17,3 @@ export const ExistingChat = {
   },
 };
 
-export const NewChat = {
-    args: {
-      
-    },
-  };
-  
-  
