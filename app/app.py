@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 from functools import lru_cache
 from conversation.answer_user_question import QnAResponse
 from conversation.retrieve_messages import get_message_history,get_history_as_messages
-from data.models import UserSession
+from data.models import UserSession, Feedback
 from settings.settings import Settings
 from conversation.check_considerations import Considerations
 from azure.storage.blob.aio import BlobServiceClient
@@ -27,7 +27,7 @@ from app_auth.authorize_user import get_session_from_session
 from threading import Thread
 from conversation.run_graph import GraphFinder
 import logging
-from conversation.update_conversation import update_conversation_history
+from conversation.update_conversation import update_conversation_history, update_conversation_history_with_feedback
 from graph_update.graph_eval_and_update import NodeEditor
 from data.models import ConversationSimple
 import asyncio
@@ -360,4 +360,27 @@ async def get_conversations(
         return JSONResponse(
             content={"message": f"failed to get messages with error {str(e)}"},
             status_code=404,
+        )
+
+# Provide feedback on conversation
+@app.post("/users/{session_guid}/conversations/{conversation_id}/messages/{message_id}")
+async def response_feedback(
+    session_guid, conversation_id, message_id, feedback: Feedback, session_data: UserSession = Depends(get_session_from_session)
+):
+    logger.info(f"CONVERSATION_ID: {conversation_id}, MESSAGE_ID: {message_id}, SESSION_ID: {session_guid}, FEEDBACK: {feedback}")
+    set_context_from_session_data(session_data)
+    conversation = get_conversation(conversation_id, session_data)
+    logger.info(f"Got conversation: {conversation}")
+    try:
+        update_conversation_history_with_feedback(feedback, conversation, message_id, session_data)
+        logger.info(f"Feedback success! {feedback}")
+        return JSONResponse(content="Successfully recorded feedback", status_code=200)
+    except Exception as e:
+        logger.info(f"Feedback failed to submit! {feedback}")
+        logger.error(
+            f"failed to update_conversation_history with error {str(e)}",
+        )
+        return JSONResponse(
+            content={"message": f"failed to record feedback with error {str(e)}"},
+            status_code=500,
         )
