@@ -1,6 +1,7 @@
+from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from mongoengine import *
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Conversation > Chat Message > Raw Chat Message > Message Content 
 # -------------------->Citation
@@ -107,10 +108,12 @@ class Citation(EmbeddedDocument):
     citation_path = StringField(required=True)
 
 class MessageContent(EmbeddedDocument):
+    _id = ObjectIdField(required=True, default=ObjectId )
     role = StringField(required=True)
     message = StringField(required=True)
     created_at = DateTimeField(default=datetime.utcnow)
     rag_results = StringField(required=False)
+    feedback = DictField(required=False)
 
 class RawChatMessage(Document):
     _auto_id_field = 'id'
@@ -162,3 +165,12 @@ class ConversationSimple(Document):
     def end_conversation(self):
         self.end_time = datetime.now()
         self.save()
+
+class Question(BaseModel):
+    scale: int = Field(ge=1, le=5)
+    comment: str | None = None
+
+class Feedback(BaseModel):
+    q1_usefullness: Question
+    q2_relevancy: Question
+    q3_accuracy: Question

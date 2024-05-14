@@ -11,6 +11,23 @@ def update_conversation_topic(user_session, user_question, conversation):
     conversation.save()
     return
 
+def update_conversation_history_with_feedback(feedback, conversation, message_id, user_session): 
+    raw_chat_messages = RawChatMessage.objects(user_session_id=user_session)
+    logger.info(f"RAW CHATS: {raw_chat_messages}")
+    for r in raw_chat_messages:
+        logger.info(f"Raw: {r}")
+        for m in r.message:
+            logger.info(f"Message: {m._id}, Looking for {message_id}")
+            if str(m._id) == message_id:
+                logger.info(f"Found target message {message_id}")
+                m.feedback = feedback.dict()
+                # Update feedback field
+                logger.info(f"Updating message with feedback: {feedback}")
+        r.save()
+
+    # Return
+    return
+
 def update_conversation_history(responses, conversation, rag_results, user_session, user_question):
 
         def create_message_content(role, message):
