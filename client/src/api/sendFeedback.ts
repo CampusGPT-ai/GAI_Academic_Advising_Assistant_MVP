@@ -4,14 +4,18 @@ import { BaseUrl } from "./baseURL";
 
 
 interface responseParams {
+  conversation_id: string;
+    session_id: string;
     feedback: any;
-  
+    message_id: string; 
   }
 
-const submitChatFeedback = async ({feedback} : responseParams) => {
+  //@app.post("/users/{session_guid}/conversations/{conversation_id}/messages/{message_id}")
+const submitChatFeedback = async ({conversation_id, session_id, feedback, message_id} : responseParams) => {
     try {
-      const response = await axios.post('https://your-endpoint.com/api/feedback', feedback);
-      console.log('Response:', response.data);
+      const response = await axios.post(`${BaseUrl()}/users/${session_id}/conversations/${conversation_id}/messages/${message_id}`, feedback);
+      console.log('Response from feedback API:', response.data);
+      debugger; 
       // Additional logic based on response, if needed
     } catch (error) {
       console.error('Error submitting form:', error);

@@ -41,7 +41,7 @@ const ChatMessageHistory: FC<ChatHistoryProps> = React.memo(({
 
             {m.role === "system" && (
               <>
-                <ChatBotChat message={m.message} isLoading={isLoading} onRetry={onRetry} isError={isError} />
+                <ChatBotChat message={m.message} isLoading={isLoading} onRetry={onRetry} isError={isError} message_id={m.id}/>
                 <Box sx={{ height: "20px" }} />
               </>
             )

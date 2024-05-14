@@ -64,11 +64,6 @@ const FeedbackForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit })
     setResponses(prev => ({ ...prev, [question]: { ...prev[question], comment: comment } }));
   };
 
-  const handleSubmit = () => {
-    submitChatFeedback({ feedback: responses });
-    onSubmit(responses);
-  };
-
   return (
     <Box width={500} p={2}>
       <Typography variant="h6" textAlign="center">Feedback Form</Typography>
@@ -97,7 +92,7 @@ const FeedbackForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit })
         fullWidth
         variant="contained"
         color="primary"
-        onClick={handleSubmit}
+        onClick={onSubmit.bind(null, responses)}
         sx={{ mt: 2 }}
       >
         Submit
