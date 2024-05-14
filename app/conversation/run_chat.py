@@ -75,7 +75,7 @@ class QueryLLM:
     def run_llm(self, prompt, expected_json = []):
         try:
             #$chat = self.azure_llm_client.chat(prompt, True)
-            chat = self.azure_llm_client.chat(prompt, True)
+            chat = self.openai_llm_client.chat(prompt, True)
             formatted_response = self.azure_llm_client._format_json(chat)
             final_out = self.azure_llm_client.validate_json(formatted_response, expected_json)
             return final_out

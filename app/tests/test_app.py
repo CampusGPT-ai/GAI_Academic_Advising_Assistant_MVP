@@ -1,4 +1,5 @@
 import pytest
+import json
 import mongomock
 
 from bson import ObjectId
@@ -7,8 +8,9 @@ from fastapi.testclient import TestClient
 from mongoengine import connect, disconnect
 
 from ..app import app, get_session_from_session
-from ..data.models import UserSession, Profile, ConversationSimple
+from ..data.models import UserSession, Profile, ConversationSimple, RawChatMessage, Feedback
 from ..app_auth.authorize_user import credentials_exception
+from ..conversation.update_conversation import update_conversation_history
 
 from .mocks.mock_services import (
     MockAzureSearchService,
@@ -155,3 +157,36 @@ def test_user_conversation_message_history_unauthorized(unauthenticated_client):
         f"/users/{test_session}/conversations/test/messages"
     )
     assert response.status_code == 401
+
+@pytest.mark.skip(reason="WIP")
+def test_user_conversation_message_feedback_success(
+    mock_services, authenticated_client, user_session
+):
+    feedback_payload = {"q1_usefullness":  {"scale": 3, "comment": "hi"}, "q2_relevancy": {"scale": 3, "comment": "bye"}, "q3_accuracy": {"scale": 5, "comment": "blah"}}
+    message_id = message.message[0].id
+    response = authenticated_client.post(
+        f"/users/{test_session}/conversations/{conversation_id}/messages/{message_id}", json=feedback_payload
+    )
+    assert response.status_code == 200
+
+    conversation = ConversationSimple(user_id=user_session.user_id, id=ObjectId(conversation_id))
+    messages = conversation.history
+    assert messages[-1].feedback == Feedback(**feedback_payload).dict()
+
+def test_user_conversation_message_feedback_unauthorized(unauthenticated_client):
+    feedback_payload = {"q1_usefullness":  {"scale": 3, "comment": "hi"}, "q2_relevancy": {"scale": 3, "comment": "bye"}, "q3_accuracy": {"scale": 5, "comment": "blah"}}
+    message_id = 0
+    response = unauthenticated_client.post(
+        f"/users/{test_session}/conversations/{conversation_id}/messages/{message_id}", json=feedback_payload
+    )
+    assert response.status_code == 401
+
+def test_user_conversation_message_feedback_failure(
+    mock_services, authenticated_client, user_session
+):
+    # Invalid rating score in payload
+    feedback_payload = {"q1_usefullness":  {"scale": 8, "comment": "hi"}, "q2_relevancy": {"scale": 3, "comment": "bye"}, "q3_accuracy": {"scale": 5, "comment": "blah"}}
+    response = authenticated_client.post(
+        f"/users/{test_session}/conversations/{conversation_id}/messages/0", json=feedback_payload
+    )
+    assert response.status_code == 422

@@ -12,6 +12,7 @@ export type Timestamp = {
     role: string;
     message: string;
     created_at: Timestamp;
+    id?: string;
     citations?: Citation[];
     followups?: string[];
   }
@@ -20,6 +21,7 @@ export type Timestamp = {
     role: string;
     message: string;
     created_at: Timestamp;
+    id?: string;
   }
 
   export type Message = {
