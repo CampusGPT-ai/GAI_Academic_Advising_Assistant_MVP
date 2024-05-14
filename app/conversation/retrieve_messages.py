@@ -36,7 +36,9 @@ def get_message_history(conversation_id, return_type = "json"):
                 #get chats
                 message_small_list = []
                 for r in m.message:
-                    message_small_list.append(r._data)
+                    r_dict = r._data
+                    r_dict["id"]=str(r_dict["_id"])
+                    message_small_list.append(r_dict)
 
                 message_small_list = sorted(message_small_list, key=lambda x: (x['role']), reverse=True)
 
@@ -86,5 +88,5 @@ if __name__=="__main__":
     with relative_path.open(mode='r') as file:
         mock_user_session : UserSession = UserSession(**json.load(file))
     
-    get_message_history(conversation_id="660f349865fb022222dcd495")
+    get_message_history(conversation_id="66438b1a16436047f729b58c")
 
