@@ -1,5 +1,6 @@
 from mongoengine import connect, disconnect
 from settings.settings import Settings
+import time 
 
 settings = Settings()
 import mongoengine.connection
@@ -60,11 +61,22 @@ class MongoConnection():
     def delete_docs_by_user(self, user):
         from data.models import ConversationSimple
         ConversationSimple.objects(user_id=user).delete()
+        
+    def delete_catalog_docs(self, retries=5, delay=1):
+        from data.models import WebPageDocument
+        results = WebPageDocument.objects(type="Catalog")
+    
+        for r in results:
+            print(f"Deleting document: {r.id}")
+            r.delete()
+
+
+    print("Failed to delete documents after several retries")
 
 if __name__ == "__main__":
     mongo = MongoConnection()
     mongo.connect()
-    mongo.delete_web_docs()
+    mongo.delete_catalog_docs()
     #mongo.delete_docs_by_user("A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I")
 
         
