@@ -35,7 +35,7 @@ def parse_json(json_data):
     document = WebPageDocument(
         page_content=json_data.get("page_content", []),
         metadata=metadata,
-        type="Document"  # Assuming type is constant; adjust if it varies
+        type="Catalog"  # Assuming type is constant; adjust if it varies
     )
 
     return document
@@ -58,7 +58,7 @@ def extract_retry_after(error_message):
 
 
 def run_move_file():
-    while True:
+    while True and not doc_queue.empty():
         doc, filename = doc_queue.get()
 
         if doc is None and filename is None:
@@ -126,7 +126,7 @@ def get_files(directory_path):
 # creates a thread pool to run qna processing (this is the main function to convert pages to short text)
 async def chunked_files():
     max_threads = 15 # be careful of rate limiting and CPU usage
-    get_files("/Users/marynelson/docs/ucf_catalog")
+    get_files("/Users/marynelson/docs/itech_catalog")
             #start consumer thread production
     for _ in range(max_threads):
         thread = threading.Thread(target=run_move_file)

@@ -37,3 +37,15 @@ Please summarize the catalog information provided. Include all essential details
         )
 
  
+def summarize_catalog_simple(c):
+    system_content = ('''
+Please summarize the information provided.  If the information appears to be a list of courses, summarize each course description individually.  Don't leave important information out. n\n''')
+
+    return (
+            [
+        Message(role='system', content=system_content),
+        Message(role='user',content=c)
+    ]
+        )
+
+ 

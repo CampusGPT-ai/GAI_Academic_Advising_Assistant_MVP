@@ -43,6 +43,7 @@ const useQnAData = (
     ) => {
     const [conversationReference, setConversationReference] = useState<ConversationReference | null>(null);
     const [kickbackResponse, setKickbackResponse] = useState<KickbackResponse | null>(null);
+    const [noKickback, setNoKickback] = useState<boolean>(false); // [NEW
     const [ragResponse, setRagResponse] = useState<RagResponse | null>(null);
     const [apiUrl, setApiUrl] = useState<string>('');
     const apiUrlRef = useRef<string | null>(null);
@@ -60,6 +61,7 @@ const useQnAData = (
 
             // Update state variables with the data from the API
             setRagResponse(data.rag_response);
+            !data.kickback_response && setNoKickback(true); 
             setKickbackResponse(data.kickback_response);
             setConversationReference(data.conversation_reference);
 
@@ -152,13 +154,9 @@ const useQnAData = (
         if (setAppStatus && 
             kickbackResponse &&
             ragResponse &&
-            kickbackResponse?.follow_up_question !== kickbackRef.current && 
+            (kickbackResponse?.follow_up_question !== kickbackRef.current || noKickback) && 
             ragResponse?.response !== ragRef.current) {
-            console.log(`resetting app status with: 
-            kickbackResponse: ${kickbackResponse?.follow_up_question}
-             and ragResponse: ${ragResponse?.response}
-             and kickbackRef.current: ${kickbackRef.current}
-             and ragRef.current: ${ragRef.current}`)
+            console.log(`resetting app status to idle with all responses in place`)
 
             if (kickbackResponse) {
                 kickbackRef.current = kickbackResponse.follow_up_question
@@ -168,9 +166,11 @@ const useQnAData = (
                 ragRef.current = ragResponse.response
                 setRagResponse(null)
             }
+            setRefreshFlag && setRefreshFlag(true);
             setAppStatus(AppStatus.Idle);
         }
     }, [kickbackResponse, ragResponse])
+    // I am making a change!
 
     return { isNewConversation: conversationReference?.id !== conversationRef.current};
 };
