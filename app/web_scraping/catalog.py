@@ -15,7 +15,7 @@ import time
 from data.models import kbDocument, WebPageDocument, catalogDocument
 from settings.settings import Settings
 from mongoengine import connect
-from web_scraping.scraping_prompts import summarize_chunks, summarize_catalog
+from web_scraping.scraping_prompts import summarize_chunks, summarize_catalog_simple
 import queue 
 
 settings = Settings()
@@ -70,6 +70,9 @@ class SyntheticQnA(FileLogger):
                                 model=OPENAI_MODEL,
                                 deployment=OPENAI_DEPLOYMENT,
                                 embedding_deployment=EMBEDDING_DEPLOYMENT)
+        self.openai_llm_client : AzureLLMClients = get_llm_client(api_type='openai',
+                                                                    api_key=settings.OPENAI_API_KEY,
+                                                                    model=settings.OPENAI_DIRECT_MODEL)
         self.lock = threading.Lock()
         self.threads = []
         self.prefix_whitelist = []
@@ -90,11 +93,11 @@ class SyntheticQnA(FileLogger):
     def generate_completion(self, context_str: list) -> str:
         
         def get_prompt():
-            return summarize_catalog(context_str)
+            return summarize_catalog_simple(context_str)
     
         
         messages = get_prompt()
-        result : ChatCompletion = self.azure_llm.chat(messages)
+        result : ChatCompletion = self.openai_llm_client.chat(messages)
         print(result.choices[0].message)
         return result.choices[0].message 
 
@@ -186,16 +189,11 @@ class SyntheticQnA(FileLogger):
             return False
         
     def get_docs_from_mongo(self):
-        documents = WebPageDocument.objects.all()
+        documents = WebPageDocument.objects(type="Catalog").all()
         asyncio.sleep(5)
         for doc in documents:
             json_doc = doc._data
-            metadata = json_doc.get('metadata')._data
-            source = metadata.get('source')
-            if 'courses' not in source:
-                continue
-            else:
-                self.mongo_docs.put(json_doc)
+            self.mongo_docs.put(json_doc)
 
     def run_qna(self):
         while True:
@@ -222,7 +220,7 @@ class SyntheticQnA(FileLogger):
                     self.visited.add(filename)
                     # self.save_visited_urls()
                     content = doc.get('page_content')
-                    content = remove_duplicate_passages(content)
+                    #content = remove_duplicate_passages(content)
                     self.threaded_generate_completion(content,filename,doc)
 
                 except KeyboardInterrupt:  
