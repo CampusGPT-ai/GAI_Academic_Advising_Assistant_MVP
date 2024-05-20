@@ -134,6 +134,7 @@ const useQnAData = (
             const conversation: ConversationNew = { id: conversationReference.id, topic: conversationReference.topic, start_time: conversationReference.start_time };
             setSelectedConversation(conversation);
         }
+        //change
     }, [conversationReference])// Dependency array, the effect runs when the URL changes
 
 
