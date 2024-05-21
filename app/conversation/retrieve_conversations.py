@@ -36,6 +36,7 @@ def remove_partial_conversation(conversation_id):
         raise e
     
 def conversation_to_dict(c):
+    logger.debug(f"conversation id: {c.topic}")
     return {
                     "topic": c.topic if c.topic else "No topic",
                     "id": str(c.id),

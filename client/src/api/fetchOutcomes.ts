@@ -35,7 +35,7 @@ export interface GraphInsights {
  
              // Update state variables with the data from the API
              setRisks(data.risks);
-            setOpportunities(data.opportunities);
+             setOpportunities(data.opportunities);
  
              console.log('Data fetched:', JSON.stringify(data));
          } catch (error: any) {
