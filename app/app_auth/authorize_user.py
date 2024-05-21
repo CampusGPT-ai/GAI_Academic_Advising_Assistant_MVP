@@ -53,7 +53,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
         options={"verify_signature": True, "verify_aud": True, "verify_iss": True}
         )
         
-        logger.info("got token payload %s", payload)
+        logger.debug("got token payload %s", payload)
         try:
             user = create_user_if_not_exist(payload)
             return user
@@ -205,7 +205,7 @@ async def saml_login_callback(request: Request):
 
 @router.post("/validate_token")
 async def validate_and_create_session_msal(token: str = Depends(oauth2_scheme)):
-    logger.info(f"Received token: {token}")
+    #logger.info(f"Received token: {token}")
     if not token or token == None:
         raise credentials_exception
     try:

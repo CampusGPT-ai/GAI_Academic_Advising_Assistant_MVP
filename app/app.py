@@ -34,6 +34,7 @@ import asyncio
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+logging.getLogger('azure').setLevel(logging.WARNING)
 
 request_id_contextvar = contextvars.ContextVar("request_id", default=None)
 user_id_contextvar = contextvars.ContextVar("user_id", default=None)
@@ -75,7 +76,7 @@ async def lifespan(app: FastAPI):
     # startup block
     settings = get_settings()
     app.state.settings = settings
-    logger.info(f"got settings from settings.py {settings.model_dump()}")
+    logger.debug(f"got settings from settings.py {settings.model_dump()}")
     # setup mongo connection
     db_name = settings.MONGO_DB
     db_conn = settings.MONGO_CONN_STR
@@ -178,7 +179,7 @@ async def get_sample_questions(
     try:
         
         questions = get_questions(conversations,session_data)
-        logger.info(f'found questions from gpt: {questions}')
+        logger.info(f'found questions from gpt.')
         return JSONResponse(content={"data": questions}, status_code=200)
     except Exception as e:
         logger.error(
@@ -235,12 +236,15 @@ async def chat_new(
    
         missing_considerations = c.match_profile_to_graph(all_considerations)
 
-        logger.info(f"missing_considerations: {missing_considerations}")
+        #logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)
         rag_response, rag_content = await responder.rag_response_async(history)
 
         if topics[0].get('score') < 0.9:
             kickback_response = ""
+        
+        if conversation.topic == "No topic":
+            conversation.topic = topic
 
         final_response = {
             "conversation_reference": conversation_to_dict(conversation),
@@ -322,7 +326,7 @@ async def get_conversations(
             )
         else:
             logger.info(
-                f"got conversations from documents {conversation_topics}",
+                f"got conversations from documents.",
             )
             response = JSONResponse(
                 content=conversation_topics, status_code=200
