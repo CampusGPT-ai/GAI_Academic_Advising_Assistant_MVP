@@ -11,7 +11,7 @@ from typing import List
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, BackgroundTasks
 from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
 from functools import lru_cache
@@ -34,6 +34,7 @@ import asyncio
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+logging.getLogger('azure').setLevel(logging.WARNING)
 
 request_id_contextvar = contextvars.ContextVar("request_id", default=None)
 user_id_contextvar = contextvars.ContextVar("user_id", default=None)
@@ -75,7 +76,7 @@ async def lifespan(app: FastAPI):
     # startup block
     settings = get_settings()
     app.state.settings = settings
-    logger.info(f"got settings from settings.py {settings.model_dump()}")
+    logger.debug(f"got settings from settings.py {settings.model_dump()}")
     # setup mongo connection
     db_name = settings.MONGO_DB
     db_conn = settings.MONGO_CONN_STR
@@ -178,7 +179,7 @@ async def get_sample_questions(
     try:
         
         questions = get_questions(conversations,session_data)
-        logger.info(f'found questions from gpt: {questions}')
+        logger.info(f'found questions from gpt.')
         return JSONResponse(content={"data": questions}, status_code=200)
     except Exception as e:
         logger.error(
@@ -195,6 +196,7 @@ async def get_sample_questions(
 async def chat_new(
     user_question,
     conversation_id,
+    background_tasks: BackgroundTasks,
     session_data: UserSession = Depends(get_session_from_session),
 ):
     try:
@@ -210,9 +212,12 @@ async def chat_new(
             print('adding new topics and relationships for low scoring match')
             finder = NodeEditor(session_data, user_question)
             finder.init_neo4j()
-            finder.orchestrate_graph_update_async(topics)
-        
-        #TODO: need to figure out how to handle low scoring topics without waiting for new considerations - maybe just blank it out? multiple topics
+            try:
+                background_tasks.add_task(finder.orchestrate_graph_update_async(topics))
+            except Exception as e:
+                logger.error(
+                    f"failed to orchestrate_graph_update_async with error {str(e)}",
+                )
         topic = topics[0].get('name')
 
         logger.info("topic is " + topic)
@@ -235,12 +240,14 @@ async def chat_new(
    
         missing_considerations = c.match_profile_to_graph(all_considerations)
 
-        logger.info(f"missing_considerations: {missing_considerations}")
+        #logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)
         rag_response, rag_content = await responder.rag_response_async(history)
 
         if topics[0].get('score') < 0.9:
             kickback_response = ""
+        
+        conversation.topic = topic
 
         final_response = {
             "conversation_reference": conversation_to_dict(conversation),
@@ -322,7 +329,7 @@ async def get_conversations(
             )
         else:
             logger.info(
-                f"got conversations from documents {conversation_topics}",
+                f"got conversations from documents.",
             )
             response = JSONResponse(
                 content=conversation_topics, status_code=200

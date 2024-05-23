@@ -32,6 +32,7 @@ interface ChatProps {
   currentAnswerRef: React.MutableRefObject<any>;
   chatWidth: string;
   opportunities?: Outcomes[];
+  currentUserQuestion?: string;
 }
 
 const Chat: FC<ChatProps> = ({
@@ -43,9 +44,14 @@ const Chat: FC<ChatProps> = ({
   currentAnswerRef,
   chatWidth,
   opportunities,
+  currentUserQuestion,
 }) => {
   //console.log(`current app status is ${appStatus}`)
   //console.log("loading chat page with ",JSON.stringify(messageHistory))
+  const handleChatSend = (messageText: string) => {
+    console.log(`Chat message sent: ${messageText}`)
+    sendChatClicked(messageText);
+  }
   
   return (
 
@@ -55,13 +61,13 @@ const Chat: FC<ChatProps> = ({
       <Box height={"100%"} display="flex" justifyContent={"center"} width={chatWidth}>
           <ChatActive //src/sections/chat/chatActive
             messageHistory={messageHistory}
-            sendChatClicked={sendChatClicked}
+            sendChatClicked={handleChatSend}
             appStatus={appStatus}
             sampleQuestions={sampleQuestions}
             isError={isError}
             currentAnswerRef={currentAnswerRef}
             opportunities={opportunities}
-
+            currentUserQuestion={currentUserQuestion}
           />
       </Box>
  

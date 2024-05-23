@@ -89,6 +89,7 @@ const MainPage: FC = () => {
     console.log(`resetting conversation on dialog click`)
     setRefreshFlag(false);
     setUserQuestion(undefined);
+    setOutcomes(undefined);
     setSelectedConversation(undefined);
     setMessageHistory(undefined);
     responseRef.current = undefined;
@@ -118,7 +119,7 @@ const MainPage: FC = () => {
   };
 
   const handleUserQuestion = async (input: string) => {
-    console.log(`handle user question with app Status: ${appStatus}`)
+    console.log(`handle user question with ${input} app Status: ${appStatus}`)
     const userMessage: MessageSimple = { role: "user", message: input, created_at: { $date: Date.now() } };
     updateHistory(userMessage);
     if (userSession) {
@@ -129,6 +130,7 @@ const MainPage: FC = () => {
   useQnAData(userQuestion,
     userSession,
     selectedConversation?.id,
+    setUserQuestion,
     setSelectedConversation,
     updateHistory,
     setAppStatus,
@@ -211,6 +213,10 @@ const MainPage: FC = () => {
       setAppStatus(AppStatus.Idle)
     }
   }, [messageHistory, appStatus])
+
+  useEffect(() => {
+    console.log('selected conversation is ', JSON.stringify(selectedConversation))
+  },[selectedConversation])
 
   const mainContentStyles = {
     flexGrow: 1,
@@ -337,7 +343,8 @@ const MainPage: FC = () => {
               messageHistory={messageHistory}
               currentAnswerRef={currentAnswerRef}
               chatWidth="70vw"
-              opportunities={opportunities} />
+              opportunities={opportunities}
+              currentUserQuestion={userQuestion}/>
           </ConversationContext.Provider>
           }
         </Box>
