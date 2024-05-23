@@ -17,7 +17,7 @@ export interface GraphInsights {
  const useGraphData = (
     setErrorMessage: (error: string) => void,
     setIsError: (isError: boolean) => void,
-     messageText?: string, 
+     conversationTopic?: string, 
      user_id?: string,
      ) => {
     const [risks, setRisks] = useState<Outcomes[]>([]);
@@ -35,7 +35,7 @@ export interface GraphInsights {
  
              // Update state variables with the data from the API
              setRisks(data.risks);
-            setOpportunities(data.opportunities);
+             setOpportunities(data.opportunities);
  
              console.log('Data fetched:', JSON.stringify(data));
          } catch (error: any) {
@@ -60,20 +60,24 @@ export interface GraphInsights {
         };
  
      useEffect(() => {
-         if (messageText) {
-             if (userQuestionRef.current === messageText) {
+         if (conversationTopic) {
+             if (userQuestionRef.current === conversationTopic) {
                  return;
              }
              else {
-              const safeMessageText = messageText.replace(/\//g, '-');
-              const encodedMessageText = encodeURIComponent(safeMessageText);
-              setApiUrl(`${BaseUrl()}/users/${user_id}/outcomes/${encodedMessageText}`);   
+              const safeconversationTopic = conversationTopic.replace(/\//g, '-');
+              const encodedconversationTopic = encodeURIComponent(safeconversationTopic);
+              setApiUrl(`${BaseUrl()}/users/${user_id}/outcomes/${encodedconversationTopic}`);   
         
                  }
  
-                 userQuestionRef.current = messageText;
+                 userQuestionRef.current = conversationTopic;
              }
-         }, [messageText, user_id]);
+          else {
+            setOpportunities([]);
+            setRisks([]);
+          }
+         }, [conversationTopic, user_id]);
  
      useEffect(() => {
          if (apiUrl && apiUrlRef.current !== apiUrl) {

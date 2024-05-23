@@ -31,6 +31,7 @@ class GraphVector:
                 
                 # Generate embedding
                 embedding = self._embed(description)
+                print('adding embedding for node:', node_id)
                 
                 # Update the node with the embedding (create a new property, e.g., 'embedding')
                 session.run('''

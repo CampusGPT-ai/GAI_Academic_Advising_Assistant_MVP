@@ -34,6 +34,7 @@ const useQnAData = (
     messageText?: string, 
     user_id?: string, 
     conversation_id?: string, 
+    setUserQuestion?: (question: string) => void,
     setSelectedConversation?: (conversation: ConversationNew) => void, 
     updateHistory?: (userMessage: MessageSimple) => void, 
     setAppStatus?: (appStatus: AppStatus) => void,
@@ -46,11 +47,7 @@ const useQnAData = (
     const [noKickback, setNoKickback] = useState<boolean>(false); // [NEW
     const [ragResponse, setRagResponse] = useState<RagResponse | null>(null);
     const [apiUrl, setApiUrl] = useState<string>('');
-    const apiUrlRef = useRef<string | null>(null);
     const conversationRef = useRef<string | null>(null);
-    const userQuestionRef = useRef<string | null>(null);
-    const ragRef = useRef<string | null>(null);
-    const kickbackRef = useRef<string | null>(null);
 
     const fetchData = async () => {
         try {
@@ -86,14 +83,20 @@ const useQnAData = (
             }
           }
         };
+     
+    const resetStatus = () => {
+        setApiUrl('');
+        setAppStatus && setAppStatus(AppStatus.Idle);
+        setKickbackResponse(null);
+        setRagResponse(null);
+        setNoKickback(false);
+        setUserQuestion && setUserQuestion('');
+    };
 
 
     useEffect(() => {
         if (messageText) {
-            if (userQuestionRef.current === messageText) {
-                return;
-            }
-            else {
+            console.log('useQnAData useEffect triggered')
                 
                 if (user_id) {
                     const safeMessageText = messageText.replace(/\//g, '-');
@@ -104,15 +107,11 @@ const useQnAData = (
                         setApiUrl(`${BaseUrl()}/users/${user_id}/conversations/0/chat_new/${encodedMessageText}`)
                     }
                 }
-
-                userQuestionRef.current = messageText;
             }
-        }
     }, [messageText, conversation_id, user_id]);
 
     useEffect(() => {
-        if (apiUrl && apiUrlRef.current !== apiUrl) {
-            apiUrlRef.current = apiUrl;
+        if (apiUrl) {
             console.log('Fetching data...');
             try {
                 fetchData();
@@ -126,7 +125,7 @@ const useQnAData = (
     }, [apiUrl]);
 
     useEffect(() => {
-        if (setSelectedConversation && conversationReference && conversationRef.current !== conversationReference.id) {
+        if (setSelectedConversation && conversationReference) {
             // trigger refresh of conversation history list
             console.log(`setting refresh flag with conversation reference conversationReference: ${JSON.stringify(conversationReference)} and conversationRef.current: ${conversationRef.current}`)
             setRefreshFlag && setRefreshFlag(true);
@@ -140,38 +139,22 @@ const useQnAData = (
 
     useEffect(() => {
 
-        if (updateHistory && ragResponse && ragRef.current !== ragResponse.response) {
+        if (updateHistory && ragResponse) {
             console.log(`ragResponse: ${ragResponse.response}`)
             const ru: MessageSimple = { role: "system", message: ragResponse.response, created_at: { $date: Date.now() } };
             updateHistory && updateHistory(ru);
         }
-        if (updateHistory && kickbackResponse && kickbackRef.current !== kickbackResponse.follow_up_question) {
+        if (updateHistory && kickbackResponse) {
             console.log(`kickbackResponse: ${kickbackResponse.follow_up_question}`)
             const followUpQuestion: MessageSimple = { role: "system", message: kickbackResponse.follow_up_question, created_at: { $date: Date.now() } };
             updateHistory && updateHistory(followUpQuestion);
         }
 
-
-        if (setAppStatus && 
-            kickbackResponse &&
-            ragResponse &&
-            (kickbackResponse?.follow_up_question !== kickbackRef.current || noKickback) && 
-            ragResponse?.response !== ragRef.current) {
-            console.log(`resetting app status to idle with all responses in place`)
-
-            if (kickbackResponse) {
-                kickbackRef.current = kickbackResponse.follow_up_question
-                setKickbackResponse(null)
-            }
-            if (ragResponse) {
-                ragRef.current = ragResponse.response
-                setRagResponse(null)
-            }
-            setRefreshFlag && setRefreshFlag(true);
-            setAppStatus(AppStatus.Idle);
+        if (ragResponse && (kickbackResponse || noKickback)) {
+         resetStatus();
         }
+
     }, [kickbackResponse, ragResponse])
-    // I am making a change!
 
     return { isNewConversation: conversationReference?.id !== conversationRef.current};
 };

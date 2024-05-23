@@ -12,7 +12,7 @@ from cloud_services.llm_services import get_llm_client, AzureLLMClients
 from typing import List
 
 logger = logging.getLogger(__name__)
-
+logging.getLogger('azure').setLevel(logging.WARNING)
 class VectorSearchService(ABC):
     @abstractmethod
     def getSearchClient(self):

@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
  
 logger = logging.getLogger(__name__)
+logging.getLogger('azure').setLevel(logging.WARNING)
 
 def normalize_text(s, sep_token = " \n "):
     s = re.sub(r'\s+',  ' ', s).strip()

@@ -1,6 +1,7 @@
 from settings.settings import Settings
 from cloud_services.kg_neo4j import Neo4jSession
 from threading import Thread
+from typing import List, Dict
 settings = Settings()
 
 class GraphFinder:
@@ -30,8 +31,20 @@ class GraphFinder:
             return graph_considerations
         elif type == 'Outcome':
             risks = self.finder.query_outcomes('IS_RISK_OF',related_topics)
+            risks = self.remove_duplicates(risks)[:3]
             opportunities = self.finder.query_outcomes('IS_OPPORTUNITY_FOR', related_topics)
+            opportunities = self.remove_duplicates(opportunities)[:3]
             return risks, opportunities
+        
+
+    def remove_duplicates(self, items: List[Dict]) -> List[Dict]:
+        unique_items = []
+        seen_names = set()
+        for item in items:
+            if item['name'] not in seen_names:
+                unique_items.append(item)
+                seen_names.add(item['name'])
+        return unique_items
 
     def init_neo4j(self):
         if self.finder == None:

@@ -39,6 +39,7 @@ interface ChatActiveProps {
   sendChatClicked: (text: string) => void;
   currentAnswerRef: React.MutableRefObject<any>;
   opportunities?: Outcomes[];
+  currentUserQuestion?: string;
 }[]
 
 const ChatActive: FC<ChatActiveProps> = ({
@@ -50,11 +51,11 @@ const ChatActive: FC<ChatActiveProps> = ({
   sendChatClicked,
   currentAnswerRef,
   opportunities,
+  currentUserQuestion,
 }) => {
   
   const [userQuestion, setUserQuestion] = useState('');
-  const questionRef = React.useRef(userQuestion);
-  const theme = useTheme()
+
   //console.log(`user questions is set to ${userQuestion} with ${appStatus}`);
   /**
    * Sets the message state to the input text.
@@ -62,6 +63,7 @@ const ChatActive: FC<ChatActiveProps> = ({
    */
   const handleSendClick = (inputText: string) => {
     console.log(`sending chat from send clicked with ${inputText}`);
+    appStatus === AppStatus.Idle && sendChatClicked(inputText);
     setUserQuestion(inputText);
   };
 
@@ -71,7 +73,8 @@ const ChatActive: FC<ChatActiveProps> = ({
    */
   const handleQuestionClick = (questionText: string) => {
     console.log(`sample question clicked: ${questionText}`);
-    setUserQuestion(questionText)
+    appStatus === AppStatus.Idle && sendChatClicked(questionText)
+    setUserQuestion(questionText);
   };
 
   const handleRetry = () => {
@@ -79,19 +82,7 @@ const ChatActive: FC<ChatActiveProps> = ({
     userQuestion != '' && userQuestion && sendChatClicked(userQuestion)
   }
 
-  /**
-   * activates the call back function when the message state is changed.
-   */
-  useEffect(() => {
-    if (questionRef.current !== userQuestion) {
-      console.log(`user question changed to ${userQuestion}`);
-      questionRef.current = userQuestion;
-    
-      if (userQuestion.trim() !== '' && userQuestion !== undefined) {
-        appStatus === AppStatus.Idle && sendChatClicked(userQuestion);
-      }
-    }
-  },[userQuestion, appStatus])
+
 
   // console.log(`generating chat history with ${JSON.stringify(messageHistory)}, app status is ${appStatus}`)
   return (
