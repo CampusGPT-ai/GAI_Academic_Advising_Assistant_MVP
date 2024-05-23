@@ -11,7 +11,7 @@ from typing import List
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, BackgroundTasks
 from mongoengine import connect, disconnect
 from contextlib import asynccontextmanager
 from functools import lru_cache
@@ -196,6 +196,7 @@ async def get_sample_questions(
 async def chat_new(
     user_question,
     conversation_id,
+    background_tasks: BackgroundTasks,
     session_data: UserSession = Depends(get_session_from_session),
 ):
     try:
@@ -211,9 +212,12 @@ async def chat_new(
             print('adding new topics and relationships for low scoring match')
             finder = NodeEditor(session_data, user_question)
             finder.init_neo4j()
-            finder.orchestrate_graph_update_async(topics)
-        
-        #TODO: need to figure out how to handle low scoring topics without waiting for new considerations - maybe just blank it out? multiple topics
+            try:
+                background_tasks.add_task(finder.orchestrate_graph_update_async(topics))
+            except Exception as e:
+                logger.error(
+                    f"failed to orchestrate_graph_update_async with error {str(e)}",
+                )
         topic = topics[0].get('name')
 
         logger.info("topic is " + topic)
@@ -243,8 +247,7 @@ async def chat_new(
         if topics[0].get('score') < 0.9:
             kickback_response = ""
         
-        if conversation.topic == "No topic":
-            conversation.topic = topic
+        conversation.topic = topic
 
         final_response = {
             "conversation_reference": conversation_to_dict(conversation),
