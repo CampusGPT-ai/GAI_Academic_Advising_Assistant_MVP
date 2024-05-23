@@ -95,6 +95,13 @@ class Neo4jSession:
         """
         parameters = {'node_name': node_names, 'relationship_type': relationship_type}
         return self.run_query(query, parameters)
+    
+    def query_topics(self, topic):
+        query = f"""
+        MATCH (t:Topic {{name: "{topic}"}})
+        RETURN t
+        """
+        return self.run_query(query)
         
 
     def query_considerations(self, node_names, node_type, relationship_type):
@@ -146,9 +153,9 @@ class Neo4jSession:
                 node = result.single()
                 if node:
                     node = node['r']
-                    print(f"Relationship created")
+                    print(f"Relationship {from_node} to {to_node} created with type {relationship_type}")
                 else:
-                    print(f"Relationship {from_node} to {to_node} not created")
+                    print(f"Relationship {from_node} to {to_node} NOT created")
         except Exception as e:
             print(e)    
             raise e
