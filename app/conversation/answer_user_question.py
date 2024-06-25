@@ -61,17 +61,17 @@ class QnAResponse:
         return rag_links, rag_content
         
         
-    def rag_response(self, conversation_history):
+    def rag_response(self, conversation_history, matching_considerations):
         rag_links, rag_content = self.run_rag()
         mapped_list = [{"response": response, "link": link} for link, response in zip(rag_links, rag_content)]
         json_string = json.dumps(mapped_list, indent=4)
         self.rag_results = json_string
         rag_prompt, rag_json = self.llm_query.create_prompt_template(
-            gpt_qa_prompt(self.get_user_context(),json_string),conversation_history, self.user_question)
+            gpt_qa_prompt(" ".join(matching_considerations),json_string),conversation_history, self.user_question)
         return self.llm_query.run_llm(rag_prompt, rag_json)
     
-    async def rag_response_async(self, conversation_history):
-        result = await asyncio.to_thread(self.rag_response, conversation_history)
+    async def rag_response_async(self, conversation_history, matching_considerations):
+        result = await asyncio.to_thread(self.rag_response, conversation_history, matching_considerations)
         return result, self.rag_results
 
     def kickback_response(self, missing_considerations, conversation_history):
@@ -95,7 +95,9 @@ if __name__ == "__main__":
     db_conn = os.getenv("MONGO_CONN_STR")
     _mongo_conn = connect(db=db_name, host=db_conn)
 
+    # Now use the relative path
     relative_path = Path('./app/data/mock_user_session.json')
+
     from conversation.retrieve_messages import get_history_as_messages
     from conversation.retrieve_conversations import conversation_to_dict
     from conversation.run_graph import GraphFinder  
@@ -118,13 +120,13 @@ if __name__ == "__main__":
         finder.init_neo4j()
         finder.orchestrate_graph_update_async(topics)
     
-    #TODO: need to figure out how to handle low scoring topics without waiting for new considerations - maybe just blank it out? multiple topics
     topic = topics[0].get('name')
 
     c = Considerations(mock_user_session, USER_QUESTION)
+
     all_considerations = graph.get_relationships('Consideration',topic)
 
-    missing_considerations = c.match_profile_to_graph(all_considerations)
+    missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
 
     history = get_history_as_messages(mock_conversation[0].id)
     follow_up = QnAResponse(USER_QUESTION, mock_user_session, mock_conversation)
@@ -151,9 +153,9 @@ if __name__ == "__main__":
     responder = QnAResponse(user_question, session_data, conversation)
     if 'course' in topic.lower():
         responder.retriever = SearchRetriever.with_default_settings(index_name=settings.SEARCH_CATALOG_NAME)
-    missing_considerations = c.match_profile_to_graph(all_considerations)
+    missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
     kickback_response = asyncio.run(responder.kickback_response_async(missing_considerations, history))
-    rag_response, _ = asyncio.run(responder.rag_response_async(history))
+    rag_response, _ = asyncio.run(responder.rag_response_async(history, matching_considerations))
 
     if topics[0].get('score') < 0.9:
         kickback_response = ""
