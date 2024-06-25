@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
-import { Box, TextField, Typography, Slider, Button, FormControl, FormLabel } from '@mui/material';
+import { Box, TextField, Typography, Slider, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControl, FormLabel } from '@mui/material';
 import submitChatFeedback from '../../../../../api/sendFeedback';
 
 interface ScaleQuestionProps {
   label: string;
-  begin: string;
-  end: string;
-  onCommentChange: (comment: string) => void;
   onScaleChange: (value: number | number[]) => void;
 }
 
-const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ label, begin, end, onCommentChange, onScaleChange }) => {
+const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ label, onScaleChange }) => {
   const marks = [
     { value: 1, label: '1' },
     { value: 2, label: '2' },
@@ -20,10 +17,9 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ label, begin, end, onComm
   ];
 
   return (
-    <FormControl fullWidth margin="normal">
-      <FormLabel>{label}</FormLabel>
-      <Typography component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="caption" mr={2}>{begin}</Typography>
+    <TableRow>
+      <TableCell>{label}</TableCell>
+      <TableCell align="center">
         <Slider
           defaultValue={3}
           step={1}
@@ -33,61 +29,77 @@ const ScaleQuestion: React.FC<ScaleQuestionProps> = ({ label, begin, end, onComm
           valueLabelDisplay="auto"
           onChange={(event, value) => onScaleChange(value)}
         />
-        <Typography variant="caption" ml={2}>{end}</Typography>
-      </Typography>
-      <TextField
-        fullWidth
-        margin="normal"
-        label="Comments"
-        variant="outlined"
-        multiline
-        rows={2}
-        onChange={(e) => onCommentChange(e.target.value)}
-      />
-    </FormControl>
+      </TableCell>
+     
+    </TableRow>
   );
 };
 
-
 const FeedbackForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit }) => {
   const [responses, setResponses] = useState({
-    q1_usefullness: { scale: 3, comment: '' },
-    q2_relevancy: { scale: 3, comment: '' },
-    q3_accuracy: { scale: 3, comment: '' },
+    relevance: { scale: 3},
+    accuracy: { scale: 3},
+    usefulness: { scale: 3},
+    helpfulnessOfLinks: { scale: 3},
+    learnMoreOptions: { scale: 3},
+    comments : { comment: ''},
   });
 
   const handleScaleChange = (question: keyof typeof responses, value: number | number[]) => {
     setResponses(prev => ({ ...prev, [question]: { ...prev[question], scale: value } }));
   };
 
-  const handleCommentChange = (question: keyof typeof responses, comment: string) => {
-    setResponses(prev => ({ ...prev, [question]: { ...prev[question], comment: comment } }));
+  const handleCommentChange = (comment: string) => {
+    setResponses(prev => ({ ...prev, comments: { comment } }));
   };
 
   return (
-    <Box width={500} p={2}>
+    <Box width={800} p={2}>
       <Typography variant="h6" textAlign="center">Feedback Form</Typography>
-      <ScaleQuestion
-        label="Information Usefullness: How useful was the information provided?"
-        begin='Not at all useful'
-        end='Extremely useful'
-        onScaleChange={(value) => handleScaleChange('q1_usefullness', value)}
-        onCommentChange={(comment) => handleCommentChange('q1_usefullness', comment)}
-      />
-      <ScaleQuestion
-        label="Information Relevancy: How well did the response interpret the intent of what you were asking and provide directly relevant information?"
-        begin="The information provided was irrelevant to what I was asking"
-        end="The information provided is relevant for what I was asking"
-        onScaleChange={(value) => handleScaleChange('q2_relevancy', value)}
-        onCommentChange={(comment) => handleCommentChange('q2_relevancy', comment)}
-      />
-      <ScaleQuestion
-        label="Information Accuracy: How accurate was the information provided, to the best of your knowledge?"
-        begin="There are obvious factual errors in the response"
-        end="The information is accurate for what I was asking"
-        onScaleChange={(value) => handleScaleChange('q3_accuracy', value)}
-        onCommentChange={(comment) => handleCommentChange('q3_accuracy', comment)}
-      />
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell width={'70%'}>Feedback</TableCell>
+              <TableCell align="center">1 = low, 5 = high</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <ScaleQuestion
+              label="Relevance: Did the AI seem to understand your question and provide a response that was directly related to your question?"
+              onScaleChange={(value) => handleScaleChange('relevance', value)}
+            />
+            <ScaleQuestion
+              label="Accuracy: Was the AI response accurate to the best of your knowledge (it didn’t create answers that were incorrect or untrue)?"
+              onScaleChange={(value) => handleScaleChange('accuracy', value)}
+            />
+            <ScaleQuestion
+              label="Usefulness: Did the AI response give you information that you would act on?"
+              onScaleChange={(value) => handleScaleChange('usefulness', value)}
+            />
+            <ScaleQuestion
+              label="Helpfulness of Links provided: In the response to your question, was the information provided in the links relevant?"
+              onScaleChange={(value) => handleScaleChange('helpfulnessOfLinks', value)}
+            />
+            <ScaleQuestion
+              label="“Learn More” Options: Were topics in the “Learn More” section related to the chat topic?"
+              onScaleChange={(value) => handleScaleChange('learnMoreOptions', value)}
+            />
+            <TableRow>
+             <TableCell>
+        <TextField
+          fullWidth
+          label="Comments"
+          variant="outlined"
+          multiline
+          rows={2}
+          onChange={(e) => handleCommentChange(e.target.value)}
+        />
+      </TableCell>
+      </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
       <Button
         fullWidth
         variant="contained"

@@ -1,10 +1,17 @@
 from mongoengine import connect, disconnect
 from settings.settings import Settings
-import time 
+import time, re
 
 settings = Settings()
 import mongoengine.connection
 
+date_patterns = [
+    r'\b\d{1,2}\s(?:January|February|March|April|May|June|July|August|September|October|November|December)\b',  # 01 January
+    r'\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s\d{1,2}\b',  # January 1
+    r'\b\d{2}/\d{2}\b',  # 01/18
+    r'\b\d{2}-\d{2}\b'   # 01-18
+]
+combined_pattern = re.compile('|'.join(date_patterns))
 
 class MongoConnection():
     # Try disconnecting fi
@@ -54,6 +61,32 @@ class MongoConnection():
         from data.models import ConversationSimple
         ConversationSimple.objects().delete()
 
+    def dedup_on_field(self):
+        content_set = set()
+        len = 0
+        from data.models import WebPageDocument
+        results = WebPageDocument.objects().all()
+        for r in results:
+            if r.page_content not in content_set:
+                content_set.add(r.page_content)
+                len = len + 1
+            else:
+                print(f"Duplicate found: {r.id}")
+                r.delete()
+        print(len)
+    
+    def flag_on_text(self):
+        len = 0
+        from data.models import WebPageDocument
+        results = WebPageDocument.objects().all()
+        for r in results:
+            if bool(combined_pattern.search(r.page_content)):
+                print(f"Flagging document: {r.id}")
+                r.version="date_flagged"
+                r.save()
+                len = len + 1
+        print(len)
+
     def delete_web_docs(self):
         from data.models import catalogDocument
         catalogDocument.objects().delete()
@@ -76,7 +109,7 @@ class MongoConnection():
 if __name__ == "__main__":
     mongo = MongoConnection()
     mongo.connect()
-    mongo.delete_catalog_docs()
+    mongo.flag_on_text()
     #mongo.delete_docs_by_user("A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I")
 
         
