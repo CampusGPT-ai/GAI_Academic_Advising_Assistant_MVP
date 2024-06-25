@@ -90,7 +90,7 @@ class SyntheticQnA(FileLogger):
     def generate_completion(self, context_str: list) -> str:
         
         def get_prompt():
-            return summarize_catalog(context_str)
+            return summarize_chunks(context_str)
     
         
         messages = get_prompt()
@@ -152,7 +152,7 @@ class SyntheticQnA(FileLogger):
                     self.visited.add(filename)
                     break  # Break on other types of errors
 
-    async def chunked_files(self):
+    async def chunked_files(self, from_queue=None):
         self.threads = []
         max_threads = 15 # be careful of rate limiting and CPU usage
                 #start consumer thread production
@@ -161,7 +161,7 @@ class SyntheticQnA(FileLogger):
             thread.start()
             self.threads.append(thread)
         
-        self.get_docs_from_mongo()
+        self.get_docs_from_mongo(from_queue)
 
         # replaced with mongo - can clean up later
         #await self.get_docs_to_process("index-upload")
@@ -184,25 +184,45 @@ class SyntheticQnA(FileLogger):
             return True
         else:
             return False
+    
+    @staticmethod
+    def delete_document_by_source_and_updated(source, updated):
+        # Query for a document with the given source and updated time
+        document = kbDocument.objects(source=source, updated=updated).first()
         
-    def get_docs_from_mongo(self):
-        documents = WebPageDocument.objects.all()
-        for doc in documents:
-            json_doc = doc._data
-            metadata = json_doc.get('metadata')._data
-            source = metadata.get('source')
-            if 'courses' not in source:
-                continue
-            else:
-                self.mongo_docs.put(json_doc)
+        if document:
+            print(f"Deleting document with source {source} and updated {updated}")
+            document.delete()
+            return True
+        else:
+            return False
+        
+    def get_docs_from_mongo(self, from_queue=None):
+        len = 0
+        if from_queue:
+            self.mongo_docs = from_queue
+        else:
+            documents = WebPageDocument.objects.all()
+            for doc in documents:
+                json_doc = doc._data
+                if doc.version != "date_flagged":
+                    continue
+                else:
+                    self.mongo_docs.put(json_doc)
+                    len = len + 1
+            print(f"Found {len} documents to process")
 
+   #TODO: I changed this to delete existing documents for a new version.  This may not be the best approach
     def run_qna(self):
         while True:
             doc = self.mongo_docs.get()
             doc['metadata'] = doc.get('metadata')._data
             metadata = doc.get('metadata')
 
-            if self.find_document_by_source_and_updated(metadata.get('source'), metadata.get('last_updated')):
+            #if self.find_document_by_source_and_updated(metadata.get('source'), metadata.get('last_updated')):
+            #    continue
+
+            if not self.delete_document_by_source_and_updated(metadata.get('source'), metadata.get('last_updated')):
                 continue
 
             if doc is None:
@@ -233,8 +253,6 @@ class SyntheticQnA(FileLogger):
                 
                 #self.save_visited_urls()
                 
-
-        
     
 if __name__ == "__main__":
     db_name = settings.MONGO_DB

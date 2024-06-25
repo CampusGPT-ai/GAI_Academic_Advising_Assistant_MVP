@@ -15,7 +15,7 @@ azure_llm_client : AzureLLMClients = get_llm_client(api_type='azure',
                                                     endpoint=settings.AZURE_OPENAI_ENDPOINT,
                                                     model=settings.GPT35_MODEL_NAME,
                                                     deployment=settings.GPT35_DEPLOYMENT_NAME,
-                                                    embedding_deployment=settings.EMBEDDING)
+                                                    embedding_deployment='embedding')
 
 class Neo4jSession:
     def __init__(self, uri, user, password):
@@ -56,7 +56,7 @@ class Neo4jSession:
 
             return similar_nodes
     
-    def find_all_nodes(self, index='Consideration'):
+    def find_all_nodes(self, index='Consideration', type='string'):
         record_list = []
         with self.driver.session() as session:
             result = session.run(f"""
@@ -67,7 +67,12 @@ class Neo4jSession:
                 if record['n']['name'] and record['n']['description']:
                     name = (record['n']['name'])
                     description = (record['n']['description'])
-                    record_list.append(f'Name: {name}. Description: {description}. /n')
+                    keywords = (record['n']['tags'] if record['n']['tags'] else '')
+                    if type == 'string':
+                        record_list.append(f'Name: {name}. Description: {description}. Keywords: {keywords}. /n')
+                    else:
+                        record_list.append({'name': name, 'description': description, 'keywords': keywords})
+
 
         return record_list
     

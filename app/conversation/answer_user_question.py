@@ -13,6 +13,7 @@ from graph_update.graph_eval_and_update import NodeEditor
 from conversation.run_chat import QueryLLM
 import json
 
+from evaluation_metrics.qa_retrieval_eval import RetrievalEval
 from data.models import ConversationSimple as Conversation, UserSession
 import logging
 logger = logging.getLogger(__name__)
@@ -34,19 +35,28 @@ class QnAResponse:
         self.set_user_considerations()
 
     def set_user_considerations(self):
-        self.user_considerations = self.user_info.get_user_info().considerations
+        info = self.user_info.get_user_info()
+        if info.considerations:
+            self.user_considerations = self.user_info.get_user_info().considerations
+        else:
+            'No considerations found in user profile.'
         return
 
     def get_user_context(self):
         return (self.user_question + json.dumps(self.user_considerations))
 
     def run_rag(self):
-        keyword_result = self.retriever.retrieve_keyword_content(self.user_question, n=2)
-        vector_result = self.retriever.retrieve_content(self.get_user_context(), n=2)
-        rag_links = keyword_result.get('source', [])
-        rag_links.extend(vector_result.get('source', []))
-        rag_content = keyword_result.get('content', [])
-        rag_content.extend(vector_result.get('content', []))
+        rag_links, rag_content = [], []
+        retriever = RetrievalEval()
+        retriever.get_results(self.user_question, 30, 'hybrid')
+        retriever.calculate_columns()
+        if not retriever.results.empty:
+            retriever.group_results(5)
+            rag_dict = retriever.results.to_dict(orient='records')
+
+        for item in rag_dict:
+            rag_links.append(item.get("source"))
+            rag_content.append(item.get('content'))
 
         return rag_links, rag_content
         
@@ -78,8 +88,8 @@ if __name__ == "__main__":
     from mongoengine import connect
     import os
 
-    USER_QUESTION = "when is course ENC4290 offered and is it required for computer science majors?"
-    USER_ID = "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I"
+    USER_QUESTION = "What are the dining options on campus?"
+    USER_ID = "MENelson@indianatech.edu"
 
     db_name = os.getenv("MONGO_DB")
     db_conn = os.getenv("MONGO_CONN_STR")
@@ -97,7 +107,7 @@ if __name__ == "__main__":
     
     # mock_conversation = Conversation(id="65cd0b42372b404efb9805f6", user_id=USER_ID)
 
-    mock_conversation = Conversation.objects(id="6622fed0fcda8e6d6c33fb04").select_related(max_depth=5)
+    mock_conversation = Conversation.objects(id="665b86e154456c7968a247c9").select_related(max_depth=5)
 
     graph = GraphFinder(mock_user_session, USER_QUESTION)
 
@@ -143,7 +153,7 @@ if __name__ == "__main__":
         responder.retriever = SearchRetriever.with_default_settings(index_name=settings.SEARCH_CATALOG_NAME)
     missing_considerations = c.match_profile_to_graph(all_considerations)
     kickback_response = asyncio.run(responder.kickback_response_async(missing_considerations, history))
-    rag_response = asyncio.run(responder.rag_response_async(history))
+    rag_response, _ = asyncio.run(responder.rag_response_async(history))
 
     if topics[0].get('score') < 0.9:
         kickback_response = ""

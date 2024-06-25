@@ -18,7 +18,7 @@ def export_messages_to_csv(filename):
     with open(filename, mode='w', newline='', encoding='utf-8') as file:
         fieldnames = [
             'user_id', 'first_name', 'last_name', 'email', 'considerations', 
-            'conversation_id', 'message_id', 'message_content', 'message_timestamp'
+            'conversation_id', 'message_id', 'message_content', 'message_timestamp', 'message_role', 'rag_results', 'q1_usefullness_scale', 'q1_uesefullness_comment', 'q2_relevancy_scale', 'q2_relevancy_comment', 'q3_accuracy_scale', 'q3_accuracy_comment'
         ]
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
@@ -50,7 +50,16 @@ def export_messages_to_csv(filename):
                         'conversation_id': str(conversation.id),
                         'message_id': str(raw_message.id),
                         'message_content': msg_content.message,
-                        'message_timestamp': format_datetime(msg_content.created_at)
+                        'message_timestamp': format_datetime(msg_content.created_at),
+                        'message_role': msg_content.role,
+                        'rag_results': msg_content.rag_results,
+                        'q1_usefullness_scale': msg_content.feedback.get("q1_usefullness").get("scale") if (msg_content.feedback != {} and msg_content.feedback != None) else '',
+                        'q1_uesefullness_comment': msg_content.feedback.get("q1_usefullness").get("comment") if (msg_content.feedback != {} and msg_content.feedback != None) else '',
+                        'q2_relevancy_scale': msg_content.feedback.get("q2_relevancy").get("scale") if (msg_content.feedback != {} and msg_content.feedback != None) else '',
+                        'q2_relevancy_comment': msg_content.feedback.get("q2_relevancy").get("comment") if (msg_content.feedback != {} and msg_content.feedback != None) else '',
+                        'q3_accuracy_scale': msg_content.feedback.get("q3_accuracy").get("scale") if (msg_content.feedback != {} and msg_content.feedback != None) else '',
+                        'q3_accuracy_comment': msg_content.feedback.get("q3_accuracy").get("comment") if (msg_content.feedback != {} and msg_content.feedback != None) else ''
+
                     }
                     writer.writerow(data)
 
