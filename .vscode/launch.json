@@ -5,16 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python Debugger: Module",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "app",
+            "cwd": "${workspaceFolder}"
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/app"
-            },
             "console": "integratedTerminal",
-            "justMyCode": false
-        },
-
+            "env": { "PYTHONPATH": "${workspaceRoot}"},
+            "cwd": "${workspaceFolder}"
+        }
     ]
 }

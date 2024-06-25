@@ -238,7 +238,7 @@ async def chat_new(
         if 'course' in topic.lower() or 'graduation requirements' in topic.lower() or 'class' in user_question:
             responder.retriever.search_client.index_name = app.state.settings.SEARCH_CATALOG_NAME
    
-        missing_considerations = c.match_profile_to_graph(all_considerations)
+        missing_considerations, _ = c.match_profile_to_graph(all_considerations)
 
         #logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)

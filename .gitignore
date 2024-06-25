@@ -166,3 +166,5 @@ app/web_scraping/all_links.txt
 all_links.txt
 exported_messages.csv
 app/evaluation_metrics/itech_processed.csv
+app/appenv
+app/clientenv.txt
