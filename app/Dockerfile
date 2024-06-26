@@ -31,6 +31,10 @@ ENV POETRY_HTTP_TIMEOUT=3000
 # Install dependencies using Poetry
 RUN POETRY_VIRTUALENVS_CREATE=false poetry install
 
+# Install NLTK and download the 'words' dataset
+RUN poetry run pip install nltk && poetry run python -m nltk.downloader -d /usr/share/nltk_data words
+
+
 FROM python:3.11-slim-bookworm
 # Set the working directory in the run stage
 WORKDIR /app
@@ -38,6 +42,10 @@ WORKDIR /app
 # Copy over the installed Python dependencies from the builder stage
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+
+
+# Copy the NLTK data downloaded in the builder stage
+COPY --from=builder /usr/share/nltk_data /usr/share/nltk_data
  
 # Copy only the necessary files to run the application
 COPY . .

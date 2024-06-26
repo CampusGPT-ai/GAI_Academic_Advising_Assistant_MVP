@@ -49,30 +49,46 @@ class QnAResponse:
         rag_links, rag_content = [], []
         retriever = RetrievalEval()
         retriever.get_results(self.user_question, 30, 'hybrid')
+        logger.info("got retrieval results")
         retriever.calculate_columns()
-        if not retriever.results.empty:
+        logger.info("calculated columns")
+        if len(retriever.results) > 0:
             retriever.group_results(5)
+            logger.info("grouped results")
             rag_dict = retriever.results.to_dict(orient='records')
 
         for item in rag_dict:
             rag_links.append(item.get("source"))
             rag_content.append(item.get('content'))
-
+        logger.info("returning rag result")
         return rag_links, rag_content
         
         
     def rag_response(self, conversation_history, matching_considerations):
-        rag_links, rag_content = self.run_rag()
-        mapped_list = [{"response": response, "link": link} for link, response in zip(rag_links, rag_content)]
-        json_string = json.dumps(mapped_list, indent=4)
-        self.rag_results = json_string
-        rag_prompt, rag_json = self.llm_query.create_prompt_template(
-            gpt_qa_prompt(" ".join(matching_considerations),json_string),conversation_history, self.user_question)
-        return self.llm_query.run_llm(rag_prompt, rag_json)
+        try:
+            rag_links, rag_content = self.run_rag()
+            try:
+                mapped_list = [{"response": response, "link": link} for link, response in zip(rag_links, rag_content)]
+                json_string = json.dumps(mapped_list, indent=4)
+                self.rag_results = json_string
+            except Exception as e:
+                logger.error(f"unable to map Rag response to list with error: {str(e)}")
+                raise e
+            rag_prompt, rag_json = self.llm_query.create_prompt_template(
+                gpt_qa_prompt(" ".join(matching_considerations),json_string),conversation_history, self.user_question)
+            return self.llm_query.run_llm(rag_prompt, rag_json)
+        except Exception as e:
+            logger.error(f"Error returning RAG response: {str(e)}")
+            raise e
     
     async def rag_response_async(self, conversation_history, matching_considerations):
-        result = await asyncio.to_thread(self.rag_response, conversation_history, matching_considerations)
-        return result, self.rag_results
+        try:
+            logger.info(f"running rag response for user question with {matching_considerations}")
+            result = await asyncio.to_thread(self.rag_response, conversation_history, matching_considerations)
+            logger.info(f"returning rag results to caller")
+            return result, self.rag_results
+        except Exception as e:
+            raise e
 
     def kickback_response(self, missing_considerations, conversation_history):
         kickback_prompt, kickback_json = self.llm_query.create_prompt_template(
@@ -80,6 +96,7 @@ class QnAResponse:
         return self.llm_query.run_llm(kickback_prompt, kickback_json) 
 
     async def kickback_response_async(self, missing_considerations, conversation_history):
+        logger.info(f"running kickback reponse for missing considerations")
         return await asyncio.to_thread(self.kickback_response, missing_considerations, conversation_history)   
 
 if __name__ == "__main__":

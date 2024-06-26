@@ -153,6 +153,9 @@ class indexDocumentv2(Document):
     link_depth_class = IntField(required=False)
     age_class = IntField(required=False)
     sentence_count_class = IntField(required=False)
+    subdomain_vector=ListField(FloatField())
+    first_path_vector=ListField(FloatField())
+    second_path_vector=ListField(FloatField())
     meta = {
     'collection': 'index_document_v2', # the name of your collection in the database
     }
