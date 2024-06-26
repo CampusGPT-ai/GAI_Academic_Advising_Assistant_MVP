@@ -11,13 +11,18 @@ password = settings.N4J_PASSWORD
 from cloud_services.llm_services import AzureLLMClients, get_llm_client, OpenAIClients
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MinMaxScaler
-
 import nltk
+
 from wordsegment import load, segment
+
 from nltk.corpus import words
 
+
+
 # Load the word corpus
+
 load()
+
 word_list = set(words.words())
 
 class RetrievalEval():
@@ -35,6 +40,7 @@ class RetrievalEval():
               api_key=settings.OPENAI_API_KEY)
         self.retriever = SearchRetriever.with_default_settings()
         self.retriever_catalog = SearchRetriever.with_default_settings(index_name=settings.SEARCH_INDEX_NAME)
+        self.keyword_embeddings: list[dict] = []
 
     def split_words(self, s):
         # Try to segment using wordsegment library
@@ -82,22 +88,30 @@ class RetrievalEval():
         return pd.read_csv(filepath)
     
     def get_results(self, input, n=30, type = 'vector'):
-        results = []
-        if type == 'vector':
-            results = self.retriever.retrieve_content(input, n)
-        elif type == 'keyword':
-            results = self.retriever.retrieve_keyword_content(input, n)
-        elif type == 'hybrid':
-            results = self.retriever.retrieve_content(input, n)
-            results1 = self.retriever.retrieve_keyword_content(input, 2)
-            for key in results:
-                if key in results1:
-                    results[key].extend(results1[key])
+        try:
+            results = []
+            if type == 'vector':
+                results = self.retriever.retrieve_content(input, n)
+            elif type == 'keyword':
+                results = self.retriever.retrieve_keyword_content(input, n)
+            elif type == 'hybrid':
+                results = self.retriever.retrieve_content(input, n)
+                results1 = self.retriever.retrieve_keyword_content(input, 2)
+                for key in results:
+                    if key in results1:
+                        results[key].extend(results1[key])
+        except Exception as e:
+            logger.error(f"failed to get search results with error: {str(e)}")
+            raise e
+        
+        logger.info(f"got {type} search results")
 
         try: 
             self.validate_input(results, ['source', '@search.score', 'page_content', 'days_since_modified', 'subdomain', 
-                                                'first_path_item', 'second_path_item', 'sentence_count', 'link_depth' ])
+                                                'first_path_item', 'second_path_item', 'sentence_count', 'link_depth', 'subdomain_vector', 
+                                                 'first_path_vector', 'second_path_vector' ])
         except Exception as e:
+            logger.error("exception validating columns in source")
             raise e
 
         i = 0
@@ -111,17 +125,25 @@ class RetrievalEval():
                                 'first_path_item': results.get('first_path_item')[i],
                                 'second_path_item': results.get('second_path_item')[i],
                                 'sentence_count': results.get('sentence_count')[i],
-                                'link_depth': results.get('link_depth')[i],})
+                                'link_depth': results.get('link_depth')[i], 
+                                'subdomain_vector': results.get('subdomain_vector')[i],
+                                'first_path_vector': results.get('first_path_vector')[i],
+                                'second_path_vector': results.get('second_path_vector')[i],
+                                })
             i += 1
 
     def group_results(self, n=3):
-        if self.results.empty:
-            return
-        else:
-            if 'input' in self.results.columns:
-                self.results = self.results.groupby('input').apply(lambda x: x.nlargest(n, 'rescore'))
-            else:
+        try:
+            if self.results.empty:
                 return
+            else:
+                if 'input' in self.results.columns:
+                    self.results = self.results.groupby('input').apply(lambda x: x.nlargest(n, 'rescore'))
+                else:
+                    return
+        except Exception as e:
+            logger.error(f"Unable to group search results with error: {str(e)}")
+            raise e
 
     def process_search(self, df: pd.DataFrame, text_col: str, n: int = 30):
         df_dict = df.to_dict(orient='records')
@@ -141,96 +163,127 @@ class RetrievalEval():
             self.group_results()
             rag_dict = self.results.to_dict(orient='records')
             for item in rag_dict:
-                rag_str += f'url: {item.get("source")}, content: {item.get('content')}\n'
+                rag_str += f'url: {item.get("source")}, content: {item.get("content")}\n'
         return rag_str
     
     def calculate_columns(self):
-        df = pd.DataFrame(self.results)
-        df = df[df['days_since_modified'] < 730]
-        #df = df[df['sentence_count'] > 3]
-        df = df[df['score'] > 0.61]
-        if df.empty:
-            return df
-        df['subdomain_similarity'] = df.apply(lambda x: self.keyword_match(x['subdomain'], x['input']), axis=1)
-        df['first_path_similarity'] = df.apply(lambda x: self.keyword_match(x['first_path_item'], x['input']), axis=1)
-        df['second_path_similarity'] = df.apply(lambda x: self.keyword_match(x['second_path_item'], x['input']), axis=1)
+        try:
+            df = pd.DataFrame(self.results)
+            df = df[df['days_since_modified'] < 730]
+            #df = df[df['sentence_count'] > 3]
+            df = df[df['score'] > 0.61]
+            if df.empty:
+                logger.error("no results above minimum score.  Returning null dataframe")
+                return df
+            logger.info("finding keyword semantic matches")
+            df['subdomain_similarity'] = df.apply(lambda x: self.keyword_match(x['subdomain'], x['subdomain_vector'], x['input']), axis=1)
+            df['first_path_similarity'] = df.apply(lambda x: self.keyword_match(x['first_path_item'], x['first_path_vector'], x['input']), axis=1)
+            df['second_path_similarity'] = df.apply(lambda x: self.keyword_match(x['second_path_item'], x['second_path_vector'], x['input']), axis=1)
 
-        scaler = MinMaxScaler()
-        columns_to_normalize = ['first_path_similarity', 'second_path_similarity', 'subdomain_similarity', 'score']
-        scaled_column_names = [f'scaled_{col}' for col in columns_to_normalize]
-        df[scaled_column_names] = scaler.fit_transform(df[columns_to_normalize])
-        df_dict = df.to_dict(orient='records')
+            scaler = MinMaxScaler()
+            logger.info("scaling columns")
+            columns_to_normalize = ['first_path_similarity', 'second_path_similarity', 'subdomain_similarity', 'score']
+            scaled_column_names = [f'scaled_{col}' for col in columns_to_normalize]
+            df[scaled_column_names] = scaler.fit_transform(df[columns_to_normalize])
 
-        df['rescore'] = df.apply(lambda x: self.rescore(x['score'],
-                                                        x['scaled_subdomain_similarity'],
-                                                        x['subdomain_similarity'],
-                                                        x['scaled_first_path_similarity'],
-                                                        x['first_path_similarity'],
-                                                        x['scaled_second_path_similarity'],
-                                                        x['second_path_similarity'],
-                                                        x['input'],
-                                                        x['link_depth']), axis=1)
-        df = df[df['rescore'] > 0.61]
-        self.results = df
-        return
+            logger.info("rescoring based on link path score")
+            df['rescore'] = df.apply(lambda x: self.rescore(x['score'],
+                                                            x['subdomain_similarity'],
+                                                            x['first_path_similarity'],
+                                                            x['second_path_similarity'],
+                                                            x['input'],
+                                                            x['link_depth']), axis=1)
+            df = df[df['rescore'] > 0.61]
+            self.results = df
+            return
+        except Exception as e: 
+            logger.error(f"unable to calculate columns with error: {str(e)}")
+            raise e
         
     def results_to_csv(self, path: str):
         return self.results.to_csv(path, index=False)
+    
+    def embed_keywords(self, keywords) -> list[float]:
+        try:
+            for item in self.keyword_embeddings:
+                if keywords == item.get('keywords'):
+                    return item.get('embeddings')
+            new_embedding = self.embed(keywords)
+            self.keyword_embeddings.append(
+                {   'keywords': keywords,
+                    'embeddings': new_embedding
+                }
+            )
+            return new_embedding
 
-    def keyword_match(self, text, keywords):
-        if not text or text == 'nan' or keywords == 'nan':
-            return 0
-        
-        if text == 'www' or text== '':
-            return 0
+        except Exception as e:
+            logger.error('error embedding keywords inside of keyword match function')
+            raise e
 
-        text = text.replace('-', ' ').replace('_', ' ')
-
-        if not len(text.split(' ')) > 1:
-            text = self.split_words(text)
-        
-        for item in self.score_list:
-            if item.get('text') == text and item.get('keywords') == keywords:
-                return item.get('score')
+    def keyword_match(self, text, text_embedding, keywords):
+        try:
+            logger.info(f"beginning keyword match with {text} and {keywords}")
+            if not text or text == 'nan' or keywords == 'nan':
+                return 0
             
-        print(f"evaluating similarity between {text} and {keywords}")
-        
-        if isinstance(text, str):   
-            text_embedding = self.embed(text)
-        else:
-            return 0
-        if isinstance(keywords, str):
-            keyword_embedding = self.embed(keywords)
-            sim_score = {"sim_score": cosine_similarity([keyword_embedding], [text_embedding])[0][0]}
-        self.score_list.append({'text': text, 'keywords': keywords, 'score': sim_score.get('sim_score')})
-        return sim_score.get('sim_score')
+            if text == 'www' or text== '':
+                return 0
+
+            text = text.replace('-', ' ').replace('_', ' ')
+
+            if not len(text.split(' ')) > 1:
+                text = self.split_words(text)
+
+            for item in self.score_list:
+                if item.get('text') == text and item.get('keywords') == keywords:
+                    return item.get('score')
+                
+            print(f"evaluating similarity between {text} and {keywords}")
+
+            if isinstance(keywords, str):
+                keyword_embedding = self.embed_keywords(keywords)
+                logger.info('retrieved keyword embedding')
+                try:
+                    sim_score = {"sim_score": cosine_similarity([keyword_embedding], [text_embedding])[0][0]}
+                except Exception as e:
+                    logger.error(f"error calculating cosign similarity for keywords: {len(keyword_embedding)} and text: {len(text_embedding)}")
+            
+            self.score_list.append({'text': text, 'keywords': keywords, 'score': sim_score.get('sim_score')})
+            return sim_score.get('sim_score')
+        except Exception as e:
+            logger.error(f"raised exception while finding keyword matches {str(e)}")
+            raise e
 
     
-    def rescore(self, score, scaled_subdomain_similarity, subdomain_similarity, scaled_first_path_similarity, first_path_similarity, scaled_second_path_similarity, second_path_similarity, text, link_depth):
-        path_complexity_adjustment = .3
-        subdomain_complexity_adjustment = .6
-        scale_adjust = .25
+    def rescore(self, score, subdomain_similarity, first_path_similarity, second_path_similarity, text, link_depth):
+        try:
+            path_complexity_adjustment = .3
+            subdomain_complexity_adjustment = .6
+            scale_adjust = .25
 
-        subdomain_adjusted = 0
-        first_path_adjusted = 0
-        second_path_adjusted = 0
+            subdomain_adjusted = 0
+            first_path_adjusted = 0
+            second_path_adjusted = 0
 
-        if len(text.split(' ')) > 10 and link_depth > 1:
-            path_complexity_adjustment = .6
+            if len(text.split(' ')) > 10 and link_depth > 1:
+                path_complexity_adjustment = .6
 
-        if isinstance(subdomain_similarity, float):
-            if subdomain_similarity > 0:
-                subdomain_adjusted = (subdomain_similarity-scale_adjust) * (subdomain_complexity_adjustment)
-            if isinstance(first_path_similarity, float):
-                if first_path_similarity > 0:
-                    first_path_adjusted = (first_path_similarity-scale_adjust) * (path_complexity_adjustment)
-                if isinstance(second_path_similarity, float) and second_path_similarity > 0:
-                    if second_path_similarity > 0:
-                        second_path_adjusted = (second_path_similarity-scale_adjust) * (.5*path_complexity_adjustment)
-                    return subdomain_adjusted + first_path_adjusted + second_path_adjusted + score
-                return subdomain_adjusted + first_path_adjusted + score
-            return subdomain_adjusted + score
-        return score
+            if isinstance(subdomain_similarity, float):
+                if subdomain_similarity > 0:
+                    subdomain_adjusted = (subdomain_similarity-scale_adjust) * (subdomain_complexity_adjustment)
+                if isinstance(first_path_similarity, float):
+                    if first_path_similarity > 0:
+                        first_path_adjusted = (first_path_similarity-scale_adjust) * (path_complexity_adjustment)
+                    if isinstance(second_path_similarity, float) and second_path_similarity > 0:
+                        if second_path_similarity > 0:
+                            second_path_adjusted = (second_path_similarity-scale_adjust) * (.5*path_complexity_adjustment)
+                        return subdomain_adjusted + first_path_adjusted + second_path_adjusted + score
+                    return subdomain_adjusted + first_path_adjusted + score
+                return subdomain_adjusted + score
+            return score
+        except Exception as e:
+            logger.error(f"Error rescoring based on path similarities: {str(e)}")
+            raise e
 
         
 

@@ -89,7 +89,7 @@ const ChatMessages: FC<ChatMessagesProps> = ({
       </Box>
       {opportunities && appStatus === AppStatus.Idle &&
         <Box ref={scrollRef} width='100%'>
-        <Typography variant="body1">Learn More About: </Typography>
+        <Typography variant="body1">Based on your question, here are some other topics you might be interested in: </Typography>
         {
           opportunities && opportunities.map((opportunity, index) => {
             return (

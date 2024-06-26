@@ -208,6 +208,7 @@ async def chat_new(
         graph = GraphFinder(session_data, user_question)
 
         topics = graph.get_topic_list_from_question()
+        logger.info(f"retrieved topic with score: {topics[0].get('score')}")
         if topics[0].get('score') < 0.9:
             print('adding new topics and relationships for low scoring match')
             finder = NodeEditor(session_data, user_question)
@@ -238,11 +239,13 @@ async def chat_new(
         if 'course' in topic.lower() or 'graduation requirements' in topic.lower() or 'class' in user_question:
             responder.retriever.search_client.index_name = app.state.settings.SEARCH_CATALOG_NAME
    
-        missing_considerations, _ = c.match_profile_to_graph(all_considerations)
+        missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
 
-        #logger.info(f"missing_considerations: {missing_considerations}")
+        logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)
-        rag_response, rag_content = await responder.rag_response_async(history)
+        rag_response, rag_content = await responder.rag_response_async(history, matching_considerations)
+
+        logger.info(f"recieved response on rag request: {rag_response}")
 
         if topics[0].get('score') < 0.9:
             kickback_response = ""
@@ -255,13 +258,14 @@ async def chat_new(
             "rag_response": rag_response
         }
         try:
+            logger.info(f"Updating conversation history with response details")
             update_conversation_history(final_response, conversation, rag_content, session_data, user_question)
         except Exception as e:
             logger.error(
                 f"failed to update_conversation_history with error {str(e)}",
             )
             raise e
-
+        logger.info("SUCCESS!  Returning response to client")
         return JSONResponse(content=final_response, status_code=200)
     except Exception as e:
         logger.error(

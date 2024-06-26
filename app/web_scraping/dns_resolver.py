@@ -68,9 +68,10 @@ def get_subdomains(domain):
     return subdomains
 
 # Domain to search subdomains for
-domain = "indianatech.edu"
+domain = "ucf.edu"
 
 # Get subdomains
 subdomains = get_subdomains(domain)
-for subdomain in subdomains:
-    print(subdomain)
+start_urls = [{"url": f"https://{subdomain}"} for subdomain in subdomains]
+import json
+print(json.dumps({"startUrls": start_urls}, indent=4))
