@@ -62,7 +62,7 @@ const ChatBotChat: FC<ChatBotChatProps> = ({
   }
 
   function sendChatFeedback(data: any) {
-    console.log(`Submitting feedback for message ${message_id} with data: ${data} with conversation ${conversation?.id} and session ${userSession}`)
+    console.log(`Submitting feedback for message ${message_id} with data: ${JSON.stringify(data)} with conversation ${conversation?.id} and session ${userSession}`)
     debugger;
      if (message_id && conversation && userSession) {
       submitChatFeedback(
