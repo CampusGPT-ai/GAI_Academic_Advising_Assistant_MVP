@@ -82,7 +82,7 @@ const FeedbackForm: React.FC<{ onSubmit: (data: any) => void }> = ({ onSubmit })
               onScaleChange={(value) => handleScaleChange('helpfulnessOfLinks', value)}
             />
             <ScaleQuestion
-              label="“Learn More” Options: Were topics in the “Learn More” section related to the chat topic?"
+              label="“Other Topics” Options: Were topics in the recommendations section of interest to you?"
               onScaleChange={(value) => handleScaleChange('learnMoreOptions', value)}
             />
             <TableRow>
