@@ -383,7 +383,7 @@ async def response_feedback(
     conversation = get_conversation(conversation_id, session_data)
     logger.info(f"Got conversation: {conversation}")
     try:
-        update_conversation_history_with_feedback(feedback, conversation, message_id, session_data)
+        update_conversation_history_with_feedback(feedback, message_id, session_data)
         logger.info(f"Feedback success! {feedback}")
         return JSONResponse(content="Successfully recorded feedback", status_code=200)
     except Exception as e:

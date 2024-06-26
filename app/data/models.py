@@ -226,9 +226,14 @@ class ConversationSimple(Document):
 
 class Question(BaseModel):
     scale: int = Field(ge=1, le=5)
-    comment: str | None = None
+
+class Comment(BaseModel):
+    comment: str
 
 class Feedback(BaseModel):
-    q1_usefullness: Question
-    q2_relevancy: Question
-    q3_accuracy: Question
+    relevance : Question
+    accuracy : Question
+    usefulness : Question
+    helpfulnessOfLinks : Question
+    learnMoreOptions : Question
+    comments : Comment
