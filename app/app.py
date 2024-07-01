@@ -208,7 +208,7 @@ async def chat_new(
         graph = GraphFinder(session_data, user_question)
 
         topics = graph.get_topic_list_from_question()
-        logger.info(f"retrieved topic {topic[0].get('name')} with score: {topics[0].get('score')}")
+        logger.info(f"retrieved topic {topics[0].get('name')} with score: {topics[0].get('score')}")
         if topics[0].get('score') < 0.74:
             print('adding new topics and relationships for low scoring match')
             finder = NodeEditor(session_data, user_question)
@@ -220,7 +220,7 @@ async def chat_new(
                 logger.error(
                     f"failed to orchestrate_graph_update_async with error {str(e)}",
                 )
-        topic = topics[0].get('name')
+        topic = topics[0].get('name', 'unable to match topic from graph')
 
         logger.info("topic is " + topic)
         all_considerations = graph.get_relationships('Consideration',topic)
