@@ -1,22 +1,17 @@
 import uuid
-import os, time, threading
+import os, time
 from dotenv import load_dotenv
-import openai
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from web_scraping.file_tracker import FileLogger
 import web_scraping.llm_services as llm
 from web_scraping.azure_cog_service import AzureSearchService
 from datetime import datetime
 import pytz
-from azure.storage.blob.aio import BlobServiceClient
-from web_scraping.file_utilities import remove_duplicate_passages
-import copy
+
 from settings.settings import Settings
 settings = Settings()
 from mongoengine import connect, disconnect
-import mongoengine.connection
+
 from data.models import WebPageDocumentNew, indexDocumentv2
-from time import sleep
+
 db_name = settings.MONGO_DB
 db_conn = settings.MONGO_CONN_STR
 _mongo_conn = connect(db=db_name, host=db_conn)
@@ -38,11 +33,11 @@ MAX_TOKEN_LENGTH = 6000
 BATCH_SIZE = 100
 
 
-while True and indexDocumentv2.objects().count() > 0:
-    try:
-        indexDocumentv2.objects().delete()
-    except:
-        sleep(1)
+#while True and indexDocumentv2.objects().count() > 0:
+#    try:
+ #       indexDocumentv2.objects().delete()
+#    except:
+ #       sleep(1)
 
 class VectorUploader():
     def __init__(self):
@@ -74,8 +69,17 @@ class VectorUploader():
     def check_upload_status(self):
         documents_already_processed = set()
         for doc in indexDocumentv2.objects():  # Query all documents
-            documents_already_processed.add(doc.content)
+            documents_already_processed.add(doc.page_content)
         return documents_already_processed
+    
+    def trim_upload_list(self):
+        return_docs = []
+        indexed_docx = self.check_upload_status()
+        doc_list = WebPageDocumentNew.objects().all()
+        for doc in doc_list:
+            if doc.page_content not in indexed_docx:
+                return_docs.append(doc)
+        return return_docs
 
     def upload_files(self, reupload=False):
         uploaded = 0
@@ -84,19 +88,13 @@ class VectorUploader():
         processed_docs = []
         batch_size = BATCH_SIZE
         if not reupload: 
-            indexed_docs = self.check_upload_status()
-            doc_list = WebPageDocumentNew.objects()
+            doc_list = self.trim_upload_list()
             print("Documents to index: ", len(doc_list))
         else:
             indexed_docs = set()
             doc_list = indexDocumentv2.objects()
         try:
             for doc in doc_list:
-                if not reupload:
-                    if doc.page_content in indexed_docs:
-                        # print(f"Document already indexed: {doc.text}")
-                        continue
-
                 try:
                     try:
                         doc_processed = self.json_to_index(doc, reupload)

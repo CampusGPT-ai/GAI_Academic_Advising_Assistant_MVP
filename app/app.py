@@ -208,13 +208,14 @@ async def chat_new(
         graph = GraphFinder(session_data, user_question)
 
         topics = graph.get_topic_list_from_question()
-        logger.info(f"retrieved topic with score: {topics[0].get('score')}")
-        if topics[0].get('score') < 0.9:
+        logger.info(f"retrieved topic {topic[0].get('name')} with score: {topics[0].get('score')}")
+        if topics[0].get('score') < 0.74:
             print('adding new topics and relationships for low scoring match')
             finder = NodeEditor(session_data, user_question)
             finder.init_neo4j()
             try:
-                background_tasks.add_task(finder.orchestrate_graph_update_async(topics))
+                logger.info('adding background task for graph update')
+                background_tasks.add_task(finder.orchestrate_graph_update_async, topics)
             except Exception as e:
                 logger.error(
                     f"failed to orchestrate_graph_update_async with error {str(e)}",
@@ -247,7 +248,7 @@ async def chat_new(
 
         logger.info(f"recieved response on rag request: {rag_response}")
 
-        if topics[0].get('score') < 0.9:
+        if topics[0].get('score') < 0.74:
             kickback_response = ""
         
         conversation.topic = topic
@@ -284,12 +285,14 @@ async def get_outcomes(
     finder = GraphFinder(session_data, user_question)
     try:
         topics = finder.get_topic_list_from_question()
+        logger.info(f"retrieved topic {topics[0].get('name')} with score: {topics[0].get('score')}")
 
-        if topics[0].get('score') < 0.9:
+        if topics[0].get('score') < 0.74:
             final_response = {
             "risks": '',
             "opportunities": ''
         }
+            return JSONResponse(content=final_response, status_code=200)
         else:
             topic = topics[0].get('name')
             risks, opportunities = finder.get_relationships('Outcome',topic)
