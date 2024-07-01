@@ -15,7 +15,7 @@ azure_llm_client : AzureLLMClients = get_llm_client(api_type='azure',
                                                     endpoint=settings.AZURE_OPENAI_ENDPOINT,
                                                     model=settings.GPT35_MODEL_NAME,
                                                     deployment=settings.GPT35_DEPLOYMENT_NAME,
-                                                    embedding_deployment='embedding')
+                                                    embedding_deployment=settings.EMBEDDING)
 
 class Neo4jSession:
     def __init__(self, uri, user, password):
@@ -38,12 +38,12 @@ class Neo4jSession:
                 return record['similarDescription']['name']
             
     
-    def find_similar_nodes_with_score(self, text, top_k=3, index='topic_index'):
+    def find_similar_nodes_with_score(self, text, top_k=3, index='topicIndexv2'):
         query_vector = azure_llm_client.embed_to_array(text)
 
         with self.driver.session() as session:
-            result = session.run("""
-                CALL db.index.vector.queryNodes('topic_index', 3, $queryVector)
+            result = session.run(f"""
+                CALL db.index.vector.queryNodes('{index}', 3, $queryVector)
                 YIELD node AS similarNode, score
                 RETURN similarNode.name AS name, similarNode.description AS description, similarNode.tags AS tags, score
                 ORDER BY score DESC
@@ -56,7 +56,7 @@ class Neo4jSession:
 
             return similar_nodes
     
-    def find_all_nodes(self, index='Consideration', type='string'):
+    def find_all_nodes(self, index='considerationIndexv2', type='string'):
         record_list = []
         with self.driver.session() as session:
             result = session.run(f"""

@@ -36,6 +36,8 @@ openai_llm : OpenAIClients = get_llm_client(api_type='openai',
 for topic in df_dict:
     if not topic.get('message_role') == 'user':
         continue
+
+
     rag_str = ''
     retreiver = RetrievalEval()
     user_input = topic.get('message_content')
@@ -68,4 +70,4 @@ for topic in df_dict:
     results_dict.append({'user_message': topic.get('message_content'), '' 'assistant_response': response.get('response'), 'context': rag_str})
 
 df = pd.DataFrame(results_dict)
-df.to_csv('exported_messages_with_responses_v2.csv', index=False)
+df.to_csv('exported_messages_scoring.csv', index=False)

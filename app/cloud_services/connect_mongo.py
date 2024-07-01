@@ -103,9 +103,6 @@ class MongoConnection():
             print(f"Deleting document: {r.id}")
             r.delete()
 
-
-    print("Failed to delete documents after several retries")
-
 if __name__ == "__main__":
     mongo = MongoConnection()
     mongo.connect()

@@ -47,6 +47,8 @@ def get_subdomains(domain):
         'intramurals','sports','recreation','fitness','wellness','health','nutrition','counseling','medical','clinic','pharmacy','counseling',
         'academicaffairs','provost','dean','faculty','staff','students','parents','alumni','donors','friends','partners','community','relations',
         'careercenter','careers','jobs','graduation','commencement','ceremony','honors','awards','recognition','scholarships','fellowships',
+        'studentsuccess', 'advising', 'counseling', 'mentoring', 'tutoring', 'coaching', 'support', 'resources', 'services', 'programs',
+        'studentlife', 'studentaffairs', 'studentresources', 'studentactivities', 'studentorganizations', 'clubs', 'events', 'activities',
     ]
     
     for prefix in prefixes:

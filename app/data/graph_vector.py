@@ -36,7 +36,7 @@ class GraphVector:
                 # Update the node with the embedding (create a new property, e.g., 'embedding')
                 session.run('''
                     MATCH (n) WHERE id(n) = $id 
-                    SET n.embedding = $embedding'''
+                    SET n.embedding_v2 = $embedding'''
                                 , id=node_id, embedding=embedding)
     
         self.graph.driver.close()
@@ -58,7 +58,7 @@ class GraphVector:
                 # Update the node with the embedding (create a new property, e.g., 'embedding')
                 session.run('''
                     MATCH (n) WHERE id(n) = $id 
-                    SET n.embedding = $embedding'''
+                    SET n.embedding_v2 = $embedding'''
                                 , id=node_id, embedding=embedding)
     
         self.graph.driver.close()

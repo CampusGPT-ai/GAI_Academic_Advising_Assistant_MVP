@@ -133,12 +133,15 @@ class RetrievalEval():
             i += 1
 
     def group_results(self, n=3):
+
         try:
-            if self.results.empty:
+            if len(self.results) == 0:
+                logger.error("qa reranking error in group_results: no results to group")
                 return
             else:
-                if 'input' in self.results.columns:
-                    self.results = self.results.groupby('input').apply(lambda x: x.nlargest(n, 'rescore'))
+                df = pd.DataFrame(self.results)
+                if 'input' in df.columns:
+                    self.results_df = df.groupby('input').apply(lambda x: x.nlargest(n, 'rescore'))
                 else:
                     return
         except Exception as e:
@@ -174,7 +177,8 @@ class RetrievalEval():
             df = df[df['score'] > 0.61]
             if df.empty:
                 logger.error("no results above minimum score.  Returning null dataframe")
-                return df
+                self.results = df
+                return
             logger.info("finding keyword semantic matches")
             df['subdomain_similarity'] = df.apply(lambda x: self.keyword_match(x['subdomain'], x['subdomain_vector'], x['input']), axis=1)
             df['first_path_similarity'] = df.apply(lambda x: self.keyword_match(x['first_path_item'], x['first_path_vector'], x['input']), axis=1)
@@ -201,7 +205,8 @@ class RetrievalEval():
             raise e
         
     def results_to_csv(self, path: str):
-        return self.results.to_csv(path, index=False)
+        df = pd.DataFrame(self.results)
+        return df.to_csv(path, index=False)
     
     def embed_keywords(self, keywords) -> list[float]:
         try:
@@ -298,7 +303,7 @@ if __name__ == '__main__':
     eval = RetrievalEval()
     df = pd.read_csv('exported_messages.csv')
     #limit for testing
-    df = df.iloc[:50]
+    df = df.iloc[-50:]
     score_set = []
     #topics = [{'name': 'What types of events are there at Tech for current students?', 'description': 'What types of events are there at Tech for current students?'}
      #         ,{'name': 'What kind of mental health supports are available for online students?', 'description': 'What kind of mental health supports are available for online students?'}
@@ -311,7 +316,7 @@ if __name__ == '__main__':
     max_score_indices = eval.group_results(df)
 
     print(max_score_indices.head())
-    max_score_indices.to_csv('max_score_indices.csv', index=False)
+    eval.results_to_csv('max_score_indices.csv', index=False)
 
 
 

@@ -50,16 +50,24 @@ class QnAResponse:
         retriever = RetrievalEval()
         retriever.get_results(self.user_question, 30, 'hybrid')
         logger.info("got retrieval results")
-        retriever.calculate_columns()
-        logger.info("calculated columns")
+
+        if len(retriever.results) > 0:
+            retriever.calculate_columns()
+            logger.info("calculated columns")
+        else: 
+            return [], []
+        
         if len(retriever.results) > 0:
             retriever.group_results(5)
             logger.info("grouped results")
             rag_dict = retriever.results.to_dict(orient='records')
+            for item in rag_dict:
+                rag_links.append(item.get("source"))
+                rag_content.append(item.get('content'))
+        else:
+            logger.error("No results found in retrieval")
+            return [], []
 
-        for item in rag_dict:
-            rag_links.append(item.get("source"))
-            rag_content.append(item.get('content'))
         logger.info("returning rag result")
         return rag_links, rag_content
         
