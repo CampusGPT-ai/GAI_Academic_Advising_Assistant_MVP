@@ -4,7 +4,7 @@ import uuid
 import time
 
     
-from conversation.retrieve_messages import get_history_as_messages
+from conversation.retrieve_messages import get_history_as_messages, get_last_response
 from conversation.retrieve_conversations import get_conversation, conversation_to_dict, get_all_conversations
 from conversation.return_questions import get_questions
 from typing import List
@@ -209,7 +209,7 @@ async def chat_new(
 
         topics = graph.get_topic_list_from_question()
         logger.info(f"retrieved topic {topics[0].get('name')} with score: {topics[0].get('score')}")
-        if topics[0].get('score') < 0.74:
+        if topics[0].get('score') < 0.73:
             print('adding new topics and relationships for low scoring match')
             finder = NodeEditor(session_data, user_question)
             finder.init_neo4j()
@@ -277,21 +277,30 @@ async def chat_new(
             status_code=404,
         )
 
-@app.get("/users/{session_guid}/outcomes/{user_question}")
+@app.get("/users/{session_guid}/outcomes/{conversation_id}")
 async def get_outcomes(
-    user_question,
+    conversation_id,
     session_data: UserSession = Depends(get_session_from_session),
 ):
-    finder = GraphFinder(session_data, user_question)
+    message_content = get_last_response(conversation_id)
+    final_response = {
+            "risks": '',
+            "opportunities": ''
+        }
+    
+    if not message_content or not message_content.content:
+        logger.error(
+            f"failed to get last response for outcome scoring.  No message content.",
+        )
+        return JSONResponse(content=final_response, status_code=200)
+    
+    logger.info(f"got last response for outcome scoring: {message_content.content}")
+    finder = GraphFinder(session_data, message_content.content)
     try:
         topics = finder.get_topic_list_from_question()
         logger.info(f"retrieved topic {topics[0].get('name')} with score: {topics[0].get('score')}")
 
-        if topics[0].get('score') < 0.74:
-            final_response = {
-            "risks": '',
-            "opportunities": ''
-        }
+        if topics[0].get('score') < 0.73:
             return JSONResponse(content=final_response, status_code=200)
         else:
             topic = topics[0].get('name')
