@@ -1,6 +1,6 @@
 from data.models import ConversationSimple, UserSession
 import logging, sys, os, json
-
+from cloud_services.openai_response_objects import Message
 logger = logging.getLogger(__name__)
 
 from settings.settings import Settings
@@ -59,7 +59,6 @@ def get_message_history(conversation_id, return_type = "json"):
         raise Exception(f"failed to find conversation with error {str(e)}")
 
 def get_history_as_messages(conversation_id):
-    from cloud_services.openai_response_objects import Message
 
     history = get_message_history(conversation_id,'none')
     messages = []
@@ -70,6 +69,14 @@ def get_history_as_messages(conversation_id):
                 message_data = message
                 messages.append(Message(role=message_data['role'], content=message_data['message']))
     return messages
+
+def get_last_response(conversation_id) -> Message:
+    messages = get_history_as_messages(conversation_id)
+    non_user_messages = [message for message in messages if message.role != 'user']
+    if non_user_messages:
+        return non_user_messages[-1]  # Get the most recent non-user message
+    return None
+
 
 if __name__=="__main__":
     from mongoengine import connect

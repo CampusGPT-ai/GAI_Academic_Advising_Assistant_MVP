@@ -17,7 +17,7 @@ export interface GraphInsights {
  const useGraphData = (
     setErrorMessage: (error: string) => void,
     setIsError: (isError: boolean) => void,
-     conversationTopic?: string, 
+     conversationId?: string, 
      user_id?: string,
      ) => {
     const [risks, setRisks] = useState<Outcomes[]>([]);
@@ -60,24 +60,22 @@ export interface GraphInsights {
         };
  
      useEffect(() => {
-         if (conversationTopic) {
-             if (userQuestionRef.current === conversationTopic) {
+         if (conversationId) {
+             if (userQuestionRef.current === conversationId) {
                  return;
              }
              else {
-              const safeconversationTopic = conversationTopic.replace(/\//g, '-');
-              const encodedconversationTopic = encodeURIComponent(safeconversationTopic);
-              setApiUrl(`${BaseUrl()}/users/${user_id}/outcomes/${encodedconversationTopic}`);   
+              setApiUrl(`${BaseUrl()}/users/${user_id}/outcomes/${conversationId}`);   
         
                  }
  
-                 userQuestionRef.current = conversationTopic;
+                 userQuestionRef.current = conversationId;
              }
           else {
             setOpportunities([]);
             setRisks([]);
           }
-         }, [conversationTopic, user_id]);
+         }, [conversationId, user_id]);
  
      useEffect(() => {
          if (apiUrl && apiUrlRef.current !== apiUrl) {

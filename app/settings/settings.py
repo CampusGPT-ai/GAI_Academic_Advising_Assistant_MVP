@@ -66,3 +66,5 @@ class Settings(BaseSettings):
      
      BASE_URL: str
      CLIENT_BASE_URL: str
+
+     APIFY_TOKEN: str

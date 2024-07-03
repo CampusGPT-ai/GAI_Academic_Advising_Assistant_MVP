@@ -1,7 +1,6 @@
 import pandas as pd 
 from data.models import WebPageDocumentNew
 from settings.settings import Settings
-df1 = pd.read_csv('/Users/marynelson/GAI_Academic_Advising_Assistant_MVP/app/evaluation_metrics/itech_processed.csv')
 import math 
 from time import sleep
 settings = Settings()
@@ -13,20 +12,19 @@ db_conn = settings.MONGO_CONN_STR
 
 _mongo_conn = connect(db=db_name, host=db_conn)
 
-###while True and WebPageDocumentNew.objects().count() > 0:
- #   try:
+#while True and WebPageDocumentNew.objects().count() > 0:
+#    try:
  #       WebPageDocumentNew.objects().delete()
  #   except:
  #       sleep(1)
+ 
 def read_df(df):
-
-    results = 0
     print(df.shape)
     # Select specific columns
-    selected_columns = df[['metadata/canonicalUrl',
-                            'metadata/jsonLd/0/@graph/0/dateModified',
-                            'metadata/jsonLd/0/@graph/0/description',
-                            'metadata/keywords',
+    selected_columns = df[['canonicalUrl',
+                            'dateModified',
+                            'description',
+                            'title',
                             'markdown',
                             'days_since_modified',
                             'word_count',
@@ -55,14 +53,15 @@ def safe_get(dictionary, key):
 
 
 def add_docs(result_dict):
+    results = 0
     docs_list = []
     for result in result_dict:
         try:
             doc = WebPageDocumentNew(
-                    source=safe_get(result, 'metadata/canonicalUrl'),
-                    last_modified=safe_get(result, 'metadata/jsonLd/0/@graph/0/dateModified'),
-                    metadata_description=safe_get(result, 'metadata/jsonLd/0/@graph/0/description'),
-                    metadata_keywords=safe_get(result, 'metadata/keywords'),
+                    source=safe_get(result, 'canonicalUrl'),
+                    last_modified=safe_get(result, 'dateModified'),
+                    metadata_description=safe_get(result, 'description'),
+                    metadata_keywords=safe_get(result, 'title'),
                     page_content=safe_get(result, 'markdown'),
                     days_since_modified=safe_get(result, 'days_since_modified'),
                     word_count=safe_get(result, 'word_count'),
@@ -91,6 +90,10 @@ def add_docs(result_dict):
     print('done')
     return
 
-if __name__=="__main__"():
+if __name__=="__main__":
+
+    from web_scraping.apify_page_count import process_results, run_all
+    results = run_all('ucf.edu', ['events', 'news', 'publication'])
+    df1 = process_results(results)
     result_dict = read_df(df1)
     add_docs(result_dict)
