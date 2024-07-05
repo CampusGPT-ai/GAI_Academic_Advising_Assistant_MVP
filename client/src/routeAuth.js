@@ -14,8 +14,10 @@ export function SAMLProtectedRoute({ children }) {
     console.log(`checking SAML login status for user.  user is authenticated? ${isAuthenticated}`)
     
     const samlLoginUrl = 
-    process.env.REACT_APP_DOMAIN !== "development" ? 
+    process.env.REACT_APP_DOMAIN === "staging" ? 
         `https://${process.env.REACT_APP_APP_NAME}-${process.env.REACT_APP_WEBENV}.azurewebsites.net/saml/login` : 
+    process.env.REACT_APP_DOMAIN === "production" ?
+        `https://${process.env.REACT_APP_APP_NAME}.azurewebsites.net/saml/login` :
         `http://localhost:8000/saml/login`;
 
     console.log(`saml login url: ${samlLoginUrl}`);

@@ -12,11 +12,11 @@ db_conn = settings.MONGO_CONN_STR
 
 _mongo_conn = connect(db=db_name, host=db_conn)
 
-#while True and WebPageDocumentNew.objects().count() > 0:
-#    try:
- #       WebPageDocumentNew.objects().delete()
- #   except:
- #       sleep(1)
+while True and WebPageDocumentNew.objects().count() > 0:
+    try:
+        WebPageDocumentNew.objects().delete()
+    except:
+        sleep(1)
  
 def read_df(df):
     print(df.shape)
