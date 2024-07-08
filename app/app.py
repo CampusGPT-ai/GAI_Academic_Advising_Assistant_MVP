@@ -236,9 +236,6 @@ async def chat_new(
             raise e
 
         responder = QnAResponse(user_question, session_data, conversation)
-
-        if 'course' in topic.lower() or 'graduation requirements' in topic.lower() or 'class' in user_question:
-            responder.retriever.search_client.index_name = app.state.settings.SEARCH_CATALOG_NAME
    
         missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
 

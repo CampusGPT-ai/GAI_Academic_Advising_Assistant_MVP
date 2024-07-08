@@ -311,7 +311,7 @@ const MainPage: FC = () => {
             <DialogTitle>{"An Error Occurred"}</DialogTitle>
             <DialogContent>
               <DialogContentText>
-                An unexpected Error has occurred.  Click close to reload the UI.
+                An unexpected Error has occurred.  Click close and reload the page to try again.
                 <br></br>
                 If this error continues to happen, pease contact us at support@campusevolve.ai.
                 <p></p>
