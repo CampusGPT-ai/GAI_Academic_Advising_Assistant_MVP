@@ -145,6 +145,8 @@ def run_all(domain: str, exclusion_list: list) -> list:
                 valid_runs.add(item.get('defaultDatasetId'))
 
     for run_item in valid_runs:
+        #if run_item == 'P6r582rg7ccM1D1T8':
+        #    continue
         r = download_results(run_item)
 
         for i in r:
@@ -172,7 +174,8 @@ def run_all(domain: str, exclusion_list: list) -> list:
                 'title': graph.get('name'),
                 'description': description,
             }
-            downloaded_results.append(flat_results)
+            if not any(exclusion in flat_results.get('canonicalUrl') for exclusion in exclusion_list):
+                downloaded_results.append(flat_results)
 
     return downloaded_results
 

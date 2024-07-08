@@ -22,7 +22,7 @@ const fetchMessageHistory = async ({
   conversationId,
 }: fetchMessagesParams):Promise<FetchMessageHistoryResult> => {
   const apiUrl = `${BaseUrl()}/users/${user}/conversations/${conversationId}/messages`;
-  console.log(`fetching messages for conversationId: ${JSON.stringify(conversationId)}`)
+  // console.log(`fetching messages for conversationId: ${JSON.stringify(conversationId)}`)
 
   try {
       // Making the axios call and expecting the response to be of type ApiMessage

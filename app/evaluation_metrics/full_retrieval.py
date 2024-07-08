@@ -13,8 +13,12 @@ def message(role, text):
     return Message(role=role, content=text)
 
 df = pd.read_csv('exported_messages.csv')
+
+
+df = df[df['first_name'] != 'Mary']
+df = df.iloc[-50:]
 df_dict = df.to_dict(orient='records')
-print(df.keys())
+print(df.head())
 
 results_dict = []
 
@@ -45,7 +49,7 @@ for topic in df_dict:
     retreiver.get_results(user_input, 30, 'hybrid')
     retreiver.calculate_columns()
     if not df.empty:
-        retreiver.group_results(df, 5)
+        retreiver.group_results(5)
         rag_dict = retreiver.results.to_dict(orient='records')
         for item in rag_dict:
             rag_str += f'url: {item.get("source")}, content: {item.get('content')}\n'
@@ -70,4 +74,4 @@ for topic in df_dict:
     results_dict.append({'user_message': topic.get('message_content'), '' 'assistant_response': response.get('response'), 'context': rag_str})
 
 df = pd.DataFrame(results_dict)
-df.to_csv('exported_messages_scoring.csv', index=False)
+df.to_csv('exported_messages_old_content.csv', index=False)

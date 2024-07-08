@@ -87,6 +87,11 @@ class MongoConnection():
                 len = len + 1
         print(len)
 
+    def count_docs(self):
+        from data.models import WebPageDocumentNew  # Adjust the model name based on your actual models
+        doc_count = WebPageDocumentNew.objects.count()
+        print(doc_count)
+
     def delete_web_docs(self):
         from data.models import catalogDocument
         catalogDocument.objects().delete()
@@ -106,7 +111,7 @@ class MongoConnection():
 if __name__ == "__main__":
     mongo = MongoConnection()
     mongo.connect()
-    mongo.flag_on_text()
+    mongo.count_docs()
     #mongo.delete_docs_by_user("A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I")
 
         

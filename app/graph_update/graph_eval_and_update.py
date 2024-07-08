@@ -135,9 +135,10 @@ class NodeEditor:
 
 
     async def orchestrate_graph_update_async(self, topics):
-        logger.info('orchestrating graph update')
-        import asyncio
-        await asyncio.to_thread(self.orchestrate_graph_update(topics))
+        if topics and topics != [] and topics != '':
+            logger.info('orchestrating graph update')
+            import asyncio
+            await asyncio.to_thread(self.orchestrate_graph_update(topics))
 
     def import_from_csv(self, file_path):
         import csv

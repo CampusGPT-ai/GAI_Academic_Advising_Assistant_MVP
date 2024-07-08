@@ -43,6 +43,7 @@ const MainPage: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>(''); // Error message to display in case of an error
   const [outcomes, setOutcomes] = useState<Outcomes[]>();
   const currentAnswerRef = useRef<MessageSimple>();
+  const [triggerFetch, setTriggerFetch] = useState<boolean>(false);
 
   // console.log(`reloading main page with app status ${appStatus} and auth type ${AUTH_TYPE}`)
 
@@ -86,7 +87,8 @@ const MainPage: FC = () => {
    * Resets the selected conversation state if the new chat button is clicked
    */
   const resetConversation = () => {
-    console.log(`resetting conversation on dialog click`)
+    setTriggerFetch(false);
+    // console.log(`resetting conversation on dialog click`);
     setRefreshFlag(false);
     setUserQuestion(undefined);
     setOutcomes(undefined);
@@ -100,7 +102,7 @@ const MainPage: FC = () => {
   // when a new question is recieved, update the history
   const updateHistory = (message: MessageSimple) => {
     if (message) { // Ensure message is not undefined or null
-      console.log("Received message: ", JSON.stringify(message));
+      // console.log("Received message: ", JSON.stringify(message));
       setMessageHistory(prevHistory => {
         // If prevHistory is undefined, start with an empty array
         const history = prevHistory || [];
@@ -112,14 +114,14 @@ const MainPage: FC = () => {
   };
 
   const resetError = () => {
-    console.log(`resetting error on dialog click`)
+    // console.log(`resetting error on dialog click`)
     setIsError(false);
     setErrorMessage('');
     setAppStatus(AppStatus.Idle);
   };
 
   const handleUserQuestion = async (input: string) => {
-    console.log(`handle user question with ${input} app Status: ${appStatus}`)
+    // console.log(`handle user question with ${input} app Status: ${appStatus}`)
     const userMessage: MessageSimple = { role: "user", message: input, created_at: { $date: Date.now() } };
     updateHistory(userMessage);
     if (userSession) {
@@ -136,9 +138,10 @@ const MainPage: FC = () => {
     setAppStatus,
     setIsError,
     setErrorMessage,
-    setRefreshFlag);
+    setRefreshFlag,
+    setTriggerFetch);
 
-  const { risks, opportunities } = useGraphData(setErrorMessage, setIsError, selectedConversation?.id, userSession)
+  const { risks, opportunities } = useGraphData(triggerFetch, setTriggerFetch, setErrorMessage, setIsError, selectedConversation?.id, userSession)
   // this effect should only run if there is a change in the app status.  It does the following:
   // 1.  If the app status is generating chat response, it sets the api url to the appropriate value
   // 2.  If the app status is getting message history, it fetches the message history
@@ -148,10 +151,10 @@ const MainPage: FC = () => {
 
     if (appStatus !== statusRef.current) {
 
-      console.log(`app status use effect triggered with ${appStatus} 
-      and ref is ${statusRef.current} and user question is ${userQuestion} 
-      and selected conversation is ${JSON.stringify(selectedConversation)} 
-      and refresh flag is ${refreshFlag}`)
+      // console.log(`app status use effect triggered with ${appStatus} 
+      // and ref is ${statusRef.current} and user question is ${userQuestion} 
+      //and selected conversation is ${JSON.stringify(selectedConversation)} 
+      //and refresh flag is ${refreshFlag}`)
 
       statusRef.current = appStatus;
 
@@ -175,7 +178,7 @@ const MainPage: FC = () => {
   useEffect(() => {
 
     if (sampleQuestions && appStatus === AppStatus.GettingQuestions) {
-      console.log(`resetting app status on sample questions load`)
+      // console.log(`resetting app status on sample questions load`)
       setAppStatus(AppStatus.Idle)
     }
   }, [sampleQuestions])
@@ -193,7 +196,7 @@ const MainPage: FC = () => {
 
   // refresh login status if user session changes
   useEffect(() => {
-    console.log(`error change detected with error: ${isError} and message: ${errorMessage}`)
+    // console.log(`error change detected with error: ${isError} and message: ${errorMessage}`)
     if (isError && errorMessage !== "Unauthorized") {
       setAppStatus(AppStatus.Error)
     }
@@ -208,14 +211,14 @@ const MainPage: FC = () => {
   useEffect(() => {
 
     if (messageHistory && appStatus === AppStatus.GettingMessageHistory && messageHistory !== messageHistoryRef.current) {
-      console.log(`updating app status on message history change`)
+      // console.log(`updating app status on message history change`)
       messageHistoryRef.current = messageHistory;
       setAppStatus(AppStatus.Idle)
     }
   }, [messageHistory, appStatus])
 
   useEffect(() => {
-    console.log('selected conversation is ', JSON.stringify(selectedConversation))
+    // console.log('selected conversation is ', JSON.stringify(selectedConversation))
   },[selectedConversation])
 
   const mainContentStyles = {

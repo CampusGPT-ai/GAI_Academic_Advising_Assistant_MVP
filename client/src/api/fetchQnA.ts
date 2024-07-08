@@ -40,7 +40,8 @@ const useQnAData = (
     setAppStatus?: (appStatus: AppStatus) => void,
     setIsError?: (isError: boolean) => void,
     setErrorMessage?: (error: string) => void,
-    setRefreshFlag?: (refreshFlag: boolean) => void
+    setRefreshFlag?: (refreshFlag: boolean) => void,
+    setTriggerFetch?: (triggerFetch: boolean) => void
     ) => {
     const [conversationReference, setConversationReference] = useState<ConversationReference | null>(null);
     const [kickbackResponse, setKickbackResponse] = useState<KickbackResponse | null>(null);
@@ -62,7 +63,7 @@ const useQnAData = (
             setKickbackResponse(data.kickback_response);
             setConversationReference(data.conversation_reference);
 
-            console.log('Data fetched:', JSON.stringify(data));
+            // console.log('Data fetched:', JSON.stringify(data));
         } catch (error: any) {
             if (axios.isAxiosError(error)) {
               console.error('API error:', error.response?.status, error.response?.data);
@@ -91,12 +92,13 @@ const useQnAData = (
         setRagResponse(null);
         setNoKickback(false);
         setUserQuestion && setUserQuestion('');
+        setTriggerFetch && setTriggerFetch(true);
     };
 
 
     useEffect(() => {
         if (messageText) {
-            console.log('useQnAData useEffect triggered')
+            // console.log('useQnAData useEffect triggered')
                 
                 if (user_id) {
                     const safeMessageText = messageText.replace(/\//g, '-');
@@ -112,7 +114,7 @@ const useQnAData = (
 
     useEffect(() => {
         if (apiUrl) {
-            console.log('Fetching data...');
+            // console.log('Fetching data...');
             try {
                 fetchData();
             }
@@ -127,7 +129,8 @@ const useQnAData = (
     useEffect(() => {
         if (setSelectedConversation && conversationReference) {
             // trigger refresh of conversation history list
-            console.log(`setting refresh flag with conversation reference conversationReference: ${JSON.stringify(conversationReference)} and conversationRef.current: ${conversationRef.current}`)
+            //
+            // console.log(`setting refresh flag with conversation reference conversationReference: ${JSON.stringify(conversationReference)} and conversationRef.current: ${conversationRef.current}`)
             setRefreshFlag && setRefreshFlag(true);
             conversationRef.current = conversationReference.id;
             const conversation: ConversationNew = { id: conversationReference.id, topic: conversationReference.topic, start_time: conversationReference.start_time };
@@ -140,12 +143,12 @@ const useQnAData = (
     useEffect(() => {
 
         if (updateHistory && ragResponse) {
-            console.log(`ragResponse: ${ragResponse.response}`)
+            // console.log(`ragResponse: ${ragResponse.response}`)
             const ru: MessageSimple = { role: "system", message: ragResponse.response, created_at: { $date: Date.now() } };
             updateHistory && updateHistory(ru);
         }
         if (updateHistory && kickbackResponse) {
-            console.log(`kickbackResponse: ${kickbackResponse.follow_up_question}`)
+            // console.log(`kickbackResponse: ${kickbackResponse.follow_up_question}`)
             const followUpQuestion: MessageSimple = { role: "system", message: kickbackResponse.follow_up_question, created_at: { $date: Date.now() } };
             updateHistory && updateHistory(followUpQuestion);
         }
