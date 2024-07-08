@@ -15,6 +15,8 @@ export interface GraphInsights {
 
  
  const useGraphData = (
+    triggerFetch: boolean,
+    setTriggerFetch: (triggerFetch: boolean) => void,
     setErrorMessage: (error: string) => void,
     setIsError: (isError: boolean) => void,
      conversationId?: string, 
@@ -76,13 +78,14 @@ export interface GraphInsights {
             setRisks([]);
           }
          }, [conversationId, user_id]);
- 
+
      useEffect(() => {
-         if (apiUrl && apiUrlRef.current !== apiUrl) {
-             apiUrlRef.current = apiUrl;
-             console.log('Fetching outcomes from graph with url ', apiUrl);
-             fetchData();}
-     }, [apiUrl]);
+      if ((triggerFetch && apiUrl) || (apiUrl && apiUrlRef.current !== apiUrl)) {
+        apiUrlRef.current = apiUrl;
+        console.log('Fetching outcomes from graph with url ', apiUrl);
+        fetchData();
+        setTriggerFetch(false);
+      }}, [triggerFetch, apiUrl]);
  
      return { risks, opportunities};
  };

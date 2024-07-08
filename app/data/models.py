@@ -172,6 +172,7 @@ class MessageContent(EmbeddedDocument):
     created_at = DateTimeField(default=datetime.utcnow)
     rag_results = StringField(required=False)
     feedback = DictField(required=False)
+    keywords = ListField(StringField(), required=False) 
 
 class RawChatMessage(Document):
     _auto_id_field = 'id'

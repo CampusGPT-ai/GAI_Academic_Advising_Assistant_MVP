@@ -180,7 +180,10 @@ class VectorUploader():
         
     def embed(self, text):
         try:
-            result = self.azure_llm.embed_to_array(text)
+            if text and text != "":
+                result = self.azure_llm.embed_to_array(text)
+            else:
+                result = []
         except Exception as e:
             if "rate limit" in str(e).lower() or "429" in str(e):
                 print(f"Rate limit exceeded. Retrying in 20 seconds...")
@@ -192,6 +195,8 @@ class VectorUploader():
 
 
     def convert_to_edm_datetimeoffset(self, date_string):
+        if not isinstance(date_string, str):
+            return ''
         dt = datetime.fromisoformat(date_string)
         dt = dt.replace(tzinfo=pytz.UTC)
         edm_datetimeoffset = dt.isoformat()
