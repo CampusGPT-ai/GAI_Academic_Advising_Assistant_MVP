@@ -138,7 +138,7 @@ const MainPage: FC = () => {
     setErrorMessage,
     setRefreshFlag);
 
-  const { risks, opportunities } = useGraphData(setErrorMessage, setIsError, selectedConversation?.topic, userSession)
+  const { risks, opportunities } = useGraphData(setErrorMessage, setIsError, selectedConversation?.id, userSession)
   // this effect should only run if there is a change in the app status.  It does the following:
   // 1.  If the app status is generating chat response, it sets the api url to the appropriate value
   // 2.  If the app status is getting message history, it fetches the message history

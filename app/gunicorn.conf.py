@@ -5,6 +5,7 @@ import os
 
 max_requests = 1000
 max_requests_jitter = 50
+timeout = 120
 
 #with open(os.getenv('LOG_CONFIG_FILE', 'logging.yaml'), 'r') as f:
  #   log_config = yaml.safe_load(f)

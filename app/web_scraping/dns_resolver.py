@@ -18,7 +18,6 @@ def get_subdomains(domain):
         'relations', 'safety', 'transit', 'transport', 'tv', 'video', 'virtual', 'wifi',
         'wireless', 'cloud', 'compute', 'database', 'db', 'storage', 'backup', 'docs',
         'api', 'api-docs', 'staging', 'qa', 'dev', 'development', 'prod', 'production',
-        'sandbox', 'sales', 'marketing', 'finance', 'accounting', 'payroll', 'benefits',
         'tax', 'legal', 'compliance', 'audit', 'facilities', 'maintenance', 'hr', 'jobs',
         'interns', 'internships', 'careers', 'recruitment', 'talent', 'apply', 'applications',
         'tickets', 'billing', 'invoice', 'pay', 'payment', 'checkout', 'store', 'shop',
@@ -42,7 +41,7 @@ def get_subdomains(domain):
         'medical','health','nursing','pharmacy','dental','law','legal','justice','criminal','psychology','counseling','sociology','anthropology',
         'diversity','inclusion','equity','accessibility','disability','accommodation','international','global','study','abroad','exchange',
         'jobs','internships','careers','employment','opportunities','work','study','research','projects','publications','news','events','calendar',
-        'online','distance','learning','elearning','virtual','remote','hybrid','blended','synchronous','asynchronous','live','recorded','video',
+        'online','distance','learning','elearning','virtual','remote','hybrid','blended','synchronous','asynchronous','live','recorded',
         'military','veterans','service','members','dependents','benefits','resources','support','counseling','advising','tutoring','mentoring',
         'intramurals','sports','recreation','fitness','wellness','health','nutrition','counseling','medical','clinic','pharmacy','counseling',
         'academicaffairs','provost','dean','faculty','staff','students','parents','alumni','donors','friends','partners','community','relations',
@@ -69,11 +68,9 @@ def get_subdomains(domain):
     
     return subdomains
 
-# Domain to search subdomains for
-domain = "ucf.edu"
+def find_all_subdomains(domain):
 
 # Get subdomains
-subdomains = get_subdomains(domain)
-start_urls = [{"url": f"https://{subdomain}"} for subdomain in subdomains]
-import json
-print(json.dumps({"startUrls": start_urls}, indent=4))
+    subdomains = get_subdomains(domain)
+    start_urls = [{"url": f"https://{subdomain}"} for subdomain in subdomains]
+    return start_urls

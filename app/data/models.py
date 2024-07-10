@@ -77,7 +77,7 @@ class WebPageDocument(Document):
 
 class WebPageDocumentNew(Document):
     source = StringField(required=True)
-    last_modified = StringField(required=True) # metadata/jsonLd/0/@graph/0/dateModified
+    last_modified = StringField(required=False) # metadata/jsonLd/0/@graph/0/dateModified
     metadata_description = StringField(required=False) # metadata/jsonLd/0/@graph/0/description
     metadata_keywords = StringField(required=False)
     page_content = StringField(required=True)
