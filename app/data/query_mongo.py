@@ -36,6 +36,9 @@ def export_messages_to_csv(filename):
                 email = profile.email
             else:
                 considerations_str, first_name, last_name, email = '', '', '', ''
+            
+            if not isinstance(conversation.history, list):
+                continue
 
             for raw_message_ref in conversation.history:
                 # Accessing referenced RawChatMessage directly

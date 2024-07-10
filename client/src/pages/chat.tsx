@@ -29,7 +29,7 @@ interface ChatProps {
   notifications?: string;
   sendChatClicked: (messageText: string) => void;
   messageHistory?: MessageSimple[];
-  currentAnswerRef: React.MutableRefObject<any>;
+  currentAnswerRef: React.MutableRefObject<any>; 
   chatWidth: string;
   opportunities?: Outcomes[];
   currentUserQuestion?: string;
@@ -49,7 +49,7 @@ const Chat: FC<ChatProps> = ({
   //console.log(`current app status is ${appStatus}`)
   //console.log("loading chat page with ",JSON.stringify(messageHistory))
   const handleChatSend = (messageText: string) => {
-    console.log(`Chat message sent: ${messageText}`)
+    // console.log(`Chat message sent: ${messageText}`)
     sendChatClicked(messageText);
   }
   

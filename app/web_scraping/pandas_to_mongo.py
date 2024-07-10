@@ -5,6 +5,7 @@ import math
 from time import sleep
 settings = Settings()
 from mongoengine import connect
+import time
 
 
 db_name = settings.MONGO_DB
@@ -13,10 +14,11 @@ db_conn = settings.MONGO_CONN_STR
 _mongo_conn = connect(db=db_name, host=db_conn)
 
 #while True and WebPageDocumentNew.objects().count() > 0:
-#    try:
+ #   print(WebPageDocumentNew.objects().count())
+ #   try:
  #       WebPageDocumentNew.objects().delete()
  #   except:
- #       sleep(1)
+  #      sleep(1)
  
 def read_df(df):
     print(df.shape)
@@ -52,12 +54,14 @@ def safe_get(dictionary, key):
     return value if not (isinstance(value, float) and math.isnan(value)) else ""
 
 
-def add_docs(result_dict):
-    results = 0
-    docs_list = []
-    for result in result_dict:
-        try:
-            doc = WebPageDocumentNew(
+def add_docs(result_dict, batch_size=50):
+    total_docs = len(result_dict)
+    for i in range(0, total_docs, batch_size):
+        batch = result_dict[i:i + batch_size]
+        docs = []
+        for result in batch:
+            try:
+                doc = WebPageDocumentNew(
                     source=safe_get(result, 'canonicalUrl'),
                     last_modified=safe_get(result, 'dateModified'),
                     metadata_description=safe_get(result, 'description'),
@@ -80,20 +84,28 @@ def add_docs(result_dict):
                     age_class=safe_get(result, 'age_class'),
                     sentence_count_class=safe_get(result, 'sentence_count_class')
                 )
-            doc.save()
-            results += 1
-            print(f"Saved {results} documents")
-            docs_list.append(doc)
-        except Exception as e:
-            print(f"Error saving document: {e}, skipping...")
-            continue
+                docs.append(doc)
+            except Exception as e:
+                print(f"Error preparing document: {e}, skipping...")
+                continue
+
+        while True:
+            try:
+                if docs:
+                    WebPageDocumentNew.objects.insert(docs, load_bulk=False)
+                    print(f"Saved batch of {len(docs)} documents")
+                break
+            except Exception as e:
+                print(f"Error saving batch: {e}. Retrying in 30 seconds...")
+                time.sleep(30)
+
     print('done')
     return
 
 if __name__=="__main__":
 
     from web_scraping.apify_page_count import process_results, run_all
-    results = run_all('ucf.edu', ['events', 'news', 'publication'])
+    results = run_all('international.ucf.edu', ['events', 'news', 'publication'])
     df1 = process_results(results)
     result_dict = read_df(df1)
     add_docs(result_dict)

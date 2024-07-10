@@ -62,7 +62,7 @@ const ChatActive: FC<ChatActiveProps> = ({
    * @param inputText - The text to set as the message state.
    */
   const handleSendClick = (inputText: string) => {
-    console.log(`sending chat from send clicked with ${inputText}`);
+    // console.log(`sending chat from send clicked with ${inputText}`);
     appStatus === AppStatus.Idle && sendChatClicked(inputText);
     setUserQuestion(inputText);
   };
@@ -72,13 +72,13 @@ const ChatActive: FC<ChatActiveProps> = ({
    * @param questionText - The text of the question to set as the message.
    */
   const handleQuestionClick = (questionText: string) => {
-    console.log(`sample question clicked: ${questionText}`);
+    // console.log(`sample question clicked: ${questionText}`);
     appStatus === AppStatus.Idle && sendChatClicked(questionText)
     setUserQuestion(questionText);
   };
 
   const handleRetry = () => {
-    console.log(`retrying chat due to error`)
+    // console.log(`retrying chat due to error`)
     userQuestion != '' && userQuestion && sendChatClicked(userQuestion)
   }
 
