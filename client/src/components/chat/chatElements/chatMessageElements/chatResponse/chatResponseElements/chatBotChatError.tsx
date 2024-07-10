@@ -42,7 +42,7 @@ const ChatBotChatError: FC<ChatBotChatErrorProps> = ({
 
 ChatBotChatError.defaultProps = {
 
-  error: "this is some error text",
+  error: "An error occurred. Please reload the page and try again.",
 
 };
 

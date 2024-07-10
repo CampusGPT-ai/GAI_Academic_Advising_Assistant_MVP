@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from azure.search.documents.aio import SearchClient
 from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
-from langchain_community.vectorstores.azuresearch import AzureSearch
 from cloud_services.llm_services import get_llm_client, AzureLLMClients
 from typing import List
 
@@ -33,21 +32,14 @@ class AzureSearchService(VectorSearchService):
                                    credential=self.search_credential)
         
         
-        self.langchain_search_client =  AzureSearch(
-        azure_search_endpoint=search_endpoint,
-        azure_search_key=search_api_key,
-        index_name=index_name,
-        embedding_function=self.llm_client.embed_to_array
-    )
-        
+       
     def getSearchClient(self):
-        return self.langchain_search_client
+        return self.azure_search_client
     
-    def doc_search(self, text, k=10):
-        return self.langchain_search_client.similarity_search(text, k)
-    
-    def upload(self, text):
-        result = self.azure_search_client.upload_documents(text)
+    def upload(self, documents: List[dict]):
+        if not isinstance(documents, list):
+            raise ValueError("Documents must be a list of dictionaries")
+        result = self.azure_search_client.upload_documents(documents)
         return result
     
     def text_search(self, text):

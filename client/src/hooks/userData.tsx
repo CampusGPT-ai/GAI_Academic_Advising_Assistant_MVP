@@ -56,10 +56,10 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     setAppStatus(AppStatus.LoggingIn)
     priorStatus.current = AppStatus.LoggingIn;
     
-    console.log(`fetching user from backend`)
+    // console.log(`fetching user from backend`)
       try {
         const userData = await sendTokenToBackend({accounts, isAuthenticated, inProgress, instance});
-        console.log(`fetched user from backend ${userData}`)
+        // console.log(`fetched user from backend ${userData}`)
         
         setUserSession(userData);
         setAppStatus(AppStatus.Idle);
@@ -77,10 +77,10 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     try {
     const authToken = localStorage.getItem('authToken');
     if (authToken === '') {
-      console.log(`no token found.  Redirecting to login`)
+      // console.log(`no token found.  Redirecting to login`)
     }
     authToken && setUserSession(authToken)
-    console.log(`fetched user from SAML ${authToken}, resetting app status to idle`)
+    // console.log(`fetched user from SAML ${authToken}, resetting app status to idle`)
     setAppStatus(AppStatus.Idle);
     }
     catch (error) {
@@ -111,7 +111,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
 
   const getConversations = async () => {
     appStatus !== AppStatus.GeneratingChatResponse && setAppStatus(AppStatus.GettingConversations)
-    console.log(`fetching conversations for user: ${userSession}`)
+    // console.log(`fetching conversations for user: ${userSession}`)
       try {
         const result = await fetchConversations({
           user: userSession
@@ -138,7 +138,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     if (refreshFlag !== refreshRef.current) {
       refreshRef.current = refreshFlag;
     // if a new conversation has been added, refresh the history list
-    console.log(`conversation refresh flag change detected ${refreshFlag}`)
+    // console.log(`conversation refresh flag change detected ${refreshFlag}`)
     refreshFlag && userSession &&
     getConversations();
     setRefreshFlag(false);
@@ -148,13 +148,13 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
   useEffect(() => {
     //console.log(`user session updated to ${userSession} with app status ${appStatus}`)
     if (userSession != undefined && sessionRef.current !== userSession) {
-      console.log(`user session updated to ${userSession}.  Refreshing conversation and questions`)
+      // console.log(`user session updated to ${userSession}.  Refreshing conversation and questions`)
       sessionRef.current = userSession;
       !(appStatus === AppStatus.Error) && getConversations();
       !(appStatus === AppStatus.Error) && getSampleQuestions();
     }
     if (userSession === undefined && localStorage.getItem('authToken') === '' && AUTH_TYPE === 'SAML') {
-      console.log(`user session cleared.  retry login`)
+      // console.log(`user session cleared.  retry login`)
       
       navigate('/login');  
     }
@@ -164,7 +164,7 @@ function useAccountData(refreshFlag : Boolean, setRefreshFlag: (refreshFlag: Boo
     
     if ((conversations || !conversationHistoryFlag.userHasHistory) && sampleQuestions) {
       if (appStatus === AppStatus.GettingConversations || appStatus === AppStatus.GettingQuestions) {
-        console.log(`conversations and sample questions updated.  Resetting app status to idle`)
+        // console.log(`conversations and sample questions updated.  Resetting app status to idle`)
         setAppStatus(AppStatus.Idle)
       }
     }
