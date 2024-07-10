@@ -71,5 +71,23 @@ def export_messages_to_csv(filename):
                     }
                     writer.writerow(data)
 
+def count_conversations_by_topic():
+    topic_counts = {}
+    
+    # Fetch all conversations
+    for conversation in ConversationSimple.objects:
+        if conversation.topic:
+            topic = conversation.topic
+            if topic in topic_counts:
+                topic_counts[topic] += 1
+            else:
+                topic_counts[topic] = 1
+    
+    # Format the result as a list of dictionaries
+    result = [{'id': topic, 'count': count} for topic, count in topic_counts.items()]
+    
+    return json.dumps(result, indent=2)
+
 if __name__ == '__main__':
-    export_messages_to_csv('exported_messages.csv')
+    # export_messages_to_csv('exported_messages.csv')
+    print(count_conversations_by_topic())

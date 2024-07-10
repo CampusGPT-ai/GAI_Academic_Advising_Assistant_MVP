@@ -1,6 +1,6 @@
 from neo4j import GraphDatabase
 from neo4j.graph import Relationship
-import re
+import re, json
 from evaluation_metrics.nlp import extract_keywords
 from settings.settings import Settings
 from cloud_services.llm_services import AzureLLMClients, get_llm_client
@@ -164,16 +164,27 @@ class Neo4jSession:
         except Exception as e:
             print(e)    
             raise e
+    
+    def find_related_topics_with_common_outcomes(self):
+        with self.driver.session() as session:
+            query = """
+            MATCH (a:Topic)-[r1:IS_OPPORTUNITY_FOR|IS_RISK_OF]->(o:Outcome)<-[r2:IS_OPPORTUNITY_FOR|IS_RISK_OF]-(b:Topic)
+            WHERE a <> b
+            RETURN a.name AS source, b.name AS target, count(o) AS value
+            """
+            result = session.run(query)
+            topics = []
+            for record in result:
+                topics.append({
+                    'source_node': record['source'],
+                    'target_node': record['target'],
+                    'value': record['value']
+                })
+                return json.dumps(topics, indent=2)
 
 
     
 if __name__ == "__main__":
     finder = Neo4jSession(uri, username, password)
     user_question = "What interships should I apply for?"
-    related_topic = finder.find_similar_nodes_with_score(user_question)
-    print(related_topic)
-    print(finder.query_outcomes('IS_OPPORTUNITY_FOR', related_topic))
-    # frame = finder.query_terms(user_question, "Topic")
-    # print(finder.find_all_nodes('Consideration'))
-    #print(frame)
-    finder.close()
+    print(finder.find_related_topics_with_common_outcomes())

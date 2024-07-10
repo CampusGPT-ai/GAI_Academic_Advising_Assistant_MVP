@@ -74,3 +74,9 @@ def find_all_subdomains(domain):
     subdomains = get_subdomains(domain)
     start_urls = [{"url": f"https://{subdomain}"} for subdomain in subdomains]
     return start_urls
+
+if __name__ == "__main__":
+    domain = "bryanuniversity.edu"
+    start_urls = find_all_subdomains(domain)
+    print(f"Found {len(start_urls)} subdomains for {domain}")
+    print(start_urls)
