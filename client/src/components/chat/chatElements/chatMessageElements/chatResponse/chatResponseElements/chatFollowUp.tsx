@@ -37,7 +37,7 @@ const ChatFollowUp: FC<ChatFollowUpProps> = ({
       }}
       onClick={() => onFollowUpClicked(text.description)}
     >
-      <Typography variant="body1" textAlign={'left'}>{text.name}: {text.description}</Typography>
+      <Typography variant="body1" textAlign={'left'}>{text.description}</Typography>
     </Button>
     <br></br>
     </div>
