@@ -11,7 +11,7 @@ import MainPageGraph from './pages/home'; // Verify this too
 import useSamlAuth from './hooks/useSamlAuth'; // Assuming this hook handles authentication logic
 import ProtectedRoute, { SAMLProtectedRoute } from './routeAuth'; // Verify these imports
 import LoginPage from './pages/login';
-
+import ConstellationGraph from './pages/graph';
 const authType = process.env.REACT_APP_AUTH_TYPE;
 console.log(`auth type =`, authType);
 
@@ -23,6 +23,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="login" element={<LoginPage />} />
+          <Route path="graph" element={<ConstellationGraph />} />
           <Route path="*" element={
             authType === 'SAML' ? (
               <SAMLProtectedRoute>

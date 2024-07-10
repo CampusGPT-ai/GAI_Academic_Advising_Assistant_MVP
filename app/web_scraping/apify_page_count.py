@@ -44,7 +44,7 @@ def get_content(url):
     "includeUrlGlobs": [],
     "excludeUrlGlobs": [],
     "maxCrawlDepth": 20,
-    "maxCrawlPages": 9999999,
+    "maxCrawlPages": 3000,
     "initialConcurrency": 0,
     "maxConcurrency": 200,
     "initialCookies": [],
@@ -328,5 +328,6 @@ def process_results(results: list) -> list:
 
 
 if __name__=="__main__":
+
     results = run_all('ucf.edu', ['events', 'news', 'publication'])
     df = process_results(results)
