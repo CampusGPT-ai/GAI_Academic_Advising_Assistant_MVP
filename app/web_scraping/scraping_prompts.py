@@ -8,6 +8,9 @@ For each fact you find, list the fact in a short paragraph.  \n
 - The paragraph should include the fact itself and all additional context that will help improve semantic search results using cosign similarity search on the embedded data. \n
 - Each paragraph should stand alone, without relying on knowledge of preceeding text to make sense. \n  
 - Repeat major topics, themes, and other facts from the body of the text for each paragraph. \n
+- if the content includes a date ALWAYs include the year in the paragraph. \n
+- If the content includes a location, ALWAYS include the address in the paragraph. \n
+- If the content includes a date, always include the year if possible, you may need to check the surrounding context to determine the year. \n
 Create as many paragraphs for as many facts as you possibly can.  \n
 always include specific dates if they are provided. \n
 Always include addresses and contact information if it is provided.  \n

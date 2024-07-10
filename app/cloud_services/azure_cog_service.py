@@ -54,9 +54,9 @@ class AzureSearchService(VectorSearchService):
         results = []
         result = self.azure_search_client.search(
             search_text=text,
-            top=n,
-            select=["content","source"])
-        results = self.dedup_results(result,"content")
+            top=n
+        )
+        results = self.dedup_results(result,"page_content")
         return results
     
     @staticmethod
@@ -85,7 +85,7 @@ class AzureSearchService(VectorSearchService):
             vector_queries=[vector_query]
             )
         
-        results = self.dedup_results(result,"content")
+        results = self.dedup_results(result,"page_content")
         return results
 
     def hybrid_search(self, text, vector_field: List[str], n):
@@ -104,7 +104,7 @@ class AzureSearchService(VectorSearchService):
             vector_queries=vqs)
         results = []
         for res in result:
-            results.append(res["content"])
+            results.append(res["page_content"])
         return results
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ class Considerations:
                 considerations = ""
             else:
                 considerations = user_info.considerations
+                logger.info(f"set user considerations to {considerations}")
             return considerations
         else: 
             return []
@@ -43,15 +44,26 @@ class Considerations:
             if consideration.keys() == name:
                 descriptions.append(consideration.values())
         return descriptions
-
+    
+    ## adding consideration matches to output
     def match_profile_to_graph(self, graph_considerations):
         profile_considerations = self.get_consideration_keys()
         missing_considerations = []
-
+        matching_considerations = []
         for consideration in graph_considerations:
+            logger.info(f"checking considerations for {consideration}")
             if consideration.get('name') not in profile_considerations:
                 missing_considerations.append(consideration)
-        return missing_considerations
+            else:
+                for pconsideration in self.user_considerations:
+                    logger.info("founding matching consideration")
+                    if isinstance(pconsideration, dict):
+                        if pconsideration.get(consideration.get('name')):
+                            logger.info(f"adding matching consideration for {pconsideration.get(consideration.get('name'))}")
+                            matching_considerations.append(pconsideration.get(consideration.get('name')))
+                            continue
+
+        return missing_considerations, matching_considerations
 
     def match_llm_to_profile(self, new_considerations):
 
@@ -95,7 +107,7 @@ class Considerations:
         return response
     
     def run_all(self, history, all_considerations, conversation):
-        graph_considerations = self.match_profile_to_graph(all_considerations)
+        graph_considerations, _ = self.match_profile_to_graph(all_considerations)
         new_considerations = self.check_considerations(history, graph_considerations)
         if new_considerations.get('contains considerations')=='no':
             return

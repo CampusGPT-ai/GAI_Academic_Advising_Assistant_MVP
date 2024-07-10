@@ -208,17 +208,19 @@ async def chat_new(
         graph = GraphFinder(session_data, user_question)
 
         topics = graph.get_topic_list_from_question()
-        if topics[0].get('score') < 0.9:
+        logger.info(f"retrieved topic {topics[0].get('name')} with score: {topics[0].get('score')}")
+        if topics[0].get('score') < 0.74:
             print('adding new topics and relationships for low scoring match')
             finder = NodeEditor(session_data, user_question)
             finder.init_neo4j()
             try:
-                background_tasks.add_task(finder.orchestrate_graph_update_async(topics))
+                logger.info('adding background task for graph update')
+                background_tasks.add_task(finder.orchestrate_graph_update_async, topics)
             except Exception as e:
                 logger.error(
                     f"failed to orchestrate_graph_update_async with error {str(e)}",
                 )
-        topic = topics[0].get('name')
+        topic = topics[0].get('name', 'unable to match topic from graph')
 
         logger.info("topic is " + topic)
         all_considerations = graph.get_relationships('Consideration',topic)
@@ -238,13 +240,15 @@ async def chat_new(
         if 'course' in topic.lower() or 'graduation requirements' in topic.lower() or 'class' in user_question:
             responder.retriever.search_client.index_name = app.state.settings.SEARCH_CATALOG_NAME
    
-        missing_considerations = c.match_profile_to_graph(all_considerations)
+        missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
 
-        #logger.info(f"missing_considerations: {missing_considerations}")
+        logger.info(f"missing_considerations: {missing_considerations}")
         kickback_response = await responder.kickback_response_async(missing_considerations, history)
-        rag_response, rag_content = await responder.rag_response_async(history)
+        rag_response, rag_content = await responder.rag_response_async(history, matching_considerations)
 
-        if topics[0].get('score') < 0.9:
+        logger.info(f"recieved response on rag request: {rag_response}")
+
+        if topics[0].get('score') < 0.74:
             kickback_response = ""
         
         conversation.topic = topic
@@ -255,13 +259,14 @@ async def chat_new(
             "rag_response": rag_response
         }
         try:
+            logger.info(f"Updating conversation history with response details")
             update_conversation_history(final_response, conversation, rag_content, session_data, user_question)
         except Exception as e:
             logger.error(
                 f"failed to update_conversation_history with error {str(e)}",
             )
             raise e
-
+        logger.info("SUCCESS!  Returning response to client")
         return JSONResponse(content=final_response, status_code=200)
     except Exception as e:
         logger.error(
@@ -280,12 +285,14 @@ async def get_outcomes(
     finder = GraphFinder(session_data, user_question)
     try:
         topics = finder.get_topic_list_from_question()
+        logger.info(f"retrieved topic {topics[0].get('name')} with score: {topics[0].get('score')}")
 
-        if topics[0].get('score') < 0.9:
+        if topics[0].get('score') < 0.74:
             final_response = {
             "risks": '',
             "opportunities": ''
         }
+            return JSONResponse(content=final_response, status_code=200)
         else:
             topic = topics[0].get('name')
             risks, opportunities = finder.get_relationships('Outcome',topic)
@@ -379,7 +386,7 @@ async def response_feedback(
     conversation = get_conversation(conversation_id, session_data)
     logger.info(f"Got conversation: {conversation}")
     try:
-        update_conversation_history_with_feedback(feedback, conversation, message_id, session_data)
+        update_conversation_history_with_feedback(feedback, message_id, session_data)
         logger.info(f"Feedback success! {feedback}")
         return JSONResponse(content="Successfully recorded feedback", status_code=200)
     except Exception as e:

@@ -1,18 +1,15 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
-import React, { FC, useEffect, useRef, Component } from "react";
+import React, { FC, useEffect, useRef } from "react";
 import "../../../assets/styles.css";
 import messageSample from "../../../model/messages/messageSample.json";
-import ParentMessage, { Citation, MessageContent, Timestamp } from "../../../model/messages/messages";
-import ChatBotChat from "./chatMessageElements/chatBotChat";
+import { Timestamp } from "../../../model/messages/messages";
 import ChatMessageHistory from "./chatMessageElements/chatMessageHistory";
-import ChatUserChat from "./chatMessageElements/chatUserChat";
 import ChatFollowUp from "./chatMessageElements/chatResponse/chatResponseElements/chatFollowUp";
 import { MessageSimple } from "../../../model/messages/messages";
 import AppStatus from "../../../model/conversation/statusMessages";
 import ChatBotChatError from "./chatMessageElements/chatResponse/chatResponseElements/chatBotChatError";
 import { useTheme } from "@emotion/react";
 import { Outcomes } from "../../../api/fetchOutcomes";
-import { Apps } from "@mui/icons-material";
 //for default props
 const jsonString = JSON.stringify(messageSample);
 const AUTH_TYPE = process.env.REACT_APP_AUTH_TYPE || 'NONE';
@@ -87,9 +84,9 @@ const ChatMessages: FC<ChatMessagesProps> = ({
           </Typography>}
         {appStatus === AppStatus.Error && <ChatBotChatError onRetry={onRetry} error={errMessage} />}
       </Box>
-      {opportunities && appStatus === AppStatus.Idle &&
+      {opportunities && appStatus === AppStatus.Idle && opportunities.length > 0 && 
         <Box ref={scrollRef} width='100%'>
-        <Typography variant="body1">Learn More About: </Typography>
+        <Typography variant="body1">Based on your question, here are some other topics you might be interested in: </Typography>
         {
           opportunities && opportunities.map((opportunity, index) => {
             return (
