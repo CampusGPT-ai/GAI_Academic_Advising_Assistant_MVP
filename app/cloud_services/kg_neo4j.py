@@ -38,12 +38,12 @@ class Neo4jSession:
                 return record['similarDescription']['name']
             
     
-    def find_similar_nodes_with_score(self, text, top_k=3, index='topic_index'):
+    def find_similar_nodes_with_score(self, text, top_k=3, index='topicIndexv2'):
         query_vector = azure_llm_client.embed_to_array(text)
 
         with self.driver.session() as session:
-            result = session.run("""
-                CALL db.index.vector.queryNodes('topic_index', 3, $queryVector)
+            result = session.run(f"""
+                CALL db.index.vector.queryNodes('{index}', 3, $queryVector)
                 YIELD node AS similarNode, score
                 RETURN similarNode.name AS name, similarNode.description AS description, similarNode.tags AS tags, score
                 ORDER BY score DESC
@@ -56,7 +56,7 @@ class Neo4jSession:
 
             return similar_nodes
     
-    def find_all_nodes(self, index='Consideration'):
+    def find_all_nodes(self, index='considerationIndexv2', type='string'):
         record_list = []
         with self.driver.session() as session:
             result = session.run(f"""
@@ -67,7 +67,12 @@ class Neo4jSession:
                 if record['n']['name'] and record['n']['description']:
                     name = (record['n']['name'])
                     description = (record['n']['description'])
-                    record_list.append(f'Name: {name}. Description: {description}. /n')
+                    keywords = (record['n']['tags'] if record['n']['tags'] else '')
+                    if type == 'string':
+                        record_list.append(f'Name: {name}. Description: {description}. Keywords: {keywords}. /n')
+                    else:
+                        record_list.append({'name': name, 'description': description, 'keywords': keywords})
+
 
         return record_list
     

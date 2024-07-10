@@ -6,6 +6,7 @@ settings = Settings()
 
 class UserInfo:
     def __init__(self, user_id):
+        self.user_id = user_id
         self.user_profile = Profile.objects(user_id=user_id).first()
         self.default_info = f'''
     enrolled at {settings.UNIVERSITY_NAME}

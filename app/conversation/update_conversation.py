@@ -11,7 +11,7 @@ def update_conversation_topic(user_session, user_question, conversation):
     conversation.save()
     return
 
-def update_conversation_history_with_feedback(feedback, conversation, message_id, user_session): 
+def update_conversation_history_with_feedback(feedback, message_id, user_session): 
     raw_chat_messages = RawChatMessage.objects(user_session_id=user_session)
     logger.info(f"RAW CHATS: {raw_chat_messages}")
     for r in raw_chat_messages:

@@ -79,14 +79,17 @@ class QueryLLM:
                 chat = self.azure_llm_client.chat(prompt, True)
             else:
                 chat = self.openai_llm_client.chat(prompt, True)
+
+            logger.info(f"run llm returned response from api")
             formatted_response = self.azure_llm_client._format_json(chat)
             final_out = self.azure_llm_client.validate_json(formatted_response, expected_json)
+            self.retry_count = 0
             return final_out
         except Exception as e:
             if self.retry_count < 2:
                 self.retry_count += 1
                 logger.error(f"error returning response from LLM:  {str(e)} \n retrying with retry count at {self.retry_count}")
-                self.run_llm(prompt, expected_json)
+                return self.run_llm(prompt, expected_json)
             else:
                 return Exception("error returning response from llm: ", str(e))
 

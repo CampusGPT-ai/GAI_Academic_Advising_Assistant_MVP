@@ -1,3 +1,7 @@
-{"terminal.integrated.env.windows": {
-    "PYTHONPATH": "${workspaceFolder};"
-  }}
+{
+    "python.defaultInterpreterPath": "/Users/marynelson/Library/Caches/pypoetry/virtualenvs/app-MeNZCdIE-py3.12/bin/python",
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "/Users/marynelson/Library/Caches/pypoetry/virtualenvs/app-MeNZCdIE-py3.12/bin/python",
+    "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+  }
+}

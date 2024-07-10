@@ -13,6 +13,7 @@ from graph_update.graph_eval_and_update import NodeEditor
 from conversation.run_chat import QueryLLM
 import json
 
+from evaluation_metrics.qa_retrieval_eval import RetrievalEval
 from data.models import ConversationSimple as Conversation, UserSession
 import logging
 logger = logging.getLogger(__name__)
@@ -34,35 +35,68 @@ class QnAResponse:
         self.set_user_considerations()
 
     def set_user_considerations(self):
-        self.user_considerations = self.user_info.get_user_info().considerations
+        info = self.user_info.get_user_info()
+        if info.considerations:
+            self.user_considerations = self.user_info.get_user_info().considerations
+        else:
+            'No considerations found in user profile.'
         return
 
     def get_user_context(self):
         return (self.user_question + json.dumps(self.user_considerations))
 
     def run_rag(self):
-        keyword_result = self.retriever.retrieve_keyword_content(self.user_question, n=2)
-        vector_result = self.retriever.retrieve_content(self.get_user_context(), n=2)
-        rag_links = keyword_result.get('source', [])
-        rag_links.extend(vector_result.get('source', []))
-        rag_content = keyword_result.get('content', [])
-        rag_content.extend(vector_result.get('content', []))
+        rag_links, rag_content = [], []
+        retriever = RetrievalEval()
+        retriever.get_results(self.user_question, 30, 'hybrid')
+        logger.info("got retrieval results")
 
+        if len(retriever.results) > 0:
+            retriever.calculate_columns()
+            logger.info("calculated columns")
+        else: 
+            return [], []
+        
+        if len(retriever.results) > 0:
+            retriever.group_results(5)
+            logger.info("grouped results")
+            rag_dict = retriever.results.to_dict(orient='records')
+            for item in rag_dict:
+                rag_links.append(item.get("source"))
+                rag_content.append(item.get('content'))
+        else:
+            logger.error("No results found in retrieval")
+            return [], []
+
+        logger.info("returning rag result")
         return rag_links, rag_content
         
         
-    def rag_response(self, conversation_history):
-        rag_links, rag_content = self.run_rag()
-        mapped_list = [{"response": response, "link": link} for link, response in zip(rag_links, rag_content)]
-        json_string = json.dumps(mapped_list, indent=4)
-        self.rag_results = json_string
-        rag_prompt, rag_json = self.llm_query.create_prompt_template(
-            gpt_qa_prompt(self.get_user_context(),json_string),conversation_history, self.user_question)
-        return self.llm_query.run_llm(rag_prompt, rag_json)
+    def rag_response(self, conversation_history, matching_considerations):
+        try:
+            rag_links, rag_content = self.run_rag()
+            try:
+                mapped_list = [{"response": response, "link": link} for link, response in zip(rag_links, rag_content)]
+                json_string = json.dumps(mapped_list, indent=4)
+                self.rag_results = json_string
+            except Exception as e:
+                logger.error(f"unable to map Rag response to list with error: {str(e)}")
+                raise e
+            rag_prompt, rag_json = self.llm_query.create_prompt_template(
+                gpt_qa_prompt(" ".join(matching_considerations),json_string),conversation_history, self.user_question)
+            return self.llm_query.run_llm(rag_prompt, rag_json)
+        except Exception as e:
+            logger.error(f"Error returning RAG response: {str(e)}")
+            raise e
     
-    async def rag_response_async(self, conversation_history):
-        result = await asyncio.to_thread(self.rag_response, conversation_history)
-        return result, self.rag_results
+    async def rag_response_async(self, conversation_history, matching_considerations):
+        try:
+            logger.info(f"running rag response for user question with {matching_considerations}")
+            result = await asyncio.to_thread(self.rag_response, conversation_history, matching_considerations)
+            logger.info(f"returning rag results to caller")
+            return result, self.rag_results
+        except Exception as e:
+            raise e
 
     def kickback_response(self, missing_considerations, conversation_history):
         kickback_prompt, kickback_json = self.llm_query.create_prompt_template(
@@ -70,6 +104,7 @@ class QnAResponse:
         return self.llm_query.run_llm(kickback_prompt, kickback_json) 
 
     async def kickback_response_async(self, missing_considerations, conversation_history):
+        logger.info(f"running kickback reponse for missing considerations")
         return await asyncio.to_thread(self.kickback_response, missing_considerations, conversation_history)   
 
 if __name__ == "__main__":
@@ -78,14 +113,16 @@ if __name__ == "__main__":
     from mongoengine import connect
     import os
 
-    USER_QUESTION = "when is course ENC4290 offered and is it required for computer science majors?"
-    USER_ID = "A_iXG9LQjG86PTY1sgG-Sm9JO3IbMlliRkZok3BhT8I"
+    USER_QUESTION = "What are the dining options on campus?"
+    USER_ID = "MENelson@indianatech.edu"
 
     db_name = os.getenv("MONGO_DB")
     db_conn = os.getenv("MONGO_CONN_STR")
     _mongo_conn = connect(db=db_name, host=db_conn)
 
+    # Now use the relative path
     relative_path = Path('./app/data/mock_user_session.json')
+
     from conversation.retrieve_messages import get_history_as_messages
     from conversation.retrieve_conversations import conversation_to_dict
     from conversation.run_graph import GraphFinder  
@@ -97,7 +134,7 @@ if __name__ == "__main__":
     
     # mock_conversation = Conversation(id="65cd0b42372b404efb9805f6", user_id=USER_ID)
 
-    mock_conversation = Conversation.objects(id="6622fed0fcda8e6d6c33fb04").select_related(max_depth=5)
+    mock_conversation = Conversation.objects(id="665b86e154456c7968a247c9").select_related(max_depth=5)
 
     graph = GraphFinder(mock_user_session, USER_QUESTION)
 
@@ -108,13 +145,13 @@ if __name__ == "__main__":
         finder.init_neo4j()
         finder.orchestrate_graph_update_async(topics)
     
-    #TODO: need to figure out how to handle low scoring topics without waiting for new considerations - maybe just blank it out? multiple topics
     topic = topics[0].get('name')
 
     c = Considerations(mock_user_session, USER_QUESTION)
+
     all_considerations = graph.get_relationships('Consideration',topic)
 
-    missing_considerations = c.match_profile_to_graph(all_considerations)
+    missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
 
     history = get_history_as_messages(mock_conversation[0].id)
     follow_up = QnAResponse(USER_QUESTION, mock_user_session, mock_conversation)
@@ -141,9 +178,9 @@ if __name__ == "__main__":
     responder = QnAResponse(user_question, session_data, conversation)
     if 'course' in topic.lower():
         responder.retriever = SearchRetriever.with_default_settings(index_name=settings.SEARCH_CATALOG_NAME)
-    missing_considerations = c.match_profile_to_graph(all_considerations)
+    missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
     kickback_response = asyncio.run(responder.kickback_response_async(missing_considerations, history))
-    rag_response = asyncio.run(responder.rag_response_async(history))
+    rag_response, _ = asyncio.run(responder.rag_response_async(history, matching_considerations))
 
     if topics[0].get('score') < 0.9:
         kickback_response = ""

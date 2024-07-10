@@ -59,6 +59,9 @@ Abstract base class for AILLM clients.
 """                  
 class AILLMClients(ABC):
 
+    @abstractmethod
+    def validate_json():
+        pass
 
     @abstractmethod
     def chat(self):
@@ -76,6 +79,29 @@ class OpenAIClients(AILLMClients):
 
         self.client = OpenAI(api_key=api_key)
         self.model = model
+    
+    @staticmethod
+    def validate_json(string_response, string_list):
+        
+        output = None
+        try:
+            dict = json.loads(string_response)
+            if not dict or dict == {}:
+                raise Exception(f"input dictionary is not valid JSON: {dict} ")
+        except Exception as e:
+            raise e
+        for l in string_list:
+            logger.info(f"checking for {l}")
+            try: 
+                output = dict.get(l)
+                if not output:
+                    raise Exception(f"key {l} not found in response {dict}")
+            except Exception as e:
+                logger.error(f'error parsing json from LLM response: {str(e)}')
+                raise e
+        return dict
+
+
 
     def chat(self, messages: List[Message], json_mode: bool = False) -> ChatCompletion:
         # Convert messages to the format expected by OpenAI
@@ -150,25 +176,7 @@ class AzureLLMClients(AILLMClients):
                 yield openai_response_objects.parse_completion_object(True,chunk)
         except Exception as e:
             raise e
-        
-    def validate_json(self, string_response, string_list):
-        output = None
-        try:
-            dict = json.loads(string_response)
-            if not dict or dict == {}:
-                raise Exception(f"input dictionary is not valid JSON: {dict} ")
-        except Exception as e:
-            raise e
-        for l in string_list:
-            logger.info(f"checking for {l}")
-            try: 
-                output = dict.get(l)
-                if not output:
-                    raise Exception(f"key {l} not found in response {dict}")
-            except Exception as e:
-                logger.error(f'error parsing json from LLM response: {str(e)}')
-                raise e
-        return dict
+
     
     @staticmethod
     def _format_json(gpt_response):
@@ -263,6 +271,31 @@ class AzureLLMClients(AILLMClients):
         """
         embedding = self.embed(text)
         return embedding.embedding
+    
+
+    
+    @staticmethod
+    def validate_json(string_response, string_list):
+        
+        output = None
+        try:
+            dict = json.loads(string_response)
+            if not dict or dict == {}:
+                raise Exception(f"input dictionary is not valid JSON: {dict} ")
+        except Exception as e:
+            raise e
+        for l in string_list:
+            logger.info(f"checking for {l}")
+            try: 
+                output = dict.get(l)
+                if not output:
+                    raise Exception(f"key {l} not found in response {dict}")
+            except Exception as e:
+                logger.error(f'error parsing json from LLM response: {str(e)}')
+                raise e
+        return dict
+
+
 
   
 def get_llm_client(api_type: str,
@@ -290,7 +323,7 @@ Returns:
     AILLMClients: An instance of the appropriate LLM client based on the specified API type.
 """  
     logger.info(f"getting open ai clients for {api_type}, {model}")
-    
+
     if api_type == "azure":
         return AzureLLMClients(
                 api_version=api_version,
