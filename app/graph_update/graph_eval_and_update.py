@@ -124,10 +124,13 @@ class NodeEditor:
                 continue
     
     def orchestrate_graph_update(self, topics):
-        new_topics = self.add_new_topic_node(topics)
-        relationships = self.add_new_relationships(topics, new_topics)
-        logger.info(f'adding new considerations and outcomes to graph')
-        self.add_new_considerations_outcomes(new_topics, relationships)
+        try:
+            new_topics = self.add_new_topic_node(topics)
+            relationships = self.add_new_relationships(topics, new_topics)
+            logger.info(f'adding new considerations and outcomes to graph')
+            self.add_new_considerations_outcomes(new_topics, relationships)
+        except Exception as e:
+            logger.error(f"exception in graph udpate process.  if none type on last call, ignore for now {str(e)}")
     
     def orchestrate_graph_update_existing_topic(self, topics, new_topics):
         relationships = self.add_new_relationships(topics, new_topics)
@@ -135,10 +138,13 @@ class NodeEditor:
 
 
     async def orchestrate_graph_update_async(self, topics):
-        if topics and topics != [] and topics != '':
-            logger.info('orchestrating graph update')
-            import asyncio
-            await asyncio.to_thread(self.orchestrate_graph_update(topics))
+        try:
+            if topics and topics != [] and topics != '':
+                logger.info('orchestrating graph update')
+                import asyncio
+                await asyncio.to_thread(self.orchestrate_graph_update(topics))
+        except Exception as e:
+            logger.error(f"exception in graph udpate process.  if none type on last call, ignore for now {str(e)}")
 
     def import_from_csv(self, file_path):
         import csv
