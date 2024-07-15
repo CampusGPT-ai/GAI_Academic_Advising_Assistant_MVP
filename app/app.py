@@ -315,7 +315,7 @@ async def get_outcomes(
         message_content = {"message": f"failed to get outcomes with error {str(e)}"}
         return JSONResponse(
             content=message_content,
-            status_code=404,
+            status_code=200,
         )
 
 
