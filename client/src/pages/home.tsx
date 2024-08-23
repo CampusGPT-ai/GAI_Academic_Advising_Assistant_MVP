@@ -6,7 +6,7 @@ import Conversation, { ConversationContext, defaultConversation } from "../model
 import { MessageSimple } from "../model/messages/messages";
 import Footer from "../components/footer/footer";
 import Chat from "./chat";
-import { Box, Container, setRef, } from "@mui/material";
+import { Box, CircularProgress, Container, setRef, } from "@mui/material";
 import { useMsal } from "@azure/msal-react";
 import useAccountData from "../hooks/userData";
 import AppBar from '@mui/material/AppBar';
@@ -24,10 +24,10 @@ import { Outcomes } from "../api/fetchOutcomes";
 import useGraphData from "../api/fetchOutcomes";
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 
+import SplashText from "./splashText";
+import fetchReviewCount, {FetchReviewCountResult} from "../api/fetchReviewCounts";
 
 const MainPage: FC = () => {
-
-
   const { accounts } = useMsal();
   const [messageHistory, setMessageHistory] = useState<MessageSimple[]>();
   const [isError, setIsError] = useState(false);
@@ -44,8 +44,16 @@ const MainPage: FC = () => {
   const [outcomes, setOutcomes] = useState<Outcomes[]>();
   const currentAnswerRef = useRef<MessageSimple>();
   const [triggerFetch, setTriggerFetch] = useState<boolean>(false);
+  const [showSplashText, setShowSplashText] = useState<boolean>(true);
+  const [splashLimit, setSplashLimit] = useState<FetchReviewCountResult>();
 
-  // console.log(`reloading main page with app status ${appStatus} and auth type ${AUTH_TYPE}`)
+  useEffect(() => {
+    const getReviewCount = async () => {
+      const count = await fetchReviewCount();
+      setSplashLimit(count);
+    }
+    getReviewCount();
+  }, []);
 
   const getMessageHistory = async () => {
     if (userSession && selectedConversation && selectedConversation.id) {
@@ -325,6 +333,25 @@ const MainPage: FC = () => {
             </DialogActions>
           </Dialog>
         )}
+
+{showSplashText &&(
+
+<Dialog
+  open={showSplashText}
+  onClose={() => setShowSplashText(false)}
+>
+  <DialogTitle>{"Research Participant Notification"}</DialogTitle>
+  <DialogContent>
+    <DialogContentText>
+     {splashLimit? <SplashText textSwitch={splashLimit?.total_users_with_five_reviews >= 300}/> : <CircularProgress />}
+    </DialogContentText>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => resetError()}>Close</Button>
+  </DialogActions>
+</Dialog>
+)}
+
 
 
         <Box
