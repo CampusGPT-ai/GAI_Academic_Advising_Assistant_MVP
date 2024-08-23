@@ -191,6 +191,23 @@ async def get_sample_questions(
             status_code=404,
         )
 
+@app.get("/research-count")
+async def get_research_count(
+    session_data: UserSession = Depends(get_session_from_session),
+):
+    try:
+        count = get_research_count(session_data)
+        logger.info(f'found research count: {count}')
+        return JSONResponse(content={"data": count}, status_code=200)
+    except Exception as e:
+        logger.error(
+            f"failed to load research count with error {str(e)}",
+        )
+        message_content = {"message": f"failed to load research count with error {str(e)}"}
+        return JSONResponse(
+            content=message_content,
+            status_code=404,
+        )
 
 @app.get("/users/{session_guid}/conversations/{conversation_id}/chat_new/{user_question}")
 async def chat_new(
