@@ -16,7 +16,8 @@ const authType = process.env.REACT_APP_AUTH_TYPE;
 console.log(`auth type =`, authType);
 
 function App() {
-  
+
+  !localStorage.getItem('showSplashText') && localStorage.setItem('showSplashText','true');
 
   return (
     <ThemeProvider theme={lightTheme}>

@@ -30,7 +30,7 @@ import logging
 from conversation.update_conversation import update_conversation_history, update_conversation_history_with_feedback
 from graph_update.graph_eval_and_update import NodeEditor
 from data.models import ConversationSimple
-import asyncio
+from data.query_mongo import count_reviews,  load_data_to_dataframe
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -191,14 +191,13 @@ async def get_sample_questions(
             status_code=404,
         )
 
-@app.get("/research-count")
-async def get_research_count(
-    session_data: UserSession = Depends(get_session_from_session),
-):
+@app.get("/review-count")
+async def get_research_count():
     try:
-        count = get_research_count(session_data)
-        logger.info(f'found research count: {count}')
-        return JSONResponse(content={"data": count}, status_code=200)
+        df = load_data_to_dataframe()
+        review_count = count_reviews(df)
+        logger.info(f'found review count, {review_count}')
+        return JSONResponse(content=review_count, status_code=200)
     except Exception as e:
         logger.error(
             f"failed to load research count with error {str(e)}",

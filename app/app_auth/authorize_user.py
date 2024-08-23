@@ -42,7 +42,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
     issuer_url = f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/v2.0"
     jwks_client = PyJWKClient(f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/discovery/v2.0/keys")
     signing_key = jwks_client.get_signing_key_from_jwt(token)
-
+    logger.info('starting token validation with issuer: %s', issuer_url)
     try:
         payload = jwt.decode(
         token, 
@@ -53,14 +53,16 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Optional[str]:
         options={"verify_signature": True, "verify_aud": True, "verify_iss": True}
         )
         
-        logger.debug("got token payload %s", payload)
+        logger.info("got token payload %s", payload)
         try:
+            logger.info("getting user from db")
             user = create_user_if_not_exist(payload)
             return user
         except Exception as e:
             raise e
     
-    except:
+    except Exception as e:
+        logger.error("Error validating token %s", e)
         raise credentials_exception
     
 def create_user_if_not_exist(payload):

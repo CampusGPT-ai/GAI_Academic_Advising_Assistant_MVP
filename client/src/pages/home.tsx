@@ -44,7 +44,11 @@ const MainPage: FC = () => {
   const [outcomes, setOutcomes] = useState<Outcomes[]>();
   const currentAnswerRef = useRef<MessageSimple>();
   const [triggerFetch, setTriggerFetch] = useState<boolean>(false);
-  const [showSplashText, setShowSplashText] = useState<boolean>(true);
+  const [showSplashText, setShowSplashText] = useState<boolean | null>(() => {
+    const storedValue = localStorage.getItem('showSplashText');
+    // Convert stored string to boolean or return null if not set
+    return storedValue === 'true' ? true : storedValue === 'false' ? false : null;
+  });
   const [splashLimit, setSplashLimit] = useState<FetchReviewCountResult>();
 
   useEffect(() => {
@@ -135,6 +139,11 @@ const MainPage: FC = () => {
     if (userSession) {
       setUserQuestion(input)
     }
+  };
+
+  const handleSpashClose = () => {
+    setShowSplashText(false);
+    localStorage.setItem('showSplashText', 'false');
   };
 
   useQnAData(userQuestion,
@@ -338,7 +347,7 @@ const MainPage: FC = () => {
 
 <Dialog
   open={showSplashText}
-  onClose={() => setShowSplashText(false)}
+  onClose={handleSpashClose}
 >
   <DialogTitle>{"Research Participant Notification"}</DialogTitle>
   <DialogContent>
@@ -347,12 +356,10 @@ const MainPage: FC = () => {
     </DialogContentText>
   </DialogContent>
   <DialogActions>
-    <Button onClick={() => resetError()}>Close</Button>
+    <Button onClick={handleSpashClose}>Continue</Button>
   </DialogActions>
 </Dialog>
 )}
-
-
 
         <Box
           display="flex"

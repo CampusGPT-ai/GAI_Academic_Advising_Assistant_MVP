@@ -36,8 +36,6 @@ export default function ProtectedRoute({children}) {
     const statusRef = useRef(inProgress);
 
 
-
-
     instance.addEventCallback((event) => {
         // set active account after redirect
         if (event.eventType === EventType.LOGIN_SUCCESS && event.payload.account) {

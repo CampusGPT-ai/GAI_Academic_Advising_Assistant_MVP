@@ -7,6 +7,9 @@ from data.models import ConversationSimple, Profile
 import numpy as np
 import pandas as pd
 from data.models import RawChatMessage
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 mongo_conn = MongoConnection()
@@ -52,23 +55,21 @@ def count_reviews(df):
     df.replace('', np.nan, inplace=True)
     df_clean = df.dropna(subset=['q1_usefullness_scale', 'q2_relevancy_scale', 'q3_accuracy_scale', 'helpfulnessofLinks', 'learnMoreOptions'])
     df_clean.to_csv('conversations_data.csv')
-    print(df_clean.head())
-    print(df_clean.describe())
     # Group by user_id and count the number of reviews per user
     user_review_counts = df_clean.groupby('user_id').size()
-    user_review_counts.to_csv('user_review_counts.csv')
 
-    
-    # Count users with at least one completed review
-    users_with_at_least_one_review = user_review_counts[user_review_counts >= 1].count()
+   # Count users with at least one completed review
+    users_with_at_least_one_review = int(user_review_counts[user_review_counts >= 1].count())
     
     # Count users with at least five completed reviews
-    users_with_five_reviews = user_review_counts[user_review_counts >= 5].count()
-    
-    return {
-        'total_users_with_one_review': users_with_at_least_one_review,
-        'total_users_with_five_reviews': users_with_five_reviews
+    users_with_five_reviews = int(user_review_counts[user_review_counts >= 5].count())
+
+    count_dict = {
+        'total_users_with_one_review': str(users_with_at_least_one_review),
+        'total_users_with_five_reviews': str(users_with_five_reviews)
     }
+    logger.info(f"user count: {count_dict}")
+    return count_dict
 
 
 def export_messages_to_csv(filename):
