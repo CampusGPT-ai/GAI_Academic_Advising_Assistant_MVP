@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { BaseUrl } from "./baseURL";
 
-interface fetchParams {
+export interface fetchParams {
   user?: string;
 
 }
