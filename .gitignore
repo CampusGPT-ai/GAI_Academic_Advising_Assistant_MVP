@@ -169,3 +169,4 @@ app/evaluation_metrics/itech_processed.csv
 app/appenv
 app/clientenv.txt
 exported_messages_scoring.csv
+*.csv
