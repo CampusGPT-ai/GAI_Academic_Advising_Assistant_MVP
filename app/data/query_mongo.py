@@ -139,7 +139,8 @@ def load_data_to_dataframe():
         profile = [profile for profile in all_profiles if profile.user_id == conversation.user_id]
         if not profile:
             continue
-        if profile[0].user_id in ['mary.schwaber@gmail.com']:
+        if profile[0].user_id in ['mary.schwaber@gmail.com', 'MXLangworthy@indianatech.edu', 'KMBliss@indianatech.edu','MENelson@indianatech.edu',
+                                ]:
             continue
         messages = [raw_message_ref.message for raw_message_ref in conversation.history]
         for raw_message in messages:
@@ -164,7 +165,7 @@ def count_reviews(df):
     print(df_clean.head())
     print(df_clean.describe())
     # Group by user_id and count the number of reviews per user
-    user_review_counts = df_clean.groupby('email').size()
+    user_review_counts = df_clean.groupby('user_id').size()
     user_review_counts.to_csv('user_review_counts.csv')
 
     
