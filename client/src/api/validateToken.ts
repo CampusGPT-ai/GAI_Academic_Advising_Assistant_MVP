@@ -41,6 +41,7 @@ const sendTokenToBackend = async( {accounts, isAuthenticated, inProgress, instan
 
                     const token: string = response.accessToken;
                     console.log(`Got token: ${token}`);
+                    console.log(`validating token with backend ${BaseUrl()}/validate_token`);
                     try {
                         backendResponse = await fetch(`${BaseUrl()}/validate_token`, {
                         method: 'POST',

@@ -25,6 +25,8 @@ class Profile(Document):
     user_id = StringField(required=True, unique=True)
     first_name = StringField(required=False)
     active_conversation = ReferenceField('ConversationSimple', required=False)
+    tos_status = BooleanField(required=False, default=False)
+    first_run_status = BooleanField(required=False, default=True)
     last_name = StringField(required=False)
     email = EmailField(required=False)
     created_at = DateTimeField(default=datetime.utcnow)

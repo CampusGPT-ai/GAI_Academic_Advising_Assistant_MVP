@@ -129,4 +129,7 @@ def export_messages_to_csv(filename):
                     writer.writerow(data)
 
 if __name__ == '__main__':
-    export_messages_to_csv('exported_messages.csv')
+    df=load_data_to_dataframe()
+    print(df.head())
+    count_reviews(df)
+

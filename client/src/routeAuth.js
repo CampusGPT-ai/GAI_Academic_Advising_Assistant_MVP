@@ -20,7 +20,7 @@ export function SAMLProtectedRoute({ children }) {
         
 
     console.log(`saml login url: ${samlLoginUrl}`);
-    //debugger;
+    debugger;
 
     if (!isAuthenticated) {
         console.log("redirecting to SAML login page");

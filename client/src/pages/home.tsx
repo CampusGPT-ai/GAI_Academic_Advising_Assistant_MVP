@@ -273,6 +273,23 @@ const MainPage: FC = () => {
           backgroundColor: "#fff"
         }}
       >
+        {showSplashText &&(
+
+<Dialog
+  open={showSplashText}
+  onClose={handleSpashClose}
+>
+  <DialogTitle>{"Research Participant Notification"}</DialogTitle>
+  <DialogContent>
+    <DialogContentText>
+     {splashLimit? <SplashText textSwitch={splashLimit?.total_users_with_five_reviews >= 300}/> : <CircularProgress />}
+    </DialogContentText>
+  </DialogContent>
+  <DialogActions>
+  <Button disabled={appStatus !== AppStatus.Idle} onClick={handleSpashClose}>Continue</Button>
+  </DialogActions>
+</Dialog>
+)}
 
 
         <Toolbar>

@@ -86,11 +86,15 @@ def create_user_if_not_exist(payload):
 async def prepare_from_fastapi_request(request, debug=False):
   form_data = await request.form()
  # Use `disguised-host` or fallback to `was-default-hostname` to get the original host
-  host = request.headers.get('disguised-host', request.headers.get('was-default-hostname', request.client.host))
+  host = request.headers.get('disguised-host', request.headers.get('was-default-hostname', request.headers.get('host',request.client.host)))
+  logger.info(f"host:{host}")
     # Use `x-forwarded-proto` to get the scheme
   proto = request.headers.get('x-forwarded-proto', 'https')
   logger.info(f"Request headers received: {request.headers}")
-  base_url = f"https://{host}"
+  if 'localhost' in host:
+    base_url = f"http://{host}"
+  else:
+    base_url = f"https://{host}"
 
   rv = {
     "https": "on" if proto == "https" else "off",
@@ -132,9 +136,11 @@ def get_saml_settings(base_url):
 @router.get("/saml/login")
 async def saml_login(request: Request):
     req = await prepare_from_fastapi_request(request)
+    logger.info(f"request base url {req.get('base_url')}")
     saml_settings = get_saml_settings(req.get('base_url'))
     auth = OneLogin_Saml2_Auth(req, saml_settings)
     callback_url = auth.login(return_to=settings.CLIENT_BASE_URL)
+    logger.info(f"callback_url: {callback_url}")
     response = RedirectResponse(url=callback_url)
     return response
 
