@@ -54,4 +54,4 @@ COPY . .
 EXPOSE 8000
 
 # Define the command to run your app
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "app_server:app"]

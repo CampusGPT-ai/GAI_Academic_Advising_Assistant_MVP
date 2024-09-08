@@ -7,8 +7,6 @@ from conversation.prompt_templates.kick_back_prompt import get_gpt_system_prompt
 from conversation.prompt_templates.gpt_qa_prompt import get_gpt_system_prompt as gpt_qa_prompt
 
 import asyncio
-from cloud_services.connect_mongo import MongoConnection
-from graph_update.graph_eval_and_update import NodeEditor
 
 from conversation.run_chat import QueryLLM
 import json
@@ -139,11 +137,6 @@ if __name__ == "__main__":
     graph = GraphFinder(mock_user_session, USER_QUESTION)
 
     topics = graph.get_topic_list_from_question()
-    if topics[0].get('score') < 0.9:
-        print('adding new topics and relationships for low scoring match')
-        finder = NodeEditor(mock_user_session, USER_QUESTION)
-        finder.init_neo4j()
-        finder.orchestrate_graph_update_async(topics)
     
     topic = topics[0].get('name')
 
@@ -166,8 +159,6 @@ if __name__ == "__main__":
     history = get_history_as_messages(conversation_id)
     all_considerations = graph.get_relationships('Consideration',topic)
     
-    c = Considerations(session_data, user_question)
-
     try:
         asyncio.run(c.run_all_async(history, all_considerations, conversation))
     except Exception as e:
@@ -176,9 +167,6 @@ if __name__ == "__main__":
         )
         raise e
     responder = QnAResponse(user_question, session_data, conversation)
-    if 'course' in topic.lower():
-        responder.retriever = SearchRetriever.with_default_settings(index_name=settings.SEARCH_CATALOG_NAME)
-    missing_considerations, matching_considerations = c.match_profile_to_graph(all_considerations)
     kickback_response = asyncio.run(responder.kickback_response_async(missing_considerations, history))
     rag_response, _ = asyncio.run(responder.rag_response_async(history, matching_considerations))
 

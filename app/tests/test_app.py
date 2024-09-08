@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from mongoengine import connect, disconnect
 
-from ..app import app, get_session_from_session
+from ..app_server import app, get_session_from_session
 from ..data.models import UserSession, Profile, ConversationSimple, RawChatMessage, Feedback
 from ..app_auth.authorize_user import credentials_exception
 from ..conversation.update_conversation import update_conversation_history

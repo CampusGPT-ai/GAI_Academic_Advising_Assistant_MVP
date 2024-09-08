@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import requests, json, re
 from playwright.async_api import async_playwright
 import os, asyncio
-from langchain.docstore.document import Document
 from datetime import datetime
 from queue import Queue
 from unidecode import unidecode
