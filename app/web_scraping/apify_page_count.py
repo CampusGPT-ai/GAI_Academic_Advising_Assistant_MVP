@@ -73,7 +73,7 @@ def download_results(dataset_id):
     # Define the base URL and the parameters
     base_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items"
     params = {
-        "token": "apify_api_L3Y5KT0rNXHKAvTzco6UgME8TDKRda431ZC7"
+        "token": settings.APIFY_TOKEN
     }
 
     # Make the GET request
@@ -92,7 +92,7 @@ def get_runs():
         # Define the base URL and the parameters
     base_url = f"https://api.apify.com/v2/actor-runs"
     params = {
-        "token": "apify_api_L3Y5KT0rNXHKAvTzco6UgME8TDKRda431ZC7"
+        "token": settings.APIFY_TOKEN
     }
 
     # Make the GET request
@@ -109,11 +109,10 @@ def get_runs():
         print(response.text)
 
 def get_run_inputs(run_id):
- #https://api.apify.com/v2/key-value-stores/kMzszX4a1gODsY6qm/records/INPUT?token=apify_api_L3Y5KT0rNXHKAvTzco6UgME8TDKRda431ZC7
          # Define the base URL and the parameters
     base_url = f"https://api.apify.com/v2/key-value-stores/{run_id}/records/INPUT"
     params = {
-        "token": "apify_api_L3Y5KT0rNXHKAvTzco6UgME8TDKRda431ZC7"
+        "token": settings.APIFY_TOKEN
     }
 
     # Make the GET request
