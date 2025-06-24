@@ -232,7 +232,6 @@
           "azureOpenAIParameters": {
             "resourceUri": "https://cog-b3yybe3qy5wiq.openai.azure.com",
             "deploymentId": "embedding",
-            "apiKey": "4efd5d72a7d9440cbbe6200784207ef0",
             "authIdentity": null
           },
           "customWebApiParameters": null
